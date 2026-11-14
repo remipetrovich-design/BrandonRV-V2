@@ -42,7 +42,7 @@ test('the woven application client preserves bounded successful caching and per-
  assert.match(client,/cacheValidForMs/);
  assert.match(client,/lastValid\.keyFingerprint/);
  assert.match(client,/fingerprintKey/);
- assert.match(client,/LICENSE_AUTHORITIES/);
+ assert.match(client,/LICENSE_API_BASE_URL/);
 });
 test('application licence storage is not accessible to public Supabase roles',()=>{
  const migration=read('../supabase/migrations/20261112090000_application_license.sql');
