@@ -66,3 +66,21 @@ Brandon RV is one application, one V2 Supabase project and one repository. The f
 - Invoice creation remains the confirmed transaction gap: invoice, invoice-item and audit writes are separate requests with a manual delete rollback. Convert that flow to one database transaction next.
 - Documentation must distinguish implemented code, partially implemented code, outstanding work and unverified runtime behavior. A database table, route or UI control alone does not establish that a complete workflow works.
 - Do not claim live License Manager validation, external mail delivery, production deployment or end-to-end workflows are verified unless they have actually been exercised.
+
+## UI consistency implementation — 15 November 2026
+
+The existing design system is being applied to the current route and component structure rather than replaced with a parallel UI system.
+
+Completed in this pass:
+- Restored the public website and customer portal to the documented warm-neutral, deep-green and orange brand register. Public display/body typography is Georgia/Arial.
+- Kept the navy/blue operational register scoped to `.brv-admin-frame`, including its own tokens, density and workspace controls.
+- Removed duplicate nested admin topbars from email templates, service areas and service catalogue pages; the shared AdminShell remains the single authenticated workspace header.
+- Redirected legacy customer-enquiry, general-enquiry and quote-request admin URLs into the canonical Enquiries register with the correct filter.
+- Standardised admin content wrappers and removed the extra blank portal-sidebar grid column from pages rendered inside AdminShell.
+- Aligned role management and application licence pages with the shared admin page-heading/layout pattern.
+- Removed the hardcoded customer support phone and portal footer location; the customer sidebar now directs customers to the enquiry form.
+- Improved public text accent contrast, workspace muted text contrast, keyboard focus treatment and reduced-motion support.
+
+No Vercel project was deployed or production environment activated. The UI pass changes presentation and route consolidation only; existing business logic and database workflows were retained.
+
+Verification: GitHub Actions runs 166–183 completed successfully for the relevant UI and documentation commits, with tests, typecheck and build passing. Later commits remain subject to their own CI results. This is not a full end-to-end or accessibility certification; real browser rendering, customer/staff account workflows and responsive device checks remain to be completed before deployment.
