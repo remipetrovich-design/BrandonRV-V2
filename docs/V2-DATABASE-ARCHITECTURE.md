@@ -40,7 +40,7 @@ The current schema intentionally keeps a permanent customer identity while attac
 
 ### Initial operating team
 
-The initial internal operating team is two people: Chris as business owner and Lucas as technical/developer support. Customer accounts are not limited to two. The live database currently has two role-assigned users: one `ceo_founder` and one `website_development_specialist`; both have employee status and appear in the staff view. Keep role assignment explicit and auditable. Do not mass-change the two existing user records unless a deliberate role change is required.
+The initial internal operating team is two people: Chris as business owner and Lucas as technical/developer support. Customer accounts are not limited to two. The live V2 `public.users` table currently contains no user records. The initial owner and Website Developer accounts still need to be created through the supported account setup flow before role-based staff workflows can be exercised end to end. Do not create placeholder identities or invent account email addresses.
 
 The system must remain capable of adding staff later, but launch workflows should not assume a large workforce, multiple departments, payroll processing, leave administration or complex HR approvals.
 
