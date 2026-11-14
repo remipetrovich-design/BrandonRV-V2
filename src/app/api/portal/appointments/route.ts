@@ -1,4 +1,6 @@
-import {currentUser,database,jsonError,sameOrigin} from "@/lib/auth";\nimport {validateBookingWindow} from "@/lib/booking-rules";\nimport {bookingWindowsConflict} from "@/lib/booking-window-policy.mjs";
+import {currentUser,database,jsonError,sameOrigin} from "@/lib/auth";
+import {validateBookingWindow} from "@/lib/booking-rules";
+import {bookingWindowsConflict} from "@/lib/booking-window-policy.mjs";
 export const runtime="nodejs";
 export async function GET(){
  const user=await currentUser();if(!user)return jsonError("Not signed in.",401);
