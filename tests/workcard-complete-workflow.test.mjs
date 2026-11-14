@@ -24,9 +24,9 @@ test("admin can create and manage a booking directly from a Workcard",async()=>{
  const route=await read("../src/app/api/admin/jobs/[id]/booking/route.ts");
  assert.match(component,/activeTab==="booking"&&<section/);
  assert.match(component,/Accept booking request/);
- assert.match(component,/Booking settings/);
+ assert.match(component,/Booking & schedule/);
  assert.match(component,/\/booking/);
- assert.match(route,/authorizePermission\("jobs\.manage"\)/);
+ assert.match(route,/authorizePermission\("appointments\.manage"\)/);
  assert.match(route,/sameOrigin\(request\)/);
  assert.match(route,/appointments/);
  assert.match(route,/starts_at/);
@@ -37,8 +37,8 @@ test("admin can create and manage a booking directly from a Workcard",async()=>{
  assert.match(route,/booking_request_accepted/);
  assert.match(route,/status==="requested"/);
  assert.match(route,/business_id/);
- assert.match(route,/\.lt\("starts_at"/);
- assert.match(route,/\.gt\("ends_at"/);
+ assert.match(route,/bookingWindowsConflict/);
+ assert.match(route,/validateBookingWindow/);
 });
 
 test("master calendar creates confirmed appointments against an existing Workcard",async()=>{
@@ -51,7 +51,7 @@ test("master calendar creates confirmed appointments against an existing Workcar
  assert.match(component,/api/);
  assert.match(route,/appointments\.manage/);
  assert.match(route,/validateBookingWindow/);
- assert.match(route,/bookingTravelBuffer/);
+ assert.match(route,/bookingWindowsConflict/);
  assert.match(route,/calendar\.appointment_created/);
  assert.match(route,/appointment_id:appointment\.id/);
 });
