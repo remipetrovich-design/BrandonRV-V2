@@ -14,7 +14,7 @@ Inspected 15 November 2026 after initial V2 provisioning:
 - One Brandon RV business/workspace seed record (`prelaunch`, Tamworth NSW).
 - No customer, employee or operational records have been copied from V1.
 - One private Storage bucket exists: `brandon-rv-private`.
-- 64 migration records are applied, including the V2 RPC-permission security patch and the latest atomic Workcard update/deletion migrations.
+- 65 migration records are applied, including the V2 RPC-permission security patch and the latest atomic Workcard update/deletion migrations.
 - The database includes the enquiry, quote, booking, Workcard, job work detail, variations, approvals, workforce/HR, suppliers/procurement, invoice/payment, audit, notification, licensing and website structures.
 - Email template schema and six default templates exist, but the external mail delivery system remains paused and has not been re-enabled.
 
