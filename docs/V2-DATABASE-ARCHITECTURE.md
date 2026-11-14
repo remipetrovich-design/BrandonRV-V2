@@ -35,11 +35,11 @@ This is a structural inventory, not a claim that every workflow is production-re
 - `user_permission_grants` stores individual, reasoned, optionally expiring permission grants.
 - `permissions` is the permission catalogue.
 
-The current schema intentionally keeps a permanent customer identity while attaching employee fields to the same row. Employee-specific data is an optional add-on: `user_role`, `employment_status`, `employment_type`, title, dates and other employee details. Do not create a second password, login, or identity record for staff.
+The current schema intentionally keeps a permanent customer identity while attaching employee fields to the same row. Employee-specific data is an optional add-on: `user_role`, `employment_status`, `employment_type`, title, dates and other employee details. The live constraints currently keep `account_type='customer'`, `primary_group='customer'` and `secondary_group` empty; staff access is granted through `user_role` and active employment status. Do not create a second password, login, or identity record for staff.
 
 ### Initial operating team
 
-The initial internal operating team is two people: Chris as business owner and Lucas as technical/developer support. Customer accounts are not limited to two. Keep role assignment explicit and auditable. Do not mass-change the two existing user records until their identities and current access have been verified against the intended role assignment.
+The initial internal operating team is two people: Chris as business owner and Lucas as technical/developer support. Customer accounts are not limited to two. The live database currently has two role-assigned users: one `ceo_founder` and one `website_development_specialist`; both have employee status and appear in the staff view. Keep role assignment explicit and auditable. Do not mass-change the two existing user records unless a deliberate role change is required.
 
 The system must remain capable of adding staff later, but launch workflows should not assume a large workforce, multiple departments, payroll processing, leave administration or complex HR approvals.
 
