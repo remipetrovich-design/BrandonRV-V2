@@ -1,0 +1,567 @@
+/* Brandon RV admin: compact operational density. Keep the public site styling untouched. */
+.brv-admin-frame {
+  --admin-space-1: 4px;
+  --admin-space-2: 8px;
+  --admin-space-3: 12px;
+  --admin-space-4: 16px;
+  --admin-control-height: 36px;
+  --admin-radius: 8px;
+  color: #172f46;
+}
+.brv-admin-frame .brv-admin-sidebar { width: 236px; }
+.brv-admin-frame .brv-admin-main { min-width: 0; }
+.brv-admin-frame .brv-admin-topbar { min-height: 54px; padding-inline: 20px; }
+.brv-admin-frame .brv-admin-content { padding: 20px clamp(18px, 2vw, 28px) 32px; }
+.brv-admin-frame .portal-page { min-height: 0; background: transparent; }
+.brv-admin-frame .portal-shell { width: 100%; max-width: 1440px !important; padding: 8px 0 28px; }
+.brv-admin-frame .portal-page-heading { margin: 0 0 18px; }
+.brv-admin-frame .portal-page-heading h1 { margin: 2px 0 5px; font-size: clamp(25px, 2.2vw, 32px); line-height: 1.12; letter-spacing: -.04em; }
+.brv-admin-frame .portal-page-heading > p:last-child { margin: 0; font-size: 12px; line-height: 1.55; }
+.brv-admin-frame .portal-panel { padding: 16px; border: 1px solid #dce5ee; border-radius: 10px; box-shadow: 0 3px 12px rgba(16, 40, 63, .035); }
+.brv-admin-frame .portal-panel + .portal-panel { margin-top: 12px; }
+.brv-admin-frame .portal-panel-heading { gap: 12px; margin-bottom: 12px; }
+.brv-admin-frame .portal-panel-heading h2 { margin: 3px 0 2px; font-size: 17px; line-height: 1.25; }
+.brv-admin-frame .portal-panel-heading p { margin: 4px 0 0; font-size: 11px; line-height: 1.5; }
+.brv-admin-frame .panel-kicker { font-size: 9px; letter-spacing: .1em; }
+.brv-admin-frame .button { min-height: var(--admin-control-height); padding: 0 12px; border-radius: 7px; font-size: 11px; line-height: 1.2; box-shadow: none; }
+.brv-admin-frame .button:hover { transform: none; box-shadow: 0 2px 7px rgba(16, 40, 63, .09); }
+.brv-admin-frame .form-grid { gap: 10px 12px; }
+.brv-admin-frame .auth-form label,
+.brv-admin-frame .portal-panel label,
+.brv-admin-frame .brv-enquiry-manager label { gap: 5px; font-size: 10px; }
+.brv-admin-frame .auth-form input:not([type="checkbox"]):not([type="file"]),
+.brv-admin-frame .auth-form select,
+.brv-admin-frame .auth-form textarea,
+.brv-admin-frame .portal-panel input:not([type="checkbox"]):not([type="file"]),
+.brv-admin-frame .portal-panel select,
+.brv-admin-frame .portal-panel textarea,
+.brv-admin-frame .brv-enquiry-manager input,
+.brv-admin-frame .brv-enquiry-manager select,
+.brv-admin-frame .brv-enquiry-manager textarea {
+  min-height: var(--admin-control-height);
+  padding: 7px 9px;
+  border: 1px solid #d5e0ea;
+  border-radius: 6px;
+  background: #fff;
+  color: #183047;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.brv-admin-frame .auth-form textarea,
+.brv-admin-frame .portal-panel textarea,
+.brv-admin-frame .brv-enquiry-manager textarea { min-height: 76px; resize: none; }
+.brv-admin-frame .activity-list { gap: 0; }
+.brv-admin-frame .activity-item { gap: 12px; padding: 11px 0; border-bottom: 1px solid #e8eef3; }
+.brv-admin-frame .activity-item:last-child { border-bottom: 0; }
+.brv-admin-frame .activity-date { min-width: 88px; font-size: 10px; }
+.brv-admin-frame .activity-copy { gap: 4px; min-width: 0; }
+.brv-admin-frame .activity-copy strong { font-size: 12px; }
+.brv-admin-frame .activity-copy > span,
+.brv-admin-frame .activity-copy small { font-size: 10px; line-height: 1.45; }
+.brv-admin-frame .brv-enquiry-tabs { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0 13px; padding-bottom: 9px; border-bottom: 1px solid #e5ebf1; }
+.brv-admin-frame .brv-enquiry-tabs button { min-height: 31px; padding: 0 10px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: #5e7185; font-size: 10px; font-weight: 700; cursor: pointer; }
+.brv-admin-frame .brv-enquiry-tabs button:hover { background: #f1f6fb; color: #155fa8; }
+.brv-admin-frame .brv-enquiry-tabs button.active { border-color: #c8dced; background: #eaf3fb; color: #155fa8; }
+.brv-admin-frame .brv-enquiry-filters { display: grid; grid-template-columns: minmax(220px, 1.5fr) minmax(150px, .7fr) auto; align-items: end; gap: 10px; margin-bottom: 12px; }
+.brv-admin-frame .brv-enquiry-filters label { display: flex; flex-direction: column; gap: 5px; color: #52677c; font-size: 10px; font-weight: 700; }
+.brv-admin-frame .brv-enquiry-filters .button { min-width: 94px; }
+.brv-admin-frame .brv-enquiry-create { margin-top: 14px; padding: 14px; border: 1px solid #dce5ee; border-radius: 8px; background: #f8fafc; }
+.brv-admin-frame .brv-enquiry-create h3 { margin: 4px 0 12px; font-size: 15px; }
+.brv-admin-frame .brv-enquiry-create > label { margin-top: 10px; }
+.brv-admin-frame .portal-stat-grid { gap: 10px; }
+.brv-admin-frame .portal-stat-grid > article,
+.brv-admin-frame .portal-stat-grid > a { min-height: 112px; padding: 13px; border-radius: 9px; box-shadow: none; }
+.brv-admin-frame .portal-stat-grid strong { font-size: 24px; }
+.brv-admin-frame .portal-shortcuts { gap: 9px; }
+.brv-admin-frame .portal-shortcuts > a { min-height: 78px; padding: 12px; border-radius: 8px; box-shadow: none; }
+.brv-admin-frame .brv-admin-section-heading { margin: 20px 0 10px; }
+.brv-admin-frame .brv-admin-section-heading h2 { margin: 2px 0 0; font-size: 17px; }
+.brv-admin-frame :focus-visible { outline: 2px solid #2b82ce; outline-offset: 2px; }
+@media (max-width: 850px) {
+  .brv-admin-frame .brv-admin-sidebar { width: 260px; }
+  .brv-admin-frame .brv-admin-content { padding: 16px; }
+}
+@media (max-width: 640px) {
+  .brv-admin-frame .brv-enquiry-filters { grid-template-columns: 1fr; }
+  .brv-admin-frame .portal-panel { padding: 13px; }
+  .brv-admin-frame .activity-item { align-items: flex-start; flex-direction: column; }
+  .brv-admin-frame .activity-date { min-width: 0; }
+}
+
+.brv-admin-frame .brv-enquiry-row-actions { display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
+.brv-admin-frame .brv-enquiry-quick-action { display:inline-flex; min-height:30px; align-items:center; padding:0 9px; border:1px solid #bcd4e8; border-radius:6px; background:#f4f9fd; color:#155fa8; font-size:10px; font-weight:750; white-space:nowrap; }
+.brv-admin-frame .brv-enquiry-quick-action:hover { border-color:#8eb7db; background:#eaf3fb; }
+
+
+/* Detail pages keep the editor full width and pair the supporting history panels. */
+.brv-admin-frame .brv-enquiry-editor {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+}
+.brv-admin-frame .brv-enquiry-editor > form { grid-column: 1 / -1; min-width: 0; }
+.brv-admin-frame .brv-enquiry-editor > section { min-width: 0; margin-top: 0; }
+.brv-admin-frame .brv-enquiry-editor > section h2 { margin: 5px 0 10px; font-size: 15px; }
+.brv-admin-frame .brv-admin-job-tools {
+  min-width: 180px;
+  border: 1px solid #dce5ee;
+  border-radius: 7px;
+  background: #fff;
+}
+.brv-admin-frame .brv-admin-job-tools > summary {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  padding: 0 9px;
+  color: #31516d;
+  font-size: 10px;
+  font-weight: 750;
+  cursor: pointer;
+  list-style-position: inside;
+}
+.brv-admin-frame .brv-admin-job-tools[open] { grid-column: 1 / -1; }
+.brv-admin-frame .brv-admin-job-tools-content { padding: 10px; border-top: 1px solid #e6edf3; }
+.brv-admin-frame .brv-admin-job-assignees { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 6px; }
+.brv-admin-frame .brv-admin-job-assignees label { display:flex; align-items:center; gap:7px; padding:6px 8px; border:1px solid #e3eaf0; border-radius:6px; }
+.brv-admin-frame .brv-admin-job-assignees small { display:block; color:#718398; font-size:9px; }
+.brv-admin-frame .brv-admin-job-tools-content h3 { margin:10px 0 7px; font-size:13px; }
+@media (max-width: 850px) {
+  .brv-admin-frame .brv-enquiry-editor { grid-template-columns: minmax(0,1fr); }
+  .brv-admin-frame .brv-enquiry-editor > form { grid-column: auto; }
+}
+
+.brv-admin-frame .brv-senior-review { display:grid; gap:9px; margin:12px 0; padding:12px; border:1px solid #d4e1ec; border-radius:7px; background:#f6f9fc; }
+.brv-admin-frame .brv-senior-review h3 { margin:0; font-size:13px; }
+.brv-admin-frame .brv-senior-review p { margin:0; color:#526a80; font-size:11px; line-height:1.5; }
+.brv-admin-frame .brv-senior-review label { display:grid; gap:5px; font-size:11px; font-weight:650; }
+.brv-admin-frame .brv-senior-review textarea { min-height:62px; resize:vertical; }
+.brv-admin-frame .brv-senior-review-actions { display:flex; flex-wrap:wrap; gap:7px; }
+.brv-admin-frame .brv-senior-review-actions .button { min-height:34px; padding:0 10px; font-size:11px; }
+
+
+/* Workcard rows use a stable grid so expanded controls never squeeze into a narrow flex column. */
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) {
+  display:grid;
+  grid-template-columns:88px minmax(0,1fr) auto;
+  align-items:start;
+  gap:8px 12px;
+}
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .activity-date { grid-column:1; }
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .activity-copy { grid-column:2; min-width:0; }
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) > .status-pill { grid-column:3; grid-row:1; }
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .brv-admin-job-tools {
+  grid-column:2 / -1;
+  width:100%;
+  min-width:0;
+}
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .brv-admin-job-tools[open] { grid-column:2 / -1; }
+@media (max-width: 700px) {
+  .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) {
+    grid-template-columns:minmax(0,1fr) auto;
+  }
+  .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .activity-date { grid-column:1 / -1; }
+  .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .activity-copy { grid-column:1 / -1; }
+  .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) > .status-pill { grid-column:1; grid-row:auto; }
+  .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-job-tools) .brv-admin-job-tools { grid-column:1 / -1; }
+}
+
+
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) {
+  display:grid;
+  grid-template-columns:88px minmax(0,1fr) auto;
+  align-items:start;
+  gap:8px 12px;
+}
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .activity-date { grid-column:1; }
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .activity-copy { grid-column:2; min-width:0; }
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) > .status-pill { grid-column:3; grid-row:1; }
+.brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .brv-admin-quote-tools { grid-column:2 / -1; width:100%; min-width:0; }
+.brv-admin-frame .brv-admin-quote-tools { border:1px solid #dce5ee; border-radius:7px; background:#fff; }
+.brv-admin-frame .brv-admin-quote-tools > summary { min-height:32px; display:flex; align-items:center; padding:0 9px; color:#31516d; font-size:10px; font-weight:750; cursor:pointer; list-style-position:inside; }
+.brv-admin-frame .brv-admin-quote-tools-content { display:grid; gap:8px; padding:10px; border-top:1px solid #e6edf3; }
+.brv-admin-frame .brv-admin-quote-status { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; font-size:11px; text-transform:capitalize; }
+.brv-admin-frame .brv-admin-quote-tools-content label { display:grid; gap:5px; font-size:11px; font-weight:650; }
+.brv-admin-frame .brv-admin-quote-tools-content textarea { min-height:62px; resize:vertical; }
+.brv-admin-frame .brv-admin-quote-actions { display:flex; flex-wrap:wrap; gap:7px; }
+.brv-admin-frame .brv-admin-quote-actions .button { min-height:34px; padding:0 10px; font-size:11px; }
+@media (max-width:700px) {
+ .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) { grid-template-columns:minmax(0,1fr) auto; }
+ .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .activity-date,
+ .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .activity-copy,
+ .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) .brv-admin-quote-tools { grid-column:1 / -1; }
+ .brv-admin-frame .admin-records-panel .activity-item:has(.brv-admin-quote-tools) > .status-pill { grid-column:1; grid-row:auto; }
+}
+
+
+/* Desktop-first Jobcard workspace: operational details on the left, decisions on the right. */
+.brv-admin-frame .brv-ticket-workspace {
+  display:grid;
+  grid-template-columns:minmax(0,1.65fr) minmax(340px,.85fr);
+  align-items:start;
+  gap:16px;
+  max-width:1500px;
+}
+.brv-admin-frame .brv-ticket-workspace > * { min-width:0; margin:0 !important; }
+.brv-admin-frame .brv-ticket-summary { grid-column:1 / -1; padding:24px 26px; border-top:3px solid #1767ad; }
+.brv-admin-frame .brv-ticket-summary .portal-panel-heading { align-items:flex-start; margin-bottom:18px; }
+.brv-admin-frame .brv-ticket-summary .portal-panel-heading h2 { margin:6px 0 5px; color:#10283f; font-size:25px; line-height:1.2; letter-spacing:-.025em; }
+.brv-admin-frame .brv-ticket-summary .portal-panel-heading p { color:#65788b; font-size:13px; }
+.brv-admin-frame .brv-ticket-workspace .panel-kicker { font-size:10px; font-weight:750; letter-spacing:.09em; }
+.brv-admin-frame .brv-ticket-customer-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; padding:18px 0; border-block:1px solid #e4ebf1; }
+.brv-admin-frame .brv-ticket-customer-grid > div { display:flex; min-width:0; flex-direction:column; align-items:flex-start; gap:6px; }
+.brv-admin-frame .brv-ticket-customer-grid small { color:#718196; font-size:11px; font-weight:750; letter-spacing:.04em; text-transform:uppercase; }
+.brv-admin-frame .brv-ticket-customer-grid strong { color:#203449; font-size:15px; line-height:1.4; }
+.brv-admin-frame .brv-ticket-customer-grid span,.brv-admin-frame .brv-ticket-customer-grid a { color:#52677c; font-size:13px; line-height:1.5; overflow-wrap:anywhere; }
+.brv-admin-frame .brv-ticket-request { padding-top:16px; }
+.brv-admin-frame .brv-ticket-request p { margin:8px 0 0; color:#263e53; font-size:14px; line-height:1.7; white-space:pre-wrap; overflow-wrap:anywhere; }
+.brv-admin-frame .brv-ticket-actions { grid-column:2; grid-row:2; padding:20px; border-left:3px solid #1767ad; background:#f9fbfd; }
+.brv-admin-frame .brv-ticket-actions h3 { margin:5px 0 14px; color:#10283f; font-size:18px; line-height:1.3; }
+.brv-admin-frame .brv-ticket-action-buttons { display:flex; flex-wrap:wrap; gap:8px; }
+.brv-admin-frame .brv-ticket-action-buttons .button { min-height:38px; padding-inline:14px; font-size:12px; }
+.brv-admin-frame .brv-ticket-edit { grid-column:1; grid-row:2 / span 4; display:grid; align-content:start; gap:16px; padding:24px; }
+.brv-admin-frame .brv-ticket-edit .portal-panel-heading { margin-bottom:2px; padding-bottom:14px; border-bottom:1px solid #e6edf3; }
+.brv-admin-frame .brv-ticket-edit .portal-panel-heading h2 { margin:4px 0 0; color:#10283f; font-size:21px; }
+.brv-admin-frame .brv-ticket-edit .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px 18px; }
+.brv-admin-frame .brv-ticket-edit label { display:grid; min-width:0; gap:7px; color:#344b60; font-size:12px; font-weight:700; }
+.brv-admin-frame .brv-ticket-edit input:not([type=checkbox]),.brv-admin-frame .brv-ticket-edit select,.brv-admin-frame .brv-ticket-edit textarea { width:100%; min-height:42px; padding:10px 12px; border:1px solid #cbd8e3; border-radius:6px; color:#183047; background:#fff; font:inherit; font-size:13px; line-height:1.45; }
+.brv-admin-frame .brv-ticket-edit textarea { min-height:104px; resize:vertical; }
+.brv-admin-frame .brv-ticket-edit input:focus,.brv-admin-frame .brv-ticket-edit select:focus,.brv-admin-frame .brv-ticket-edit textarea:focus { border-color:#1767ad; outline:3px solid rgba(23,103,173,.13); }
+.brv-admin-frame .brv-ticket-edit .brv-ticket-staff-fieldset { display:grid; gap:10px; min-width:0; margin:0; padding:16px; border:1px solid #d7e1ea; border-radius:7px; background:#f8fafc; }
+.brv-admin-frame .brv-ticket-edit .brv-ticket-staff-fieldset legend { padding:0 5px; color:#203c55; font-size:13px; font-weight:750; }
+.brv-admin-frame .brv-ticket-staff-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.brv-admin-frame .brv-ticket-staff-option { display:flex !important; min-height:48px; align-items:center; gap:10px !important; padding:9px 11px; border:1px solid #dce5ed; border-radius:6px; background:#fff; cursor:pointer; }
+.brv-admin-frame .brv-ticket-staff-option input[type=checkbox] { width:17px; height:17px; flex:0 0 auto; accent-color:#1767ad; }
+.brv-admin-frame .brv-ticket-staff-option span { display:grid; gap:2px; }
+.brv-admin-frame .brv-ticket-staff-option strong { color:#203449; font-size:12px; }
+.brv-admin-frame .brv-ticket-staff-option small { color:#718196; font-size:11px; font-weight:500; }
+.brv-admin-frame .brv-ticket-edit > .button { justify-self:start; min-width:190px; min-height:42px; padding-inline:20px; font-size:13px; }
+.brv-admin-frame .brv-ticket-customer-convert { grid-column:2; grid-row:3; padding:18px 20px; }
+.brv-admin-frame .brv-ticket-linked-customer { grid-column:2; grid-row:4; padding:18px 20px; }
+.brv-admin-frame .brv-ticket-vehicle-notes { grid-column:2; grid-row:5; padding:18px 20px; }
+.brv-admin-frame .brv-ticket-customer-convert p,.brv-admin-frame .brv-ticket-linked-customer p,.brv-admin-frame .brv-ticket-vehicle-notes p { color:#52677c; font-size:13px; line-height:1.6; }
+.brv-admin-frame .brv-ticket-quotes { grid-column:1 / -1; padding:22px 24px; }
+.brv-admin-frame .brv-ticket-quotes .portal-panel-heading h2 { font-size:20px; }
+.brv-admin-frame .brv-ticket-quote { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:14px 0; border-top:1px solid #e6edf3; }
+.brv-admin-frame .brv-ticket-quote > div:first-child { display:grid; gap:5px; }
+.brv-admin-frame .brv-ticket-quote strong { font-size:14px; }
+.brv-admin-frame .brv-ticket-quote span,.brv-admin-frame .brv-ticket-quote small { color:#65788b; font-size:12px; }
+.brv-admin-frame .brv-ticket-quote-create,.brv-admin-frame .brv-ticket-workcard-create { margin-top:16px; padding:18px; border:1px solid #dce5ee; border-radius:7px; background:#f8fafc; }
+.brv-admin-frame .brv-ticket-attachments { grid-column:1; padding:20px; }
+.brv-admin-frame .brv-ticket-history { grid-column:2; padding:20px; }
+.brv-admin-frame .brv-ticket-attachments h2,.brv-admin-frame .brv-ticket-history h2 { font-size:18px; }
+.brv-admin-frame .brv-ticket-history .activity-date,.brv-admin-frame .brv-ticket-history .activity-copy > span { font-size:12px; }
+.brv-admin-frame .brv-ticket-workspace .panel-footnote { color:#65788b; font-size:12px; line-height:1.55; }
+@media (max-width:1100px) {
+ .brv-admin-frame .brv-ticket-workspace { grid-template-columns:minmax(0,1fr); }
+ .brv-admin-frame .brv-ticket-workspace > * { grid-column:1 !important; grid-row:auto !important; }
+ .brv-admin-frame .brv-ticket-customer-grid,.brv-admin-frame .brv-ticket-staff-options { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+
+.brv-admin-frame .brv-ticket-conversation {
+  grid-column:1 / -1;
+  padding:22px 24px;
+}
+.brv-admin-frame .brv-ticket-conversation .portal-panel-heading h2 { font-size:20px; }
+.brv-admin-frame .brv-ticket-conversation .activity-item { display:grid; grid-template-columns:170px minmax(0,1fr); gap:16px; padding:14px 0; }
+.brv-admin-frame .brv-ticket-conversation .activity-date { min-width:0; color:#718196; font-size:12px; }
+.brv-admin-frame .brv-ticket-conversation .activity-copy { gap:6px; }
+.brv-admin-frame .brv-ticket-conversation .activity-copy strong { color:#203c55; font-size:13px; }
+.brv-admin-frame .brv-ticket-conversation .activity-copy > span { color:#344b60; font-size:14px; line-height:1.6; white-space:pre-wrap; }
+.brv-admin-frame .brv-ticket-conversation form { display:grid; gap:12px; margin-top:18px; padding-top:18px; border-top:1px solid #e5ebf1; }
+.brv-admin-frame .brv-ticket-conversation form label { display:grid; gap:8px; color:#344b60; font-size:13px; font-weight:700; }
+.brv-admin-frame .brv-ticket-conversation form textarea { min-height:110px; padding:12px; border:1px solid #cbd8e3; border-radius:6px; font-size:14px; line-height:1.55; }
+.brv-admin-frame .brv-ticket-conversation form label:has(input[type=checkbox]) { display:flex; align-items:center; gap:9px; font-weight:600; }
+.brv-admin-frame .brv-ticket-conversation form input[type=checkbox] { width:17px; height:17px; accent-color:#1767ad; }
+.brv-admin-frame .brv-ticket-conversation form .button { justify-self:start; min-width:180px; min-height:42px; font-size:13px; }
+.brv-admin-frame .brv-ticket-workspace .status-pill { min-height:28px; padding:5px 11px; font-size:11px; font-weight:750; }
+@media (max-width:1100px) {
+ .brv-admin-frame .brv-ticket-conversation .activity-item { grid-template-columns:1fr; gap:6px; }
+}
+
+
+/* Quote Request detail is a single workspace with focused, keyboard-accessible tabs. */
+.brv-admin-frame .brv-ticket-tabbed-workspace {
+  grid-template-columns:minmax(0,1fr);
+  gap:12px;
+}
+.brv-admin-frame .brv-ticket-tabbed-workspace > * {
+  grid-column:1 !important;
+  grid-row:auto !important;
+  min-width:0;
+}
+.brv-admin-frame .brv-ticket-tabbed-workspace .brv-ticket-summary {
+  padding:18px 20px;
+}
+.brv-admin-frame .brv-ticket-tabs {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px;
+  padding:6px;
+  border:1px solid #dce5ee;
+  border-radius:9px;
+  background:#f8fafc;
+}
+.brv-admin-frame .brv-ticket-tabs [role="tab"] {
+  min-height:40px;
+  padding:0 16px;
+  border:1px solid transparent;
+  border-radius:6px;
+  background:transparent;
+  color:#52677c;
+  font:inherit;
+  font-size:12px;
+  font-weight:750;
+  cursor:pointer;
+}
+.brv-admin-frame .brv-ticket-tabs [role="tab"]:hover {
+  background:#edf4fa;
+  color:#155fa8;
+}
+.brv-admin-frame .brv-ticket-tabs [role="tab"][aria-selected="true"] {
+  border-color:#c8dced;
+  background:#eaf3fb;
+  color:#155fa8;
+}
+.brv-admin-frame .brv-ticket-tab-panel[hidden] {
+  display:none !important;
+}
+.brv-admin-frame .brv-ticket-tab-panel {
+  display:grid;
+  align-content:start;
+  gap:16px;
+  width:100%;
+}
+.brv-admin-frame .brv-ticket-tab-panel > .portal-panel-heading {
+  margin:0;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-edit {
+  grid-column:auto;
+  grid-row:auto;
+  display:grid;
+  width:100%;
+  gap:14px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-actions,
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-attachments,
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-history {
+  grid-column:auto;
+  grid-row:auto;
+  padding:16px;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-linked-customer,
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-vehicle-notes {
+  padding:14px;
+  border:1px solid #dce5ee;
+  border-radius:8px;
+  background:#f8fafc;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-linked-customer h3 {
+  margin:5px 0;
+  color:#203449;
+  font-size:14px;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-linked-customer p,
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-vehicle-notes p {
+  margin:5px 0;
+  color:#52677c;
+  font-size:12px;
+  line-height:1.55;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-customer-grid {
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  padding:12px;
+  border:1px solid #e4ebf1;
+  border-radius:8px;
+  background:#fbfcfd;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-customer-grid strong {
+  font-size:13px;
+  overflow-wrap:anywhere;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-customer-grid span {
+  font-size:11px;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-conversation {
+  grid-column:auto;
+  padding:16px;
+}
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-quote-create,
+.brv-admin-frame .brv-ticket-tab-panel .brv-ticket-workcard-create {
+  margin-top:8px;
+}
+@media (max-width:700px) {
+  .brv-admin-frame .brv-ticket-tabs {
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  .brv-admin-frame .brv-ticket-tabs [role="tab"] {
+    min-height:44px;
+    text-align:left;
+  }
+  .brv-admin-frame .brv-ticket-tab-panel .brv-ticket-customer-grid {
+    grid-template-columns:1fr;
+  }
+}
+
+
+.brv-admin-frame .brv-admin-workcard-scope {
+  display:block;
+  max-width:900px;
+  margin-top:4px;
+  color:#52677c;
+  font-size:11px;
+  line-height:1.5;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+
+
+.brv-admin-frame .brv-ticket-tabs [role="tab"] span {
+  display:inline-grid;
+  min-width:19px;
+  height:19px;
+  margin-left:6px;
+  padding:0 5px;
+  place-items:center;
+  border-radius:10px;
+  background:#e5edf4;
+  color:#52677c;
+  font-size:10px;
+  font-weight:800;
+}
+.brv-admin-frame .brv-ticket-tabs [role="tab"][aria-selected="true"] span {
+  background:#d4e7f6;
+  color:#155fa8;
+}
+.brv-admin-frame .brv-ticket-tab-panel > .brv-ticket-attachments,
+.brv-admin-frame .brv-ticket-tab-panel > .brv-ticket-history {
+  width:100%;
+}
+
+
+/* Bookings register: keep appointment details and controls in independent,
+   wrapping columns so the date fields never collide with the record content. */
+.brv-admin-frame .admin-appointments-page .portal-shell { width:100%; max-width:1440px !important; }
+.brv-admin-frame .admin-appointments-page .admin-records-panel .activity-list { display:grid; gap:10px; }
+.brv-admin-frame .admin-appointments-page .admin-records-panel .activity-item {
+  display:grid;
+  grid-template-columns:minmax(150px,.7fr) minmax(220px,1.1fr) minmax(420px,1.6fr);
+  align-items:start;
+  gap:12px 18px;
+  padding:16px;
+  border:1px solid #e1e8ef;
+  border-radius:9px;
+  background:#fff;
+}
+.brv-admin-frame .admin-appointments-page .activity-date,
+.brv-admin-frame .admin-appointments-page .activity-copy,
+.brv-admin-frame .admin-appointments-page .record-actions { min-width:0; }
+.brv-admin-frame .admin-appointments-page .activity-copy { overflow-wrap:anywhere; }
+.brv-admin-frame .admin-appointments-page .activity-copy > span { display:block; line-height:1.55; }
+.brv-admin-frame .admin-appointments-page .record-actions {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  align-items:end;
+  gap:9px 10px;
+  width:100%;
+  padding:12px;
+  border:1px solid #e5ebf1;
+  border-radius:8px;
+  background:#f8fafc;
+}
+.brv-admin-frame .admin-appointments-page .record-actions label {
+  display:grid;
+  min-width:0;
+  gap:5px;
+  color:#52677c;
+  font-size:10px;
+  font-weight:700;
+}
+.brv-admin-frame .admin-appointments-page .record-actions input,
+.brv-admin-frame .admin-appointments-page .record-actions select {
+  width:100%;
+  min-width:0;
+  max-width:100%;
+}
+.brv-admin-frame .admin-appointments-page .record-actions > select { grid-column:1; }
+.brv-admin-frame .admin-appointments-page .record-actions > button { grid-column:2; justify-self:start; }
+.brv-admin-frame .admin-appointments-page .record-actions > small { grid-column:1 / -1; overflow-wrap:anywhere; }
+@media (max-width:1100px) {
+  .brv-admin-frame .admin-appointments-page .admin-records-panel .activity-item { grid-template-columns:minmax(0,1fr); }
+  .brv-admin-frame .admin-appointments-page .record-actions { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:700px) {
+  .brv-admin-frame .admin-appointments-page .admin-records-panel .activity-item { gap:9px; padding:12px; }
+  .brv-admin-frame .admin-appointments-page .record-actions { grid-template-columns:minmax(0,1fr); }
+  .brv-admin-frame .admin-appointments-page .record-actions > select,
+  .brv-admin-frame .admin-appointments-page .record-actions > button,
+  .brv-admin-frame .admin-appointments-page .record-actions > small { grid-column:1; }
+}
+
+
+/* Operational workflow refinements: readable controls, clear confirmations and read-only views. */
+.brv-admin-frame .auth-form label,
+.brv-admin-frame .portal-panel label,
+.brv-admin-frame .brv-enquiry-manager label { font-size: 12px; line-height: 1.4; }
+.brv-admin-frame .auth-form input:not([type="checkbox"]):not([type="file"]),
+.brv-admin-frame .auth-form select,
+.brv-admin-frame .auth-form textarea,
+.brv-admin-frame .portal-panel input:not([type="checkbox"]):not([type="file"]),
+.brv-admin-frame .portal-panel select,
+.brv-admin-frame .portal-panel textarea,
+.brv-admin-frame .brv-enquiry-manager input,
+.brv-admin-frame .brv-enquiry-manager select,
+.brv-admin-frame .brv-enquiry-manager textarea { font-size: 13px; }
+.brv-admin-frame .brv-enquiry-tabs button,
+.brv-admin-frame .brv-workcard-tab { min-height: 36px; font-size: 12px; }
+.brv-admin-frame .activity-copy > span,
+.brv-admin-frame .activity-copy small { font-size: 11px; }
+.brv-admin-frame .brv-action-danger { border: 1px solid #b94a48; background: #fff5f4; color: #963a38; }
+.brv-admin-frame .brv-action-danger:hover { border-color: #963a38; background: #fde9e7; }
+.brv-admin-frame .brv-inline-confirm { display:flex; flex-wrap:wrap; align-items:center; gap:8px; width:100%; margin-top:10px; padding:12px; border:1px solid #e7c8c4; border-radius:8px; background:#fff8f7; }
+.brv-admin-frame .brv-inline-confirm p { flex-basis:100%; margin:0; color:#71413e; font-size:12px; line-height:1.5; }
+.brv-admin-frame .brv-workcard-readonly { display:grid; gap:16px; }
+.brv-admin-frame .brv-workcard-readonly > header { padding-bottom:12px; border-bottom:1px solid #e3eaf0; }
+.brv-admin-frame .brv-workcard-readonly > header h2 { margin:4px 0; font-size:18px; }
+.brv-admin-frame .brv-workcard-readonly > header p,
+.brv-admin-frame .brv-workcard-readonly > section p { margin:4px 0; color:#52677c; font-size:13px; line-height:1.6; }
+.brv-admin-frame .brv-workcard-readonly > section h3 { margin:0 0 8px; font-size:14px; }
+.brv-admin-frame .brv-admin-access-denied { min-height:60vh; }
+.brv-admin-frame .brv-admin-access-denied h1 { margin:6px 0 12px; color:#10283f; font-size:26px; }
+.brv-admin-frame .brv-admin-access-denied p { max-width:580px; color:#52677c; font-size:13px; line-height:1.65; }
+@media (max-width:640px) {
+ .brv-admin-frame .button { min-height:44px; padding-inline:14px; font-size:12px; }
+ .brv-admin-frame .auth-form input:not([type="checkbox"]):not([type="file"]),
+ .brv-admin-frame .auth-form select,
+ .brv-admin-frame .portal-panel input:not([type="checkbox"]):not([type="file"]),
+ .brv-admin-frame .portal-panel select,
+ .brv-admin-frame .brv-enquiry-manager input,
+ .brv-admin-frame .brv-enquiry-manager select { min-height:44px; font-size:14px; }
+ .brv-admin-frame .brv-enquiry-tabs button,
+ .brv-admin-frame .brv-workcard-tab { min-height:44px; }
+ .brv-admin-frame .brv-inline-confirm { align-items:stretch; }
+ .brv-admin-frame .brv-inline-confirm .button { flex:1 1 130px; }
+}
+
+.brv-admin-frame .brv-jobcard-next-step { display:grid; gap:4px; margin-top:12px; padding:12px 16px; border-left:3px solid #1767ad; border-radius:0 7px 7px 0; background:#f1f6fb; }
+.brv-admin-frame .brv-jobcard-next-step strong { color:#183047; font-size:13px; line-height:1.5; }
+.brv-admin-frame .brv-jobcard-progress { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; margin:14px 0 0; padding:0; list-style:none; }
+.brv-admin-frame .brv-jobcard-progress li { display:grid; justify-items:center; gap:6px; min-width:0; padding:8px 4px; border:1px solid #dce5ee; border-radius:7px; background:#fff; color:#60758a; text-align:center; }
+.brv-admin-frame .brv-jobcard-progress li > span { display:grid; place-items:center; width:24px; height:24px; border-radius:50%; background:#edf2f6; color:#48627a; font-size:11px; font-weight:800; }
+.brv-admin-frame .brv-jobcard-progress li small { font-size:10px; line-height:1.35; }
+.brv-admin-frame .brv-jobcard-progress li.complete { border-color:#c6dfd2; background:#f4faf6; color:#35664c; }
+.brv-admin-frame .brv-jobcard-progress li.complete > span { background:#dcefe3; color:#285b40; }
+.brv-admin-frame .brv-jobcard-progress li.current { border-color:#8bb8dc; background:#eff6fc; color:#164f7f; }
+.brv-admin-frame .brv-jobcard-progress li.current > span { background:#1767ad; color:#fff; }
+@media (max-width:640px) {
+ .brv-admin-frame .brv-jobcard-progress { grid-template-columns:repeat(3,minmax(0,1fr)); }
+ .brv-admin-frame .brv-jobcard-progress li { min-height:64px; }
+}
