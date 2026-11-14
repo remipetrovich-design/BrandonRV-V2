@@ -1,4 +1,5 @@
 import {currentUser,currentMembership,database,userHasPermission,userHasPermissions,jsonError,sameOrigin,normalizeEmail} from "@/lib/auth";
+import {isUuid} from "@/lib/api-validation.mjs";
 import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
 const STAFF_ROLE_KEYS=["apprentice","senior_worker","office","supervisor","manager","owner","website_developer"];
@@ -9,7 +10,7 @@ const fieldLimits:Record<string,number>={first_name:120,last_name:120,full_name:
 async function access(permission:string){const user=await currentUser();if(!user)return {user:null,membership:null,error:jsonError("Not signed in.",401)};const membership=await currentMembership(user.id);if(!membership||!(await userHasPermission(user.id,permission)))return {user,membership,error:jsonError("You do not have permission to access this customer.",403)};return {user,membership,error:null};}
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
  const a=await access("customers.view");if(a.error)return a.error;
- const {id}=await params;if(!/^[0-9a-f-]{36}$/i.test(id))return jsonError("Customer not found.",404);
+ const {id}=await params;if(!isUuid(id))return jsonError("Customer not found.",404);
  const db=database(),businessId=a.membership!.business_id;
  const {data:customer,error}=await db.from("customers").select("*").eq("id",id).eq("business_id",businessId).maybeSingle();
  if(error||!customer)return jsonError("Customer not found.",404);
@@ -52,7 +53,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
 export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const a=await access("customers.manage");if(a.error)return a.error;
- const {id}=await params;if(!/^[0-9a-f-]{36}$/i.test(id))return jsonError("Customer not found.",404);
+ const {id}=await params;if(!isUuid(id))return jsonError("Customer not found.",404);
  try{
   const body=await request.json(),update:Record<string,string|null>={};
   if(body.user_role!==undefined){if(!isGlobalAdministrator(a.user?.user_role))return jsonError("Only a global administrator can change user roles.",403);const roleKey=String(body.user_role??"").trim();if(roleKey){if(!STAFF_ROLE_KEYS.includes(roleKey))return jsonError("Select one of the available Brandon RV staff titles.");const {data:role}=await database().from("user_roles").select("role_key").eq("role_key",roleKey).maybeSingle();if(!role)return jsonError("Select a valid user role.");update.user_role=roleKey;}else update.user_role=null;}
