@@ -71,7 +71,8 @@ test("booking policy keeps notice, working-day, unavailable-date and advance lim
  assert.match(helper,/booking_notice_hours/);
  assert.match(helper,/working_days/);
  assert.match(helper,/unavailable_dates/);
- assert.match(helper,/opening_time|closing_time/);\n assert.match(helper,/bookingHoursError/);
+ assert.match(helper,/opening_time|closing_time/);
+ assert.match(helper,/bookingHoursError/);
  assert.match(helper,/maximum_advance_days/);
  assert.match(helper,/travel_buffer_minutes/);
 });
