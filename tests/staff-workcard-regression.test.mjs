@@ -30,12 +30,13 @@ test("worker-facing Workcards do not expose customer prices or invoice controls"
  assert.doesNotMatch(ui,/job\.quotes\?\.total/);
 });
 
-test("workers can record actual quantities and costs but cannot set customer billing values",async()=>{
+test("workers can record actual quantities and parts orders but cannot set financial values",async()=>{
  const route=await read("../src/app/api/staff/jobs/[id]/work-entries/route.ts");
- assert.match(route,/cost_unit_price:costUnitPrice/);
- assert.doesNotMatch(route,/invoiceable:body\.invoiceable/);
- assert.doesNotMatch(route,/unit_price:unitPrice/);
- assert.match(route,/invoiceable:false/);
+ assert.match(route,/quantityUsed>quantityRequired/);
+ assert.match(route,/quantityUsed>quantityReceived-quantityReturned/);
+ assert.doesNotMatch(route,/cost_unit_price:/);
+ assert.doesNotMatch(route,/unit_price:/);
+ assert.match(route,/Financial and invoice settings can only be managed by authorised business staff/);
 });
 
 test("Jobcard booking details require appointment view or manage permission and hide private notes",async()=>{
