@@ -35,8 +35,7 @@ export async function POST(request:Request){
   if(vehicleId){const {data:vehicle}=await db.from("vehicles").select("id").eq("id",vehicleId).eq("customer_id",user.id).maybeSingle();if(!vehicle)return jsonError("Select one of your saved vehicles.");}
   let linkedVehicle=vehicleId;const enquiryId=quote.enquiry_id;
   if(!linkedVehicle&&enquiryId){const {data:enquiry}=await db.from("enquiries").select("vehicle_id").eq("id",enquiryId).maybeSingle();linkedVehicle=enquiry?.vehicle_id??null;}
-  const preferredEnd=new Date(startDate.getTime()+Number(bookingConfig.appointment_duration_minutes??60)*60*1000).toISOString();
-  const {data:appointment,error}=await db.from("appointments").insert({business_id:customer.business_id,customer_id:user.id,user_id:user.id,enquiry_id:enquiryId,quote_id:quote.id,vehicle_id:linkedVehicle,preferred_start:startDate.toISOString(),preferred_end:preferredEnd,location,customer_notes:notes||null,status:"requested"}).select("id,status,preferred_start,quote_id").single();
+  const {data:appointment,error}=await db.from("appointments").insert({business_id:customer.business_id,customer_id:user.id,user_id:user.id,enquiry_id:enquiryId,quote_id:quote.id,vehicle_id:linkedVehicle,preferred_start:startDate.toISOString(),preferred_end:preferredEnd.toISOString(),location,customer_notes:notes||null,status:"requested"}).select("id,status,preferred_start,quote_id").single();
   if(error||!appointment)return jsonError("Could not submit booking request.",500);
   const {error:workcardLinkError}=await db.from("jobs").update({appointment_id:appointment.id,updated_at:new Date().toISOString()}).eq("business_id",customer.business_id).eq("quote_id",quote.id);
   if(workcardLinkError){await db.from("appointments").delete().eq("id",appointment.id).eq("business_id",customer.business_id);return jsonError("Your booking request could not be linked to the Workcard. Please try again.",500);}
