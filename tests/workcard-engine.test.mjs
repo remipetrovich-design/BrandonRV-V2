@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import {
   buildPlannedWorkEntries,
   getInitialWorkcardState,
-  getEnquiryStageForWorkcardStatus
+  getEnquiryStageForWorkcardStatus,
+  canTransitionWorkcardStatus
 } from "../src/lib/workcard-engine.mjs";
 
 test("accepted quote lines become planned Workcard entries, not used or invoiceable work", () => {
@@ -76,4 +77,15 @@ test("Workcard status maps to the matching customer Jobcard pipeline stage", () 
   assert.equal(getEnquiryStageForWorkcardStatus("completed"), "quality_check");
   assert.equal(getEnquiryStageForWorkcardStatus("cancelled"), "cancelled");
   assert.equal(getEnquiryStageForWorkcardStatus("pending"), null);
+});
+
+test("Workcard status transitions cannot reopen closed work or skip operational stages", () => {
+  assert.equal(canTransitionWorkcardStatus("pending", "scheduled"), true);
+  assert.equal(canTransitionWorkcardStatus("scheduled", "in_progress"), true);
+  assert.equal(canTransitionWorkcardStatus("in_progress", "waiting_parts"), true);
+  assert.equal(canTransitionWorkcardStatus("waiting_parts", "in_progress"), true);
+  assert.equal(canTransitionWorkcardStatus("pending", "completed"), false);
+  assert.equal(canTransitionWorkcardStatus("completed", "in_progress"), false);
+  assert.equal(canTransitionWorkcardStatus("cancelled", "scheduled"), false);
+  assert.equal(canTransitionWorkcardStatus("scheduled", "scheduled"), true);
 });
