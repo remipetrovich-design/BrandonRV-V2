@@ -40,7 +40,7 @@ The V2 database currently has no user accounts. When the application is delibera
 
 ## External systems
 
-Brandon RV uses the existing external OrbitFS Mail and License Manager integrations. The License Manager remains the licensing authority; do not introduce a duplicate licensing engine or invent a replacement License Manager URL. Mail remains paused and must not be configured or activated until separately authorised.
+Brandon RV uses the existing external OrbitFS Mail and License Manager integrations. The License Manager remains the licensing authority; do not introduce a duplicate licensing engine or invent a replacement License Manager URL. The mail integration is send-only and uses the existing sender identity assigned by the external system; sender addresses are resolved from that system and must not be duplicated in Brandon RV configuration. Mail remains paused and must not be configured or activated until separately authorised.
 
 ## Before any deployment
 
