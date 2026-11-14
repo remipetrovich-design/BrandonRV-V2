@@ -32,7 +32,6 @@ export function prepareQuoteLines(items, defaultTaxRate = 0) {
     }
 
     return {
-      ...item,
       description,
       quantity,
       unit_price: unitPrice,
