@@ -1,4 +1,5 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
+import {priceDocumentLines} from "@/lib/commercial-money.mjs";
 export const runtime="nodejs";
 export async function GET(){
  const access=await authorizePermission("invoices.manage");if(access.response)return access.response;const db=database(),businessId=access.membership!.business_id;
@@ -34,10 +35,9 @@ export async function POST(request:Request){
   const gstStatus=String(pricing.gst_status??"not_configured"),gstRate=Number(pricing.gst_rate??10);
   if(gstStatus!=="registered"&&entries.some(x=>Number(x.tax_rate)>0))return jsonError("Invoice GST must be zero until the business is confirmed as GST registered.");
   if(gstStatus==="registered"&&entries.some(x=>Math.abs(Number(x.tax_rate)-gstRate)>0.001))return jsonError("Update Workcard entry tax rates to the configured GST rate before invoicing.");
-  const items=entries.map((x,i)=>{const quantity=Number(x.quantity_used),unitPrice=Number(x.unit_price),taxRate=Number(x.tax_rate),lineTotal=Number((quantity*unitPrice).toFixed(2));return {description:x.description,quantity,unit_price:unitPrice,tax_rate:taxRate,line_total:lineTotal,sort_order:i};});
-  const subtotal=Number(items.reduce((s,x)=>s+x.line_total,0).toFixed(2));
-  const taxAmount=Number(items.reduce((s,x)=>s+x.line_total*x.tax_rate/100,0).toFixed(2));
-  const total=Number((subtotal+taxAmount).toFixed(2));
+  const priced=priceDocumentLines(entries.map((x,i)=>({description:x.description,quantity:Number(x.quantity_used),unit_price:Number(x.unit_price),tax_rate:Number(x.tax_rate),sort_order:i})));
+  const items=priced.lines;
+  const {subtotal,taxAmount,total}=priced;
   if(total<=0)return jsonError("The actual Workcard charges must be greater than zero before invoicing.",409);
   const invoiceNumber="BRV-I-"+Date.now().toString(36).toUpperCase()+"-"+crypto.randomUUID().slice(0,4).toUpperCase();
   const {data:invoice,error}=await db.from("invoices").insert({business_id:businessId,customer_id:job.customer_id,user_id:job.user_id,job_id:job.id,quote_id:job.quote_id,invoice_number:invoiceNumber,status:"draft",due_date:dueDate,subtotal,tax_amount:taxAmount,total,amount_paid:0,notes:notes||("Final invoice for Workcard "+job.job_number+" · calculated from actual completed work.")}).select("id,invoice_number,total").single();
