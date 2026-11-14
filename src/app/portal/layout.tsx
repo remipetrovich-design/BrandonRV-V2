@@ -12,6 +12,6 @@ export default function PortalLayout({children}:{children:React.ReactNode}) {
    <div className="portal-topbar-right">{!isAuthPage&&<span className="portal-account-label">BRANDON RV ACCOUNT</span>}{!isAuthPage&&<Link href="/admin" className="portal-workspace-link">Business workspace</Link>}<Link href="/">Back to website <span aria-hidden="true">↗</span></Link></div>
   </div></header>
   <PortalAuthGuard>{isAuthPage?<div className="portal-auth-layout">{children}</div>:<div className="shell portal-shell"><PortalSidebar/><main className="portal-main">{children}</main></div>}</PortalAuthGuard>
-  <footer className="portal-footer"><div className="shell"><span>Brandon RV · Tamworth NSW</span><span>Your account and service records in one place.</span></div></footer>
+  <footer className="portal-footer"><div className="shell"><span>Brandon RV customer account</span><span>Your account and service records in one place.</span></div></footer>
  </div>;
 }
