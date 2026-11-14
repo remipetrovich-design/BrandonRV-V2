@@ -51,9 +51,9 @@ Add these as repository Actions secrets:
 | `SUPABASE_DB_PASSWORD` | Database password for the target Supabase project |
 | `SUPABASE_PROJECT_ID` | Supabase project reference |
 
-The configured project reference is `lciylmfpcefdpsouoqvm`.
+The configured V2 project reference is `lciylmfpcefdpsouoqvm`.
 
-**Migration status:** The dedicated V2 project has its own migration history. The inspected baseline records 62 applied migrations (61 repository migrations plus one V2 security patch). No V1 operational data was copied. See `docs/V2-DATABASE-ARCHITECTURE.md` for the inspected database snapshot.
+**Migration status:** The dedicated V2 project has its own migration history; the latest inspected snapshot records 65 applied migration records. No V1 operational data was copied. See `docs/V2-DATABASE-ARCHITECTURE.md` for the inspected database snapshot.
 
 Do not commit access tokens, database passwords, service-role keys or other credentials to this repository.
 
@@ -79,15 +79,7 @@ Available scripts:
 
 ## Environment variables
 
-See `.env.example` for the supported configuration:
-
-- `SUPABASE_URL` — Supabase project URL
-- `SUPABASE_SERVICE_ROLE_KEY` — server-only Supabase service-role key; never expose it with a `NEXT_PUBLIC_` prefix
-- `BRANDON_RV_SETUP_SECRET` — optional legacy owner-bootstrap secret
-- `BRANDON_RV_LICENSE_ENCRYPTION_SECRET` — required server-only random secret (at least 32 characters) used to encrypt the installed application licence
-- `NEXT_PUBLIC_APP_URL` — public application origin used for account and invitation links; production is `https://brandon-rv.vercel.app`
-- `ORBITFS_MAIL_URL` — base URL of the connected OrbitFS Mail service
-- `BRANDONSRV_MAIL_API_KEY` — Brandon RV Mail System API key; keep server-side only
+The root `.env.example` is the complete list of application runtime variables. See [Environment and pre-deployment setup](./docs/PRODUCTION_SETUP.md) for the exact purpose of each variable and whether it belongs in GitHub Actions or Vercel. The current GitHub Actions workflow requires no secrets. Runtime variables belong in local `.env.local` and, when hosting is configured, in Vercel. Never commit actual secret values.
 
 ## Transactional email and staff invitations
 
