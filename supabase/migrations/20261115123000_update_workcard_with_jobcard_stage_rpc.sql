@@ -53,7 +53,7 @@ BEGIN
       RAISE EXCEPTION 'Invalid Workcard status.' USING ERRCODE = '22023';
     END IF;
 
-    IF NOT CASE v_current.status
+    IF NOT (CASE v_current.status
       WHEN 'pending' THEN v_updated.status IN ('pending', 'scheduled', 'waiting_parts', 'in_progress', 'cancelled')
       WHEN 'scheduled' THEN v_updated.status IN ('scheduled', 'waiting_parts', 'in_progress', 'cancelled')
       WHEN 'waiting_parts' THEN v_updated.status IN ('waiting_parts', 'scheduled', 'in_progress', 'cancelled')
@@ -61,7 +61,7 @@ BEGIN
       WHEN 'completed' THEN v_updated.status = 'completed'
       WHEN 'cancelled' THEN v_updated.status = 'cancelled'
       ELSE false
-    END THEN
+    END) THEN
       RAISE EXCEPTION 'This Workcard status transition is not permitted.' USING ERRCODE = 'P0001';
     END IF;
 
