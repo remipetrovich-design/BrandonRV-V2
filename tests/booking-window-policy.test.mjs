@@ -18,3 +18,8 @@ test("an explicit legacy end time is used only for conflict calculations",()=>{
  const settings={booking:{appointment_duration_minutes:60,travel_buffer_minutes:0}};
  assert.equal(bookingWindowsConflict(new Date("2026-11-15T09:00:00Z"),new Date("2026-11-15T09:30:00Z"),new Date("2026-11-15T09:20:00Z"),null,settings),true);
 });
+
+test("the default travel buffer matches the business settings default of thirty minutes",()=>{
+ assert.equal(bookingWindowsConflict(new Date("2026-11-15T09:00:00Z"),new Date("2026-11-15T10:00:00Z"),new Date("2026-11-15T10:20:00Z"),new Date("2026-11-15T11:20:00Z")),true);
+ assert.equal(bookingWindowsConflict(new Date("2026-11-15T09:00:00Z"),new Date("2026-11-15T10:00:00Z"),new Date("2026-11-15T10:31:00Z"),new Date("2026-11-15T11:31:00Z")),false);
+});
