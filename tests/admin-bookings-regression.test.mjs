@@ -59,7 +59,10 @@ test("service presets create service or labour quote lines rather than parts lin
  assert.match(editor,/itemType:"labour"/);
  assert.match(editor,/itemType:e.target.value/);
  const jobs=await read("../src/app/api/admin/jobs/route.ts");
- assert.match(jobs,/entry_type:item\.item_type==="parts"\?"parts":"labour"/);
+ const engine=await read("../src/lib/workcard-engine.mjs");
+ assert.match(jobs,/buildPlannedWorkEntries/);
+ assert.match(engine,/entry_type: itemType/);
+ assert.match(engine,/\["labour", "parts"\]/);
 });
 
 test("Jobcard pipeline includes procurement, booking, work, quality, invoice and payment stages",async()=>{
