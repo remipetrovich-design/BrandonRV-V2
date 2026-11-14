@@ -2,22 +2,23 @@
 
 ## Purpose and database boundary
 
-This document describes the V2 logical data model implemented in the existing Supabase project. The application currently connects to the PostgreSQL `public` schema. V2 therefore uses the existing `public` tables and compatibility views; it does not create a second PostgreSQL schema called `v2`, which would require changing every database client and API query.
+This document describes the V2 logical data model in its dedicated Supabase project `Brandon-RV-V2` (`lciylmfpcefdpsouoqvm`, API URL `https://lciylmfpcefdpsouoqvm.supabase.co`). V2 uses the PostgreSQL `public` schema and compatibility views; it does not create a second PostgreSQL schema called `v2`, which would require changing every database client and API query.
 
-The Supabase project is shared with the legacy application. Migrations in this repository must be forward-only and additive unless a change is proven safe for both consumers. Do not drop or rename existing tables, columns, views, RPCs, or policies merely to make the model look cleaner. Preserve existing records. Do not apply migrations from this repository automatically.
+V2 now has its own Supabase project, database, migration history, auth/storage resources and keys, separate from V1. The project was created in region `ap-northeast-1` (Tokyo). Never connect V2 to the old V1 project (`thkxalrsklgademwrrlq`) or apply V2 migrations there. All future V2 schema changes must be committed to this repository and applied only to `lciylmfpcefdpsouoqvm`.
 
 ## Current database snapshot
 
-Inspected 15 November 2026:
-- 57 base tables in `public`.
-- All 57 tables reported Row Level Security enabled.
-- One Brandon RV business record.
-- Two user identity records.
-- Existing `audit_events` table with 57 events.
-- Existing quote, enquiry, booking, Workcard, workforce, invoice, payment, settings, permissions and website structures.
-- The database migration history reports 60 applied migrations. The repository contains those migrations plus `20261115090000_supervisor_approval_authority.sql`, which is not recorded as applied at the time of inspection.
+Inspected 15 November 2026 after initial V2 provisioning:
+- 57 base tables in `public` and 3 compatibility views (`customers`, `profiles`, `staff`).
+- All 57 base tables have Row Level Security enabled.
+- One Brandon RV business/workspace seed record (`prelaunch`, Tamworth NSW).
+- No customer, employee or operational records have been copied from V1.
+- One private Storage bucket exists: `brandon-rv-private`.
+- 62 migration records are applied, covering the 61 repository migrations plus the V2 RPC-permission security patch.
+- The database includes the enquiry, quote, booking, Workcard, job work detail, variations, approvals, workforce/HR, suppliers/procurement, invoice/payment, audit, notification, licensing and website structures.
+- Email template schema and six default templates exist, but the external mail delivery system remains paused and has not been re-enabled.
 
-This is a structural inventory, not a claim that every workflow is production-ready.
+All tables are RLS-enabled. Some internal/service-only tables intentionally have no user-facing RLS policies; their table grants are restricted to `service_role`, with no `anon` or `authenticated` table grants. This is a structural snapshot, not a claim that every workflow is production-ready.
 
 ## Canonical identity and staff model
 
