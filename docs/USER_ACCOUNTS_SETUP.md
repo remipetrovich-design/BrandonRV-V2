@@ -27,15 +27,9 @@ The \`customers\` and \`staff\` database views are compatibility views over \`us
 
 Existing business_members.role values and named permission_groups are copied into the global role catalogue. Member-specific extra permission groups are converted into shared synthetic global roles keyed by each distinct effective permission set. This preserves each employee's actual permissions without granting one person's extra permissions to everyone with the same base role. Runtime authentication and permission checks use users.user_role and user_role_permissions; legacy business-role tables are retained for compatibility but are not used for runtime authorization.
 
-## Required Vercel environment variables
+## Environment configuration
 
-- \`SUPABASE_URL\`: the Brandon RV Supabase project URL.
-- \`SUPABASE_SERVICE_ROLE_KEY\`: the project service-role key. Server-side only.
-- \`BRANDON_RV_SETUP_SECRET\`: one-time owner bootstrap protection.
-- \`NEXT_PUBLIC_APP_URL\`: the deployed public application origin used to build account links.
-- \`RESEND_API_KEY\` and \`EMAIL_FROM\`: optional transactional email delivery settings.
-
-The preview branch needs its own Preview-target versions of the Supabase URL and service-role key. Redeploy after changing environment variables. The migration workflow pins Supabase CLI v2.122.1 so its existing remote-linking commands do not silently switch to CLI v3 semantics.
+Use the complete runtime variable list in the repository root `.env.example` and the GitHub/Vercel mapping in [Environment and pre-deployment setup](./PRODUCTION_SETUP.md). The application uses the existing OrbitFS Mail integration, not Resend. The current GitHub Actions checks require no secrets; the Vercel project has not been deployed.
 
 ## First owner
 
