@@ -60,5 +60,9 @@ test("writeAuditEvent inserts into audit_events and propagates database errors",
   assert.deepEqual(inserted, buildAuditEvent(valid));
 
   const failingDb = { from: () => ({ insert: async () => ({ error: new Error("database unavailable") }) }) };
-  await assert.rejects(writeAuditEvent(failingDb, valid), /database unavailable/);
+  await assert.rejects(writeAuditEvent(failingDb, valid), error => {
+    assert.equal(error.message, "Could not write audit event.");
+    assert.equal(error.cause?.message, "database unavailable");
+    return true;
+  });
 });
