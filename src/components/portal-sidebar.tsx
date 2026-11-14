@@ -45,7 +45,7 @@ export default function PortalSidebar() {
       <div className="portal-sidebar-help">
         <span>NEED A HAND?</span>
         <strong>Talk to Brandon RV</strong>
-        <a href="tel:+61407189087">0407 189 087</a>
+        <Link href="/general-enquiry">Send an enquiry</Link>
       </div>
       <SignOutButton/>
     </aside>
