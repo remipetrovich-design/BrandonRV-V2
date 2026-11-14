@@ -103,3 +103,16 @@ test('the licensing client uses the single consolidated License Manager API endp
  assert.match(types,/LICENSE_API_BASE_URL/);
  assert.doesNotMatch(types,/fallback/);
 });
+
+test('the licensing client uses the single consolidated License Manager API endpoint',()=>{
+ const client=read('../src/lib/license-manager-client.js');
+ const types=read('../src/lib/license-manager-client.d.ts');
+ assert.match(client,/LICENSE_API_BASE_URL = 'https:\/\/incendiarynetworks\.cc\/api\/v1'/);
+ assert.match(client,/baseUrl \+ '\/license\/health'/);
+ assert.match(client,/baseUrl \+ '\/license\/validate'/);
+ assert.doesNotMatch(client,/lm\.incendiarynetworks\.cc/);
+ assert.doesNotMatch(client,/source-configuration/);
+ assert.doesNotMatch(client,/SOURCE_MODE_STANDBY/);
+ assert.match(types,/LICENSE_API_BASE_URL/);
+ assert.doesNotMatch(types,/fallback/);
+});
