@@ -12,7 +12,7 @@ export const DEFAULT_BUSINESS_POLICIES: {
   pricing: { freight_policy: string; consumables_policy: string };
 };
 export function mergeBusinessPolicies(savedSettings?: Record<string, unknown>): Record<string, any> & { payment: BusinessPaymentPolicy };
-export function validateBusinessPolicies(input?: Partial<BusinessPaymentPolicy>): {
+export function validateBusinessPolicies(input?: Partial<BusinessPaymentPolicy> | Record<string, unknown>): {
   valid: boolean;
   errors: string[];
   value: BusinessPaymentPolicy;
