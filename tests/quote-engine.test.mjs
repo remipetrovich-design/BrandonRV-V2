@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import {
   prepareQuoteLines,
   validateQuoteTaxPolicy,
-  nextQuoteRevision
+  nextQuoteRevision,
+  defaultQuoteExpiryDate
 } from "../src/lib/quote-engine.mjs";
 
 test("prepares itemised labour and parts quote lines with shared money totals", () => {
@@ -56,4 +57,16 @@ test("quote revisions stay with the same customer and Jobcard and cannot revise 
   assert.equal(nextQuoteRevision(prior, { enquiryId: "enquiry-1", customerId: "customer-1" }), 3);
   assert.throws(() => nextQuoteRevision(prior, { enquiryId: "enquiry-2", customerId: "customer-1" }), /same customer and Jobcard/i);
   assert.throws(() => nextQuoteRevision({ ...prior, status: "accepted" }, { enquiryId: "enquiry-1", customerId: "customer-1" }), /accepted quote cannot be revised/i);
+});
+
+test("configured quote validity supplies a default expiry without overriding an explicit date", () => {
+  assert.equal(defaultQuoteExpiryDate(30, "2026-11-14"), "2026-12-14");
+  assert.equal(defaultQuoteExpiryDate(null, "2026-11-14"), null);
+  assert.equal(defaultQuoteExpiryDate(14, "2026-11-14", "2026-11-20"), "2026-11-20");
+});
+
+test("quote validity must be a whole number between 1 and 365 days", () => {
+  assert.throws(() => defaultQuoteExpiryDate(0, "2026-11-14"), /1 and 365/i);
+  assert.throws(() => defaultQuoteExpiryDate(366, "2026-11-14"), /1 and 365/i);
+  assert.throws(() => defaultQuoteExpiryDate(1.5, "2026-11-14"), /1 and 365/i);
 });
