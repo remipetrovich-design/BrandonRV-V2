@@ -1,4 +1,5 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
+import {isUuid} from "@/lib/api-validation.mjs";
 import {getEnquiryStageForWorkcardStatus,canTransitionWorkcardStatus} from "@/lib/workcard-engine.mjs";
 export const runtime="nodejs";
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
@@ -11,7 +12,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
 export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const access=await authorizePermission("jobs.manage");if(access.response)return access.response;
- const {id}=await params;if(!/^[0-9a-f-]{36}$/i.test(id))return jsonError("Invalid Workcard ID.");
+ const {id}=await params;if(!isUuid(id))return jsonError("Invalid Workcard ID.");
  try{
   const body=await request.json(),db=database(),businessId=access.membership!.business_id;
   const {data:current,error:loadError}=await db.from("jobs").select("id,status,quote_id,senior_approval_status,worker_signed_off_at,customer_approval_status").eq("id",id).eq("business_id",businessId).maybeSingle();
