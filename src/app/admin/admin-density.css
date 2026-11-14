@@ -565,3 +565,40 @@
  .brv-admin-frame .brv-jobcard-progress { grid-template-columns:repeat(3,minmax(0,1fr)); }
  .brv-admin-frame .brv-jobcard-progress li { min-height:64px; }
 }
+
+/* Product-wide operational theme boundary. The public and customer areas use the
+   warm Brandon RV identity; the authenticated workspace deliberately stays navy/blue. */
+.brv-admin-frame {
+  --ink: #10283F;
+  --muted: #65788B;
+  --paper: #F5F7F8;
+  --white: #FFFFFF;
+  --green: #1767AD;
+  --green-dark: #10283F;
+  --orange: #1767AD;
+  --line: #DBE4EC;
+  --display: "Segoe UI", Arial, sans-serif;
+  --body: "Segoe UI", Arial, sans-serif;
+  --brv-navy: #10283F;
+  --brv-blue: #1767AD;
+  --brv-blue-light: #EAF3FA;
+  --brv-surface: #FFFFFF;
+  --brv-border: #DBE4EC;
+  --brv-muted: #65788B;
+}
+.brv-admin-frame .brv-admin-roles .brv-admin-page-inner {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 8px 0 28px;
+}
+.brv-admin-frame .brv-admin-roles .permission-section { margin-top: 14px; }
+.brv-admin-frame .brv-admin-roles .permission-section h3 { margin: 8px 0; color: #203c55; font-size: 14px; }
+.brv-admin-frame .brv-admin-roles .activity-item { display:flex; align-items:center; gap:12px; }
+.brv-admin-frame .brv-admin-roles .activity-item input[type="checkbox"] { width:17px; height:17px; flex:0 0 auto; accent-color:#1767AD; }
+.brv-admin-frame .brv-admin-roles .inline-notice { margin-top:12px; }
+.brv-admin-frame .brv-admin-roles .auth-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:end; gap:12px; }
+.brv-admin-frame .brv-admin-roles .auth-form button { justify-self:start; }
+@media (max-width:640px) {
+  .brv-admin-frame .brv-admin-roles .auth-form { grid-template-columns:minmax(0,1fr); }
+}
