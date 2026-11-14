@@ -82,7 +82,7 @@ export default function StaffWorkOrders(){
       <label>Entry type<select value={form(job.id).entryType} onChange={e=>setEntryForms(v=>({...v,[job.id]:{...form(job.id),entryType:e.target.value}}))}><option value="labour">Labour</option><option value="parts">Parts</option><option value="test">Test / check (not billed)</option><option value="note">Work note (not billed)</option></select></label>
       <label>Description<input required minLength={2} maxLength={2000} value={form(job.id).description} onChange={e=>setEntryForms(v=>({...v,[job.id]:{...form(job.id),description:e.target.value}}))}/></label>
       <label>Quantity / hours<input type="number" min="0.01" step="0.01" value={form(job.id).quantity} onChange={e=>setEntryForms(v=>({...v,[job.id]:{...form(job.id),quantity:e.target.value}}))}/></label>
-      <small>Customer charges and invoice eligibility are reviewed by management against the accepted quote or an approved variation.</small>
+      <small>Pricing and invoice settings are managed by authorised business staff.</small>
       <label className="brv-workcard-checkbox"><input type="checkbox" checked={form(job.id).customerVisible} onChange={e=>setEntryForms(v=>({...v,[job.id]:{...form(job.id),customerVisible:e.target.checked}}))}/> Show this entry on the customer Jobcard</label>
       <button className="button button-secondary" disabled={busy||!form(job.id).description.trim()}>Add entry</button>
      </form>
