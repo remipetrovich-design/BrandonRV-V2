@@ -27,21 +27,24 @@ test("Workcard management endpoint returns complete job context and service-link
  for(const field of ["quantity_required","quantity_used","unit_price","cost_unit_price","services:services!job_work_entries_service_id_fkey(name)","customers:users!jobs_customer_id_users_fkey(full_name,email,phone)","from(\"quotes\")","from(\"appointments\")","from(\"services\")","from(\"job_work_entries\")"])assert.ok(route.includes(field),"Missing Workcard API field/query: "+field);
 });
 
-test("accepted quote converts the Jobcard into a pre-populated Workcard without losing approved line detail",async()=>{
+test("accepted quote conversion creates one linked Workcard and planned entries in one database transaction",async()=>{
  const route=await read("../src/app/api/admin/jobs/route.ts");
+ const migration=await read("../supabase/migrations/20261115110000_create_workcard_from_accepted_quote_rpc.sql");
  const engine=await read("../src/lib/workcard-engine.mjs");
- assert.ok(route.includes("quote_items(id,description,quantity,unit_price,tax_rate,item_type,service_id)"),"Original quote lines must be loaded for conversion.");
- assert.ok(route.includes("const scope=String(body.scope??defaultScope)"),"The approved scope remains attached to the Workcard.");
- assert.ok(route.includes("const plannedEntries=buildPlannedWorkEntries"),"Accepted quote lines must be prepared by the Workcard domain engine.");
- assert.ok(engine.includes("source_quote_item_id: item.id"),"Each prepared line must retain its source quote line.");
- assert.ok(route.includes("update({stage:initialState.enquiryStage,status:\"converted\""),"The original Jobcard must record its conversion to a Workcard or the procurement/booking stage.");
- assert.ok(route.includes("enquiry_stage_history"),"The Jobcard conversion must be recorded in its stage history.");
- assert.ok(engine.includes("quantity_required: quantity"),"Required quantities must be carried into the Workcard.");
- assert.ok(engine.includes("quantity_used: 0"),"Planned quantities must not be mistaken for actual usage.");
- assert.ok(engine.includes("invoiceable: false"),"Prepared quote lines must not be invoiced before actual work is recorded.");
- assert.ok(route.includes("if(entryError)"),"Failed conversion must roll back the new Workcard.");
+ assert.ok(route.includes('rpc("create_workcard_from_accepted_quote"'),"The route must use the atomic database conversion.");
+ assert.ok(migration.includes("FROM public.quote_items qi"),"The original accepted quote lines must be copied.");
+ assert.ok(migration.includes("source_quote_item_id"),"Each Workcard line must retain its source quote line.");
+ assert.ok(migration.includes("quantity_required")&&migration.includes("quantity_used"),"Planned quantities must remain separate from actual usage.");
+ assert.ok(migration.includes("invoiceable"),"Prepared quote lines must not be invoiceable before actual work is recorded.");
+ assert.ok(migration.includes("UPDATE public.enquiries"),"The original customer Jobcard must be updated in the same transaction.");
+ assert.ok(migration.includes("INSERT INTO public.enquiry_stage_history"),"The Jobcard conversion must be recorded in its stage history.");
+ assert.ok(migration.includes("INSERT INTO public.audit_events"),"The conversion must be audited in the same transaction.");
+ assert.ok(migration.includes("FOR UPDATE"),"Concurrent conversion requests must lock the accepted quote.");
+ assert.ok(migration.includes("alreadyCreated"),"Retries must return the existing Workcard rather than create another.");
+ assert.ok(engine.includes("quantity_used: 0"),"Planned lines must start with zero actual use.");
+ assert.ok(engine.includes("invoiceable: false"),"Planned lines must start non-invoiceable.");
+ assert.ok(!route.includes('from("jobs").delete()'),"The route must not use manual multi-request rollback.");
 });
-
 test("staff Workcard API returns operational quote lines without financial fields",async()=>{
  const list=await read("../src/app/api/staff/jobs/route.ts");
  const entries=await read("../src/app/api/staff/jobs/[id]/work-entries/route.ts");
