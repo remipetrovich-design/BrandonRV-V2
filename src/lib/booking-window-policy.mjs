@@ -12,6 +12,6 @@ export function bookingWindowsConflict(start, end, existingStart, existingEnd, s
   if (!Number.isFinite(endMs) || !Number.isFinite(existingEndMs) || endMs <= startMs || existingEndMs <= existingStartMs) return false;
 
   const bufferMs = bufferMinutes * 60000;
-  return startMs - bufferMs < existingEndMs + bufferMs &&
-    endMs + bufferMs > existingStartMs - bufferMs;
+  return startMs < existingEndMs + bufferMs &&
+    endMs + bufferMs > existingStartMs;
 }
