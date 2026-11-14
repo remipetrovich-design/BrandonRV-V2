@@ -46,18 +46,16 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
 export async function DELETE(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const access=await authorizePermission("jobs.manage");if(access.response)return access.response;
- const {id}=await params,db=database(),businessId=access.membership!.business_id;
- const {data:job}=await db.from("jobs").select("id,status,worker_signed_off_at,customer_approval_status").eq("id",id).eq("business_id",businessId).maybeSingle();
- if(!job)return jsonError("Workcard not found.",404);
- if(job.status!=="pending"||job.worker_signed_off_at||job.customer_approval_status==="approved")return jsonError("Only an untouched pending Workcard can be deleted. Cancel or complete active Workcards instead.",409);
- const [{count:invoiceCount,error:invoiceError},{count:taskCount,error:taskError}]=await Promise.all([
-  db.from("invoices").select("id",{count:"exact",head:true}).eq("business_id",businessId).eq("job_id",id),
-  db.from("job_tasks").select("id",{count:"exact",head:true}).eq("business_id",businessId).eq("job_id",id)
- ]);
- if(invoiceError||taskError)return jsonError("Could not verify linked Workcard records.",500);
- if((invoiceCount??0)>0||(taskCount??0)>0)return jsonError("This Workcard has linked financial or task records. Cancel it instead of deleting it.",409);
- const {error}=await db.from("jobs").delete().eq("id",id).eq("business_id",businessId);
- if(error)return jsonError("Could not delete Workcard.",500);
- await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.deleted",entity_type:"job",entity_id:id,details:{job_number:job.id}});
- return Response.json({success:true});
+ const {id}=await params;if(!isUuid(id))return jsonError("Invalid Workcard ID.");
+ const {data,error}=await database().rpc("delete_untouched_workcard",{
+  p_business_id:access.membership!.business_id,
+  p_job_id:id,
+  p_actor_user_id:access.user!.id
+ });
+ if(error){
+  console.error("Transactional Workcard deletion failed",error);
+  const status=error.code==="P0002"?404:error.code==="P0001"?409:error.code==="22023"?400:500;
+  return jsonError(status===404?"Workcard not found.":status===409?error.message||"This Workcard cannot be deleted.":status===400?"Invalid Workcard deletion details.":"Could not delete Workcard.",status);
+ }
+ return Response.json({success:Boolean(data?.success)});
 }
