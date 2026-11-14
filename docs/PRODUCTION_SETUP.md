@@ -46,6 +46,10 @@ Do not add the old `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` or V1 project
 
 The V2 database currently has no user accounts. When the application is deliberately made available for owner setup, configure a strong `BRANDON_RV_SETUP_SECRET`, open `/setup`, and create the real owner account. The endpoint refuses to create a second owner. Remove the setup secret from the hosted environment after successful setup. Do not create placeholder accounts.
 
+## External systems
+
+Brandon RV uses the existing external OrbitFS Mail and License Manager integrations. The mail integration is send-only and uses the existing sender identity assigned by the external system; sender addresses are resolved from that system and must not be duplicated in Brandon RV configuration. Both integrations remain subject to their existing activation and security controls.
+
 ## Mail integration
 
 Brandon RV's email renderer uses the existing OrbitFS Mail service through `ORBITFS_MAIL_URL` and `BRANDONSRV_MAIL_API_KEY`. It does not use Resend or an `EMAIL_FROM` variable. Mail remains paused; do not configure or activate delivery until separately authorised. The existing send-only external-system identity and key are to be reused if mail is enabled.
