@@ -41,7 +41,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
    business_id:membership.business_id,job_id:id,staff_id:access.staff?.id??null,created_by:user.id,
    entry_type:entryType,description,quantity,unit_price:0,tax_rate:0,line_total:0,cost_unit_price:0,invoiceable:false,
    customer_visible:customerVisible
-  }).select("id,entry_type,description,quantity,cost_unit_price,occurred_at,customer_visible").single();
+  }).select("id,entry_type,description,quantity,occurred_at,customer_visible").single();
   if(error||!entry)return jsonError("Could not save Work Order entry.",500);
   await access.db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:"work_order.entry_added",entity_type:"job",entity_id:id,details:{entry_id:entry.id,entry_type:entryType,customer_visible:customerVisible}});
   return Response.json({entry},{status:201});
@@ -61,19 +61,18 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const body=await request.json(),entryId=String(body.entryId??"");
   if(!isInProgress&&["quantityUsed","costUnitPrice","customerVisible"].some(field=>body[field]!==undefined))return jsonError("Actual work, costs and customer-visible completion details can only be recorded after work starts.",409);
   if(!/^[0-9a-f-]{36}$/i.test(entryId))return jsonError("Select a valid prepared Workcard item.");
+  if(["costUnitPrice","unitPrice","taxRate","invoiceable","lineTotal"].some(field=>body[field]!==undefined))return jsonError("Financial and invoice settings can only be managed by authorised business staff.",403);
   const {data:current,error:currentError}=await access.db.from("job_work_entries")
-   .select("id,source_quote_item_id,entry_type,quantity_required,quantity_used,quantity_ordered,quantity_received,quantity_returned,part_order_status,supplier_order_reference,ordered_at,expected_at,received_at,cost_unit_price,part_number,supplier_name,customer_visible")
+   .select("id,source_quote_item_id,entry_type,quantity_required,quantity_used,quantity_ordered,quantity_received,quantity_returned,part_order_status,supplier_order_reference,ordered_at,expected_at,received_at,part_number,supplier_name,customer_visible")
    .eq("id",entryId).eq("job_id",id).eq("business_id",membership.business_id).maybeSingle();
   if(currentError||!current)return jsonError("Prepared Workcard item not found.",404);
   const quantityRequired=Number(current.quantity_required);
   const quantityUsed=body.quantityUsed===undefined?Number(current.quantity_used):Number(body.quantityUsed);
-  const costUnitPrice=body.costUnitPrice===undefined?Number(current.cost_unit_price):Number(body.costUnitPrice);
-  if(![quantityRequired,quantityUsed,costUnitPrice].every(Number.isFinite)||quantityRequired<0||quantityUsed<0||quantityRequired>10000||quantityUsed>10000||costUnitPrice<0||costUnitPrice>10000000)return jsonError("Enter valid actual quantities and costs.");
+  if(![quantityRequired,quantityUsed].every(Number.isFinite)||quantityRequired<0||quantityUsed<0||quantityRequired>10000||quantityUsed>10000)return jsonError("Enter valid actual quantities and costs.");
   if(quantityUsed>quantityRequired)return jsonError("Actual use exceeds the approved quantity. Record the additional requirement as a customer-approved variation before using it.",409);
   const patch:Record<string,unknown>={
    quantity:quantityUsed>0?quantityUsed:Math.max(quantityRequired,0.01),
    quantity_required:quantityRequired,quantity_used:quantityUsed,
-   cost_unit_price:costUnitPrice,
    customer_visible:(body.customerVisible===undefined?current.customer_visible:Boolean(body.customerVisible))&&(quantityUsed>0||!["labour","parts"].includes(current.entry_type)),
   };
   if(body.partNumber!==undefined)patch.part_number=String(body.partNumber).trim().slice(0,100)||null;
@@ -98,7 +97,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   }
   const {data:entry,error}=await access.db.from("job_work_entries").update(patch)
    .eq("id",entryId).eq("job_id",id).eq("business_id",membership.business_id)
-   .select("id,source_quote_item_id,entry_type,description,quantity,quantity_required,quantity_used,quantity_ordered,quantity_received,quantity_returned,part_order_status,supplier_order_reference,ordered_at,expected_at,received_at,cost_unit_price,part_number,supplier_name,customer_visible,occurred_at").single();
+   .select("id,source_quote_item_id,entry_type,description,quantity,quantity_required,quantity_used,quantity_ordered,quantity_received,quantity_returned,part_order_status,supplier_order_reference,ordered_at,expected_at,received_at,part_number,supplier_name,customer_visible,occurred_at").single();
   if(error||!entry){console.error("Worker Workcard item update failed",error);return jsonError("Could not update the prepared Workcard item.",500);}
   await access.db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:"work_order.entry_updated",entity_type:"job_work_entry",entity_id:entry.id,details:{job_id:id,entry_type:entry.entry_type,quantity_required:quantityRequired,quantity_used:quantityUsed,quantity_ordered:entry.quantity_ordered??null,quantity_received:entry.quantity_received??null}});
   return Response.json({entry});
