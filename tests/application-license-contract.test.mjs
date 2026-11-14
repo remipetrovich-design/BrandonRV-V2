@@ -90,3 +90,16 @@ test('the portable client and enforcement helpers are woven into application run
  assert.doesNotMatch(runtime,/standalone-license-module/);
  assert.doesNotMatch(read('../src/proxy.ts'),/standalone-license-module/);
 });
+
+test('the licensing client uses the single consolidated License Manager API endpoint',()=>{
+ const client=read('../src/lib/license-manager-client.js');
+ const types=read('../src/lib/license-manager-client.d.ts');
+ assert.match(client,/LICENSE_API_BASE_URL = 'https:\/\/incendiarynetworks\.cc\/api\/v1'/);
+ assert.match(client,/baseUrl \+ '\/license\/health'/);
+ assert.match(client,/baseUrl \+ '\/license\/validate'/);
+ assert.doesNotMatch(client,/lm\.incendiarynetworks\.cc/);
+ assert.doesNotMatch(client,/source-configuration/);
+ assert.doesNotMatch(client,/LICENSE_AUTHORITIES/);
+ assert.match(types,/LICENSE_API_BASE_URL/);
+ assert.doesNotMatch(types,/fallback/);
+});
