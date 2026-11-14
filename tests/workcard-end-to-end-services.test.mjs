@@ -29,15 +29,16 @@ test("Workcard management endpoint returns complete job context and service-link
 
 test("accepted quote converts the Jobcard into a pre-populated Workcard without losing approved line detail",async()=>{
  const route=await read("../src/app/api/admin/jobs/route.ts");
+ const engine=await read("../src/lib/workcard-engine.mjs");
  assert.ok(route.includes("quote_items(id,description,quantity,unit_price,tax_rate,item_type,service_id)"),"Original quote lines must be loaded for conversion.");
  assert.ok(route.includes("const scope=String(body.scope??defaultScope)"),"The approved scope remains attached to the Workcard.");
- assert.ok(route.includes("const plannedEntries="),"Accepted quote lines must become prepared Workcard entries.");
- assert.ok(route.includes("source_quote_item_id:item.id"),"Each prepared line must retain its source quote line.");
- assert.ok(route.includes("update({stage:nextEnquiryStage,status:\"converted\""),"The original Jobcard must record its conversion to a Workcard or the procurement/booking stage.");
+ assert.ok(route.includes("const plannedEntries=buildPlannedWorkEntries"),"Accepted quote lines must be prepared by the Workcard domain engine.");
+ assert.ok(engine.includes("source_quote_item_id: item.id"),"Each prepared line must retain its source quote line.");
+ assert.ok(route.includes("update({stage:initialState.enquiryStage,status:\"converted\""),"The original Jobcard must record its conversion to a Workcard or the procurement/booking stage.");
  assert.ok(route.includes("enquiry_stage_history"),"The Jobcard conversion must be recorded in its stage history.");
- assert.ok(route.includes("quantity_required:Number(item.quantity)"),"Required quantities must be carried into the Workcard.");
- assert.ok(route.includes("quantity_used:0"),"Planned quantities must not be mistaken for actual usage.");
- assert.ok(route.includes("invoiceable:false"),"Prepared quote lines must not be invoiced before actual work is recorded.");
+ assert.ok(engine.includes("quantity_required: quantity"),"Required quantities must be carried into the Workcard.");
+ assert.ok(engine.includes("quantity_used: 0"),"Planned quantities must not be mistaken for actual usage.");
+ assert.ok(engine.includes("invoiceable: false"),"Prepared quote lines must not be invoiced before actual work is recorded.");
  assert.ok(route.includes("if(entryError)"),"Failed conversion must roll back the new Workcard.");
 });
 
