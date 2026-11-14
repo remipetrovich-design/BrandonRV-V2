@@ -104,7 +104,7 @@ BEGIN
     SELECT value FROM pg_catalog.jsonb_array_elements(p_items)
   LOOP
     IF pg_catalog.jsonb_typeof(v_item) IS DISTINCT FROM 'object'
-       OR pg_catalog.coalesce(v_item ->> 'source_entry_id', '') = '' THEN
+       OR COALESCE(v_item ->> 'source_entry_id', '') = '' THEN
       RAISE EXCEPTION 'Each invoice line must identify its Workcard entry.'
         USING ERRCODE = '22023';
     END IF;
@@ -159,7 +159,8 @@ BEGIN
       USING ERRCODE = '22023';
   END;
 
-  IF pg_catalog.length(v_invoice_number) < 5
+  IF v_invoice_number IS NULL
+     OR pg_catalog.length(v_invoice_number) < 5
      OR pg_catalog.length(v_invoice_number) > 50
      OR v_requested_subtotal IS NULL
      OR v_requested_tax_amount IS NULL
@@ -176,7 +177,7 @@ BEGIN
       USING ERRCODE = '22023';
   END IF;
 
-  v_notes := NULLIF(pg_catalog.left(pg_catalog.btrim(pg_catalog.coalesce(p_invoice ->> 'notes', '')), 3000), '');
+  v_notes := NULLIF(pg_catalog.left(pg_catalog.btrim(COALESCE(p_invoice ->> 'notes', '')), 3000), '');
 
   INSERT INTO public.invoices (
     business_id, customer_id, user_id, job_id, quote_id,
