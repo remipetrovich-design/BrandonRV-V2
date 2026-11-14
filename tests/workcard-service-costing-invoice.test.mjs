@@ -40,6 +40,7 @@ test("final invoice draft is created atomically before customer approval from ap
  assert.doesNotMatch(api,/\.from\("invoices"\)\.insert/);
  assert.doesNotMatch(api,/\.from\("invoice_items"\)\.insert/);
  assert.match(migration,/customer_approval_status <> 'pending'/);
- assert.doesNotMatch(migration,/SELECT count\(\*\)::integer INTO v_entry_count[\s\S]*?FOR UPDATE;/);
+ const entryCountQuery=migration.split("SELECT count(*)::integer INTO v_entry_count")[1]?.split(";")[0]??"";
+ assert.doesNotMatch(entryCountQuery,/FOR UPDATE/);
  assert.match(migration,/SELECT e\.id,e\.entry_type[\s\S]*?FOR UPDATE;/);
 });
