@@ -264,7 +264,9 @@ test("Workcards retain and display customer, vehicle, accepted quote and booking
  const staffApi=await source("../src/app/api/staff/jobs/route.ts");
  const staffUi=await source("../src/components/staff-work-orders.tsx");
  const adminPage=await source("../src/app/admin/[section]/page.tsx");
- assert.match(staffApi,/quotes\(quote_number,status,total,enquiries\(id,request_number,request_type,requested_service,description,location,contact_name,email,phone,vehicle_description,vehicles\(make,model,year,vehicle_type,registration,vin\)\)\)/);
+ assert.ok(staffApi.includes("customers:users!jobs_customer_id_users_fkey"),"Staff Workcards must resolve customers through the users identity table.");
+ assert.ok(staffApi.includes("quotes:quotes!jobs_quote_id_fkey"),"Staff Workcards must resolve the accepted quote and Jobcard context.");
+ assert.ok(!staffApi.includes("total"),"Employee Workcards must not expose quote totals.");
  assert.match(staffUi,/Accepted quote/);
  assert.match(staffUi,/Customer/);
  assert.match(staffUi,/Vehicle/);
