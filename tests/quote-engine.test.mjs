@@ -26,6 +26,9 @@ test("prepares itemised labour and parts quote lines with shared money totals", 
   assert.equal(quote.subtotal, 184);
   assert.equal(quote.taxAmount, 18.4);
   assert.equal(quote.total, 202.4);
+  assert.deepEqual(Object.keys(quote.lines[0]).sort(), [
+    "description", "item_type", "line_total", "quantity", "service_id", "sort_order", "tax_rate", "unit_price"
+  ].sort(), "Only database quote-item fields should be returned from the quote engine.");
 });
 
 test("rejects invalid quote lines and service presets on parts", () => {
