@@ -22,7 +22,7 @@ export async function POST(request:Request){
   const {data:job,error:jobError}=await db.from("jobs").select("id,job_number,title,customer_id,user_id,quote_id,status,senior_approval_status,customer_approval_status").eq("id",jobId).eq("business_id",businessId).eq("status","completed").maybeSingle();
   if(jobError||!job)return jsonError("Only a completed Workcard can be invoiced.",409);
   if(job.senior_approval_status!=="approved"&&job.senior_approval_status!=="legacy_approved")return jsonError("Senior approval is required before invoicing.",409);
-  if(job.customer_approval_status!=="approved")return jsonError("Customer approval is required before invoicing.",409);
+  if(job.customer_approval_status!=="pending")return jsonError("The completed Workcard must be awaiting customer approval before its draft invoice can be created.",409);
   const {data:existing,error:existingError}=await db.from("invoices").select("id").eq("business_id",businessId).eq("job_id",job.id).limit(1).maybeSingle();
   if(existingError)return jsonError("Could not check for an existing invoice.",500);
   if(existing)return jsonError("This Workcard already has an invoice. Use the existing invoice to manage its balance.",409);
@@ -40,11 +40,18 @@ export async function POST(request:Request){
   const {subtotal,taxAmount,total}=priced;
   if(total<=0)return jsonError("The actual Workcard charges must be greater than zero before invoicing.",409);
   const invoiceNumber="BRV-I-"+Date.now().toString(36).toUpperCase()+"-"+crypto.randomUUID().slice(0,4).toUpperCase();
-  const {data:invoice,error}=await db.from("invoices").insert({business_id:businessId,customer_id:job.customer_id,user_id:job.user_id,job_id:job.id,quote_id:job.quote_id,invoice_number:invoiceNumber,status:"draft",due_date:dueDate,subtotal,tax_amount:taxAmount,total,amount_paid:0,notes:notes||("Final invoice for Workcard "+job.job_number+" · calculated from actual completed work.")}).select("id,invoice_number,total").single();
-  if(error||!invoice){console.error("Final invoice creation failed",error);return jsonError("Could not create final invoice.",500);}
-  const {error:itemError}=await db.from("invoice_items").insert(items.map(x=>({...x,invoice_id:invoice.id})));
-  if(itemError){console.error("Final invoice item insert failed",itemError);await db.from("invoices").delete().eq("id",invoice.id).eq("business_id",businessId);return jsonError("Could not save actual Workcard charges to the invoice. The draft was rolled back.",500);}
-  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"invoice.created_from_actual_work",entity_type:"invoice",entity_id:invoice.id,details:{invoice_number:invoiceNumber,job_id:job.id,source_entry_ids:entries.map(x=>x.id),subtotal,tax_amount:taxAmount,total,estimate_quote_id:job.quote_id}});
-  return Response.json({invoice},{status:201});
+  const {data:result,error}=await db.rpc("create_invoice_from_approved_workcard",{
+   p_business_id:businessId,
+   p_job_id:job.id,
+   p_actor_user_id:access.user!.id,
+   p_invoice:{invoice_number:invoiceNumber,due_date:dueDate,subtotal,tax_amount:taxAmount,total,notes:notes||("Final invoice for Workcard "+job.job_number+" · calculated from actual completed work.")},
+   p_items:items.map((item,index)=>({...item,source_entry_id:entries[index].id}))
+  });
+  if(error||!result?.invoice){
+   console.error("Transactional final invoice creation failed",error);
+   const status=error?.code==="P0001"||error?.code==="23505"?409:error?.code==="22023"?400:500;
+   return jsonError(status===409?error?.message||"This Workcard is not ready for invoicing.":status===400?error?.message||"Invoice values are invalid.":"Could not create final invoice.",status);
+  }
+  return Response.json({invoice:result.invoice},{status:201});
  }catch(error){console.error("Final invoice creation failed",error);return jsonError("Could not create final invoice.",500);}
 }
