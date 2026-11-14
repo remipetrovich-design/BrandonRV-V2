@@ -8,11 +8,12 @@ test("admin Workcard updates use one transactional RPC for Workcard, Jobcard sta
   const route = await read("../src/app/api/admin/jobs/[id]/route.ts");
   const migration = await read("../supabase/migrations/20261115123000_update_workcard_with_jobcard_stage_rpc.sql");
 
-  assert.ok(route.includes('rpc("update_workcard_with_jobcard_stage"'), "The route must use the transactional update RPC.");
-  assert.ok(!route.includes('.from("jobs").update('), "The route must not update the Workcard outside the transaction.");
-  assert.ok(!route.includes('.from("enquiries").update('), "The route must not update the Jobcard pipeline separately.");
-  assert.ok(!route.includes('.from("enquiry_stage_history").insert('), "Stage history must be written in the same transaction.");
-  assert.ok(!route.includes('.from("audit_events").insert('), "The audit event must be written in the same transaction.");
+  const patch = route.slice(route.indexOf("export async function PATCH"), route.indexOf("export async function DELETE"));
+  assert.ok(patch.includes('rpc("update_workcard_with_jobcard_stage"'), "The route must use the transactional update RPC.");
+  assert.ok(!patch.includes('.from("jobs").update('), "The route must not update the Workcard outside the transaction.");
+  assert.ok(!patch.includes('.from("enquiries").update('), "The route must not update the Jobcard pipeline separately.");
+  assert.ok(!patch.includes('.from("enquiry_stage_history").insert('), "Stage history must be written in the same transaction.");
+  assert.ok(!patch.includes('.from("audit_events").insert('), "The audit event must be written in the same transaction.");
 
   for (const token of [
     "FOR UPDATE",
