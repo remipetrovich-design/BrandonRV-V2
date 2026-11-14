@@ -1,4 +1,6 @@
-# Brandon RV
+# Brandon RV V2
+
+This is the independent V2 development repository. The original `Brandon-RV-` repository and its production deployment are not modified by V2 work. V2 is not connected to Vercel yet. It is intended to use the existing Supabase project `thkxalrsklgademwrrlq` when its environment is configured, so database migrations and data-changing operations must be reviewed carefully and are never applied automatically from this repository.
 
 Brandon RV is a mobile caravan and motorhome interior repair and accessories business based in Tamworth, NSW. This repository contains the public website, customer portal and shared staff/admin application.
 
@@ -21,7 +23,7 @@ Brandon RV is registered with the central License Manager as product ID `brandon
 
 The application-level guard is implemented in `src/proxy.ts` and protects website pages and API routes. When the licence is missing, invalid, expired, suspended, revoked, or the configured licensing authority is unavailable, protected requests are blocked. The `/license` page and sign-in/account recovery routes remain reachable so an owner can restore access. API requests receive HTTP 423 while the licence is not valid.
 
-The owner or Website Developer installs a key at `/license`. The server validates the key against the active Main/Fallback License Manager, then stores it encrypted with AES-256-GCM in `application_license`. The key is never returned to the browser. Configure the server-only Vercel environment variable `BRANDON_RV_LICENSE_ENCRYPTION_SECRET` with a random secret of at least 32 characters. Never prefix it with `NEXT_PUBLIC_`. The Supabase migration `20261112090000_application_license.sql` creates the restricted storage table; the existing Supabase migration workflow applies it after a successful main-branch CI check.
+The owner or Website Developer installs a key at `/license`. The server validates the key against the active Main/Fallback License Manager, then stores it encrypted with AES-256-GCM in `application_license`. The key is never returned to the browser. Configure the server-only environment variable `BRANDON_RV_LICENSE_ENCRYPTION_SECRET` with a random secret of at least 32 characters. Never prefix it with `NEXT_PUBLIC_`. The migration `20261112090000_application_license.sql` is included in this repository, but V2 does not apply database migrations automatically.
 
 Brandon RV's live licensing implementation is integrated into the normal application source: `src/lib/license-manager-client.js` contains the portable License Manager client and enforcement helpers, `src/lib/brandon-license.ts` provides Brandon RV's encrypted storage and activation adapter, `/license` provides owner activation, `/admin/license` provides monitoring, and `src/proxy.ts` enforces the licence across protected pages and API routes. The original portable source has been archived as `standalone-license-module.zip` and removed from the runtime repository; the application does not import or depend on a separate module folder. For another product, use the retained ZIP archive and its Next.js integration guide; register its own product ID and configure a separate stable business-installation ID and encryption secret. Do not copy Brandon RV's product ID, database table, auth implementation or secrets into another product.
 
@@ -37,9 +39,7 @@ Global role permissions are stored in \`user_roles\` and \`user_role_permissions
 
 ## Supabase migrations
 
-Database migrations are stored in `supabase/migrations/` and are applied through the GitHub Actions workflow:
-
-`.github/workflows/supabase-migrations.yml`
+Database migrations are stored in `supabase/migrations/`. **V2 does not include an automatic Supabase migration workflow.** The V2 application is intended to connect to the existing Brandon RV Supabase project, so applying any migration from V2 could affect the database used by the original application. Review migration history and SQL first; do not apply V2 migrations until explicitly approved.
 
 ### GitHub Actions secrets
 
@@ -53,7 +53,7 @@ Add these as repository Actions secrets:
 
 The configured project reference is `thkxalrsklgademwrrlq`.
 
-**Migration status:** The production migration workflow has been run successfully. The required GitHub Actions secrets were recognised and the database migrations completed successfully.
+**Migration status:** This repository is a code copy only. No V2 migration has been applied to Supabase. The existing database remains shared with the original application.
 
 Do not commit access tokens, database passwords, service-role keys or other credentials to this repository.
 
@@ -137,7 +137,7 @@ Customer Enquiries and Quote Requests are ticket-backed records. Customers and s
 
 A preferred appointment time is only a request. Once the customer accepts a quote, staff create exactly one Workcard from that accepted quote. The Workcard goes through senior setup review before management assigns a worker; the worker must accept the assignment before arranging a booking. Management confirms the agreed date, start/end time and service location, then links that confirmed Booking to the existing Workcard. Booking confirmation never creates a second job record. The customer and staff/admin interfaces remain views over the same user identity and Supabase database.
 
-The migration for this workflow is applied through the existing production Supabase migration workflow after it is merged to main. No production database change is made by creating the feature branch or pull request.
+The migration is included as source history only. V2 changes must be checked against the shared Supabase migration history before any database deployment.
 
 
 ## Owner configuration and launch readiness (Phase 6)
@@ -146,7 +146,7 @@ The owner-facing Business Configuration area supports public business details, d
 
 Services have an explicit approval status: Approved for launch, Conditional, Assessment required, Deferred or Not offered. Only active, published services approved for launch are exposed to customers. Newly created services default to Assessment required and cannot be published until explicitly approved.
 
-The Phase 6 migration adds this service approval gate. It is forward-only and is applied by the existing Supabase migration workflow after the pull request is merged. Do not apply it manually to production while the change is under review.
+The Phase 6 migration adds this service approval gate. It is forward-only. V2 does not apply it automatically; verify whether it is already present in the shared Supabase database before considering any migration action.
 
 ## Launch readiness (Phase 7)
 
@@ -161,4 +161,4 @@ Staff with the required permission can create an intake record directly in the a
 
 Pipeline stages: New, Contacted, Awaiting Information, Assessment Required, Quote in Progress, Quote Sent, Awaiting Approval, Approved, Declined, Converted and Closed. Existing enquiry status values are retained for compatibility with the quote and booking workflows; stage changes update the corresponding legacy status and create an immutable stage-history entry.
 
-Staff assignment history and stage history are stored against the same enquiry record. Assignments are business-scoped and limited to active staff in the Brandon RV workspace. The unified enquiry migration is forward-only and must run through the existing Supabase migration workflow after merge.
+Staff assignment history and stage history are stored against the same enquiry record. Assignments are business-scoped and limited to active staff in the Brandon RV workspace. The unified enquiry migration is forward-only. V2 does not apply it automatically; verify the shared database migration history before considering any migration action.
