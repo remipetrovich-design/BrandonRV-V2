@@ -61,10 +61,11 @@ export async function PATCH(request:Request){
   if(!Number.isInteger(minimum_attendance_minutes)||minimum_attendance_minutes<0||minimum_attendance_minutes>1440)return jsonError("Minimum attendance must be 0 to 1440 minutes.");
   if(!["not_configured","at_cost","quoted","included"].includes(freight_policy)||!["not_configured","at_cost","quoted","included"].includes(consumables_policy))return jsonError("Select a valid freight and consumables policy.");
   if(!["not_configured","registered","not_registered"].includes(gst_status)||!Number.isFinite(gst_rate)||gst_rate<0||gst_rate>20)return jsonError("Check the GST configuration.");
-  const paymentResult=validateBusinessPolicies(isObject(input.payment)?input.payment:{});
-  if(!paymentResult.valid)return jsonError(paymentResult.errors[0]??"Check payment and parts policies.");
   const db=database();const {data:existing}=await db.from("business_settings").select("settings").eq("business_id",access.membership!.business_id).maybeSingle();
   const previous=isObject(existing?.settings)?existing!.settings:{};
+  const paymentInput=isObject(input.payment)?input.payment:(isObject(previous.payment)?previous.payment:defaults.payment);
+  const paymentResult=validateBusinessPolicies(paymentInput);
+  if(!paymentResult.valid)return jsonError(paymentResult.errors[0]??"Check payment and parts policies.");
   const settings={...defaults,...previous,operating_hours,accepting_enquiries,booking_notice_hours,customer_message,
    booking:{...defaults.booking,...(isObject(previous.booking)?previous.booking:{}),working_days,opening_time,closing_time,appointment_duration_minutes,travel_buffer_minutes,maximum_advance_days,unavailable_dates,cancellation_notice_hours,cancellation_policy,approval_required},
    pricing:{...defaults.pricing,...(isObject(previous.pricing)?previous.pricing:{}),labour_rate,parts_markup_percent,minimum_attendance_minutes,freight_policy,consumables_policy,gst_status,gst_rate},
