@@ -2,31 +2,52 @@
 
 This is the active V2 implementation plan. Work only in `BrandonRV-V2`. Do not inspect or modify V1. Preserve the existing UI and the two portal areas: (1) Main Website with Customer Portal, and (2) Employee / Business Portal.
 
-## Initial operating model
+## Operating model
 - Initial internal operating team: Chris (business owner) and Lucas (technical/developer support). Customer accounts are not limited to two.
-- Keep one canonical identity in `public.users`; customers and staff are compatibility views/roles on that identity, not separate login systems.
-- Keep the ability to add staff later, but defer payroll, leave, onboarding, employee assets and complex HR workflows from launch-critical scope.
-- Supplier accounts and purchasing remain future scope. Do not make supplier management a launch dependency.
+- Keep one canonical identity in `public.users`; customer and employee access remain roles/extensions of that identity, not separate login systems.
+- Keep the ability to add staff later. Existing workforce/HR features remain in the product, but payroll, leave and complex HR workflows are not launch dependencies.
+- Supplier and purchasing capabilities remain in the product. Their full operational rollout can follow the core job workflow.
+- Reuse existing modules, tables, routes, components, policies and domain logic wherever they already satisfy the requirement. Upgrade and connect them; do not create parallel systems or remove existing functionality to simplify the build.
+
+## Application architecture
+Brandon RV is one application, one V2 Supabase project and one repository. The following are logical groupings inside the application, not separately deployed services or separate databases:
+
+1. **Core foundation** — canonical user identity, authentication/session handling, roles and permissions, business configuration, shared validation, security boundaries and audit history.
+2. **Job Management** — customer and vehicle context, enquiries/Jobcards, quote records and revisions, appointments/bookings, Workcards, invoices and payments as separate linked records. The original quote-request enquiry is the Jobcard identity. The Jobcard view aggregates related records; it does not absorb or merge their data.
+3. **Workshop Operations** — Workcard setup/review, assignments, worker acceptance, tasks, actual labour and parts, time, attachments, tests, variations, approvals, completion and handover.
+4. **Business Operations** — business settings, service catalogue, service areas, supplier/procurement functions, workforce/HR functions, financial administration, notifications, dashboards and reports. Existing capabilities are retained; launch priority is based on the real business workflow.
+
+**External dependency — OrbitFS License Manager:** the existing licensing module is already integrated. Its own API is responsible for licence validation and enforcement. Brandon RV uses the existing integration; do not build a second licensing engine, duplicate licence records, or reimplement the License Manager's enforcement. Licensing changes are deferred unless a concrete integration defect is identified.
+
+## Record relationships and business workflow
+- One quote request creates one original Jobcard using the existing `enquiries` record. Do not create a duplicate Jobcard table or record.
+- Quotes, quote revisions, appointments/bookings, Workcards, invoices, payments, messages, attachments and history remain separate records with their own status and lifecycle.
+- Each related record links back to the original Jobcard wherever the existing schema supports that relationship.
+- The Jobcard screen aggregates the related records into one customer/job view. Opening a Workcard opens its own operational detail and provides a clear link back to the Jobcard.
+- Acceptance of a specific standard quote revision creates exactly one Workcard. The existing atomic conversion RPC is reused; retries must return the existing Workcard.
+- Booking remains a separate record and does not create another Jobcard or Workcard.
+- Canonical workflow: enquiry/Jobcard → quote and revisions → customer acceptance → one Workcard → assignment and booking → work, parts and variations → worker and senior review → customer approval → invoice and payment → closeout/history.
+- Do not assume every job needs a booking at the same point. Preserve the existing workflow rules and booking configuration.
 
 ## Infrastructure and operating boundaries
 - V2 repository: `remipetrovich-design/BrandonRV-V2`, branch `main`.
 - Supabase project: `Brandon-RV-V2` (`lciylmfpcefdpsouoqvm`), URL `https://lciylmfpcefdpsouoqvm.supabase.co`, region `ap-northeast-1` (Tokyo).
-- V2 now has its own database, migration history, auth/storage resources and keys. V1 (`thkxalrsklgademwrrlq`) remains separate and must not be inspected or modified.
-- The 61 repository migrations and one additional V2 security patch have been applied to the clean V2 project. No V1 data was copied. See [V2 Database Architecture](./V2-DATABASE-ARCHITECTURE.md) for the relationship map and migration boundary.
-- All future V2 schema changes must be committed to this repository and applied only to `lciylmfpcefdpsouoqvm`.
-- The user has explicitly authorised provisioning the V2 database and applying its schema. Continue applying reviewed migrations only to the dedicated V2 project; never to V1.
+- V2 has its own database, migration history, auth/storage resources and keys. V1 (`thkxalrsklgademwrrlq`) remains separate and must not be inspected or modified.
+- The 61 repository migrations and one additional V2 security patch have been applied to the clean V2 project. No V1 data was copied. See [V2 Database Architecture](./V2-DATABASE-ARCHITECTURE.md).
+- Commit all future V2 schema changes to this repository. Apply reviewed migrations only to the dedicated V2 project when authorised; never to V1.
+- GitHub stores source and history; Vercel hosts/runs the application when configured; Supabase provides the database, authentication and storage. Keep one application and one V2 database. Use existing free-tier services and monitor their limits; do not add paid services without approval.
 - Do not deploy to production unless explicitly requested.
-- Stage 8 (full testing/hardening) is not authorised yet. Normal build, typecheck, and focused regression tests remain part of development and are not Stage 8.
+- The mail delivery system remains paused. Do not resume or change it.
+- Keep `.env.example` complete with variable names and placeholders only. Do not put real credentials in source control or ask for secrets in chat.
+- Stage 8 (full testing/hardening) is not authorised. Focused tests, typecheck and build checks for individual changes remain part of normal development.
 
-## Staged delivery plan
-1. **Backend foundation** — shared domain/service conventions; input validation; permission enforcement; atomic state changes; audit history; idempotency; consistent errors; safe database boundaries.
-2. **Quote engine** — quote creation, pricing, labour/parts, travel/freight, GST configuration, revisions, approvals, issue, customer acceptance/decline.
-3. **Job / Workcard engine** — one Workcard per accepted quote; lifecycle, tasks, assignments, work records, variations, approvals, completion.
-4. **Booking engine** — availability, operating hours, travel buffers, conflicts, requests, confirmations, rescheduling and cancellation.
-5. **Parts / supplier engine** — quoted parts, ordering and receiving states, backorders, returns, job costing. Full supplier management/order arrangements remain a future item.
-6. **Invoice / payment engine** — invoice from approved completed work, balances, payments, deposits, refunds and receipts.
-7. **Business automation** — notifications, reminders, follow-ups, dashboards and reports.
-8. **Testing / hardening** — end-to-end workflows, permissions, consistency, failure handling and security. **Do not start without explicit user permission.**
+## Delivery priorities
+1. **Reuse and reconcile the existing foundation** — inspect the current implementation and migrations; correct stale/conflicting documentation; preserve working functionality; standardise validation, permission checks, audit handling and error behavior where gaps are confirmed.
+2. **Finish the Jobcard and commercial path** — complete and verify enquiry/Jobcard intake, quote creation/revisions/approval, customer acceptance/decline and the single atomic Workcard conversion.
+3. **Finish Workshop Operations** — Workcard review, assignment and acceptance, booking link, tasks, actual work/parts/time, attachments, variations, worker sign-off, independent senior review and customer handover.
+4. **Finish Business Operations and closeout** — invoice from approved actual work, payment recording, deposits/refunds, supplier/procurement flow, business settings, notifications and useful reports. Keep supplier setup configurable and do not invent supplier relationships.
+5. **Connect and refine the portals** — ensure the public website/customer portal and employee/business portal present the same linked records with role-appropriate controls; retain existing design and improve consistency/usability.
+6. **Operational verification before release** — focused regression checks during development. Full end-to-end testing/hardening remains Stage 8 and requires Lucas's explicit permission.
 
 ## Business decisions and placeholders
 - Service list and pricing: “Placeholder 4 chris to fill later”.
@@ -34,8 +55,13 @@ This is the active V2 implementation plan. Work only in `BrandonRV-V2`. Do not i
 - Supplier names and ordering arrangements: “Future thing”.
 - Parts, freight and deposits paid before ordering: configurable in Business Settings; do not hardcode policy.
 - Approval authority: Supervisors+.
+- Do not promise job completion until critical parts and site access are confirmed.
 
-## Current implementation notes
-- Preliminary quote and Workcard engines, booking rules, business-policy configuration, and a shared audit table already exist. These are foundations, not a declaration that Stages 1–3 are complete.
-- The unified License Manager API base is hardcoded as `https://incendiarynetworks.cc/api/v1`; the live endpoint contract still needs independent verification.
-- Stage 1 progress: shared API validation helpers, audit event helpers, business policy rules and domain engines are in the repository. The new V2 Supabase project is active and isolated from V1. All 61 existing repository migrations have been applied, plus a security patch restricting `revise_job_variation_quote` to `service_role`. The new database has 57 public base tables, all RLS-enabled, a private file bucket and the Brandon RV prelaunch workspace seed. No V1 operational records were copied. The mail delivery system remains paused. Next: finish connecting the application runtime to the new V2 URL/keys, then complete the enquiry → quote → Workcard → work details → approval → invoice/payment transaction paths. Stage 8 remains unauthorised.
+## Verified implementation baseline and current gaps
+- Existing repository includes customer and employee portals, quote and Workcard domain logic, booking rules, business policy configuration, audit helpers, a dedicated V2 database schema, and a License Manager integration. Existing code and schema must be inspected before adding replacements.
+- The accepted-quote → Workcard conversion uses `create_workcard_from_accepted_quote`, which locks the quote and creates the Workcard, planned work entries, Jobcard stage history and audit event in one database transaction. The route calls this RPC and returns the existing Workcard on a retry.
+- The V2 database snapshot recorded in [V2 Database Architecture](./V2-DATABASE-ARCHITECTURE.md) includes 57 RLS-enabled public base tables, three compatibility views, a private storage bucket and 62 applied migration records. This is a structural snapshot, not proof that every feature is complete.
+- A concrete remaining defect was confirmed in `src/app/api/admin/jobs/[id]/route.ts`: Workcard update, linked Jobcard stage/history and audit writes are currently separate requests, and errors from the latter writes are ignored. This can leave partially updated state. Prioritise making this mutation transactional and cover it with focused tests.
+- The invoice creation route also performs invoice, invoice-item and audit writes separately with a manual delete rollback. Inspect and address this transaction boundary after the Workcard status path.
+- Documentation must distinguish implemented code, partially implemented code, outstanding work and unverified runtime behavior. A database table, route or UI control alone does not establish that a complete workflow works.
+- Do not claim live License Manager validation, external mail delivery, production deployment or end-to-end workflows are verified unless they have actually been exercised.
