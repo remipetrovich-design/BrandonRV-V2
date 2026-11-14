@@ -104,16 +104,17 @@ The system must remain capable of adding staff later, but launch workflows shoul
 | Operations/comms | `audit_events`, `notifications`, `notification_preferences`, `email_templates`, `documents` |
 | Licensing | `application_license` |
 
-## Simplification decisions
+## Product and operating decisions
 
 - Keep one canonical user identity and one optional employee profile on that identity.
 - Use explicit role keys and permission keys. Do not rely on a display title such as “Supervisor” as the permission check itself.
 - The approval rule remains Supervisors and above, implemented through explicit quote/job approval permissions.
 - Chris must be able to manage routine business configuration without developer intervention.
-- Do not build payroll, leave, employee assets or onboarding as launch-critical workflows for a two-person operation. Existing tables and records remain intact for compatibility; these modules can be hidden/deferred in the V2 product until needed.
-- Supplier accounts and purchase-order management remain a future item. Existing supplier tables are not a launch dependency.
+- Keep all current features, including workforce/HR, supplier/procurement, customer portal and employee portal. Improve their integration and usability rather than deleting or hiding them.
+- The initial operating team is two people, but the system must remain extensible for additional staff and suppliers.
 - Service list/pricing and GST remain Chris-configured placeholders. Do not seed assumed prices or tax registration/rates.
 - Parts, freight and deposit prepayment policies remain configurable in Business Settings.
+- Supplier purchasing remains a later implementation priority, not a reason to remove supplier features.
 
 ## Stage 1 backend foundation
 
