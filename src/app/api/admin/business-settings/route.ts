@@ -34,7 +34,7 @@ export async function PATCH(request:Request){
   if(working_days.some((day:string)=>!validDays.includes(day)))return jsonError("Select valid working days.");
   const opening_time=time(b.opening_time),closing_time=time(b.closing_time);
   if((opening_time&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(opening_time))||(closing_time&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(closing_time)))return jsonError("Enter opening and closing times in 24-hour format.");
-  if(opening_time&&closing_time&&opening_time>=closing_time)return jsonError("Closing time must be later than opening time.");
+  if(Boolean(opening_time)!==Boolean(closing_time))return jsonError("Configure both opening and closing times, or leave both blank.");\n  if(opening_time&&closing_time&&opening_time>=closing_time)return jsonError("Closing time must be later than opening time.");
   const appointment_duration_minutes=number(b.appointment_duration_minutes,60);
   const travel_buffer_minutes=number(b.travel_buffer_minutes,30);
   const maximum_advance_days=number(b.maximum_advance_days,90);
