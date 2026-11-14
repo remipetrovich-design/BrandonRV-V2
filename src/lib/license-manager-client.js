@@ -1,8 +1,5 @@
 /** Portable, opt-in License Manager client. No V1 Base imports or side effects. */
-export const LICENSE_AUTHORITIES = Object.freeze({
-  main: 'https://incendiarynetworks.cc/api/v1',
-  fallback: 'https://lm.incendiarynetworks.cc/api/v1'
-});
+export const LICENSE_API_BASE_URL = 'https://incendiarynetworks.cc/api/v1';
 
 export class LicenseError extends Error {
   constructor(message, options = {}) {
@@ -37,10 +34,7 @@ export function createLicenseClient(options = {}) {
   const timeoutMs = Math.max(1000, Number(options.timeoutMs || 7000));
   const storage = options.storage || null;
   const cacheKey = 'license-manager-client:' + product + ':' + installationId;
-  const sourceUrls = [
-    LICENSE_AUTHORITIES.main + '/source-configuration',
-    LICENSE_AUTHORITIES.fallback + '/source-configuration'
-  ];
+  const baseUrl = LICENSE_API_BASE_URL.replace(/\/+$/, '');
   let currentAuthority = null;
   let lastValid = null;
 
@@ -66,46 +60,27 @@ export function createLicenseClient(options = {}) {
 
   async function detectAuthority({ force = false } = {}) {
     if (!force && currentAuthority && Date.now() - currentAuthority.checkedAt < 5000) return currentAuthority;
-    let lastError = null;
-    for (const sourceUrl of sourceUrls) {
-      let authoritativeConfigFound = false;
-      try {
-        const config = await request(sourceUrl);
-        const mode = String(config.mode || '').toLowerCase();
-        if (config.protocol !== 1 || !['main', 'fallback'].includes(mode)) continue;
-        const baseUrl = LICENSE_AUTHORITIES[mode];
-        if (!config.active || config.active.licenseApi !== baseUrl) continue;
-        authoritativeConfigFound = true;
-        let health;
-        try {
-          health = await request(baseUrl + '/license/health');
-        } catch (error) {
-          throw new LicenseError('The configured active License Manager is unavailable.', {
-            code: 'ACTIVE_AUTHORITY_UNAVAILABLE', status: 503, details: { mode, cause: error.code || error.message }
-          });
-        }
-        if (health.ok !== true || health.service !== 'license-manager') {
-          throw new LicenseError('The configured active License Manager is unhealthy.', {
-            code: 'ACTIVE_AUTHORITY_UNAVAILABLE', status: 503, details: { mode, health }
-          });
-        }
-        if (!health.capabilities || health.capabilities.license_validation !== true) {
-          throw new LicenseError('Licensing is disabled on the active authority.', {
-            code: 'LICENSING_AUTHORITY_DISABLED', status: 503, details: { mode, health }
-          });
-        }
-        currentAuthority = { mode, baseUrl, revision: config.revision || null, checkedAt: Date.now(), health };
-        return currentAuthority;
-      } catch (error) {
-        lastError = error;
-        // Never promote the standby if authoritative config names an unhealthy manager.
-        if (authoritativeConfigFound || error.code === 'ACTIVE_AUTHORITY_UNAVAILABLE' || error.code === 'LICENSING_AUTHORITY_DISABLED') throw error;
-      }
+    let health;
+    try {
+      health = await request(baseUrl + '/license/health');
+    } catch (error) {
+      throw new LicenseError('The unified License Manager API is unavailable.', {
+        code: 'ACTIVE_AUTHORITY_UNAVAILABLE', status: 503,
+        details: { baseUrl, cause: error.code || error.message }
+      });
     }
-    throw new LicenseError('Could not determine the active License Manager.', {
-      code: 'AUTHORITY_DISCOVERY_FAILED', status: 503,
-      details: lastError ? { code: lastError.code || null, message: lastError.message } : null
-    });
+    if (health.ok !== true || health.service !== 'license-manager') {
+      throw new LicenseError('The unified License Manager API is unhealthy.', {
+        code: 'ACTIVE_AUTHORITY_UNAVAILABLE', status: 503, details: { baseUrl, health }
+      });
+    }
+    if (!health.capabilities || health.capabilities.license_validation !== true) {
+      throw new LicenseError('Licensing is disabled on the unified API.', {
+        code: 'LICENSING_AUTHORITY_DISABLED', status: 503, details: { health }
+      });
+    }
+    currentAuthority = { mode: 'unified', baseUrl, revision: health.revision || null, checkedAt: Date.now(), health };
+    return currentAuthority;
   }
 
   async function readCache() {
