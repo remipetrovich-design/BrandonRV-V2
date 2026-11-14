@@ -1,7 +1,11 @@
-import { bookingHoursError } from "./booking-hours-policy.mjs";\n\nexport type BookingPolicy = {
+import { bookingHoursError } from "./booking-hours-policy.mjs";
+
+export type BookingPolicy = {
   booking_notice_hours?: number;
   booking?: {
-    working_days?: string[];\n    opening_time?: string;\n    closing_time?: string;
+    working_days?: string[];
+    opening_time?: string;
+    closing_time?: string;
     appointment_duration_minutes?: number;
     travel_buffer_minutes?: number;
     maximum_advance_days?: number;
