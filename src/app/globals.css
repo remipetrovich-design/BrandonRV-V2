@@ -1083,7 +1083,7 @@ h1 em, h2 em { color: var(--green); font-weight: 400; }
 
 /* Brand text accents use a darker orange for readable text; bright orange remains
    available for decorative rules and the dark-text primary button surface. */
-.brand-name strong span,.footer-brand span,.fact-index,.service-number,.service-arrow,
+.brand-name strong span,.fact-index,.service-number,.service-arrow,
 .text-link span,.contact-strip h2 em,.detail-item span,.form-section-title > span,
 .portal-shortcuts a > span,.brv-jobcard-section-heading > span { color:#a84f24; }
 .main-nav a:hover,.art-card strong em { color:#a84f24; }
