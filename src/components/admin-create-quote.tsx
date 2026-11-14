@@ -18,7 +18,8 @@ export default function AdminCreateQuote({initialEnquiryId="",onCreated}:{initia
  const [nextLineId,setNextLineId]=useState(2);
  const [taxRate,setTaxRate]=useState("0");
  const [gstStatus,setGstStatus]=useState("not_configured");
- const [configuredGstRate,setConfiguredGstRate]=useState(10);\n const [quoteValidityDays,setQuoteValidityDays]=useState<number|null>(null);
+ const [configuredGstRate,setConfiguredGstRate]=useState(10);
+ const [quoteValidityDays,setQuoteValidityDays]=useState<number|null>(null);
  const [expiryDate,setExpiryDate]=useState("");
  const [notes,setNotes]=useState("");
  const [terms,setTerms]=useState("");
