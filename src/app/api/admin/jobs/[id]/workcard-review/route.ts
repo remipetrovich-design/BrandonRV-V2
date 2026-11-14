@@ -1,4 +1,4 @@
-import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
+import {authorizePermission,database,jsonError,sameOrigin,userHasPermission} from "@/lib/auth";
 export const runtime="nodejs";
 
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
@@ -6,12 +6,13 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const {id}=await params;
  const {data:job,error}=await database().from("jobs").select("id,job_number,title,quote_id,workcard_review_status,workcard_reviewed_by,workcard_reviewed_at,workcard_review_note").eq("id",id).eq("business_id",access.membership!.business_id).maybeSingle();
  if(error||!job)return jsonError("Workcard not found.",404);
- return Response.json({job,reviewedByCurrentUser:job.workcard_reviewed_by===access.user!.id});
+ const canApprove=await userHasPermission(access.user!.id,"jobs.approve");
+ return Response.json({job,reviewedByCurrentUser:job.workcard_reviewed_by===access.user!.id,canApprove});
 }
 
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
- const access=await authorizePermission("jobs.manage");if(access.response)return access.response;
+ const access=await authorizePermission("jobs.approve");if(access.response)return access.response;
  try{
   const {id}=await params,body=await request.json();
   const decision=String(body.decision??""),note=String(body.note??"").trim().slice(0,2000);
