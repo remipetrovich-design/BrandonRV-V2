@@ -15,7 +15,7 @@ The authenticated admin workspace uses a practical workshop-office register: nav
 - Page neutral: `#F5F7F8` — admin workspace background.
 - Surface: `#FFFFFF` — panels, forms and documents.
 - Border: `#DBE4EC` — separators and control outlines.
-- Muted: `#65788B` — secondary information.
+- Muted: `#5D6F82` — secondary information with stronger contrast on the workspace background.
 - Danger: semantic red with text/icon; never rely on colour alone.
 
 ## Public brand palette
