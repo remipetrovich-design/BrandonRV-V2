@@ -31,3 +31,4 @@ export interface PreparedQuote {
 export function prepareQuoteLines(items: QuoteLineInput[], defaultTaxRate?: number): PreparedQuote;
 export function validateQuoteTaxPolicy(taxRates: number[] | number, pricing?: { gst_status?: string; gst_rate?: number | string }): { gstStatus: string; configuredGstRate: number };
 export function nextQuoteRevision(prior: { enquiry_id: string | null; customer_id: string | null; revision_number?: number; status: string } | null, context: { enquiryId: string | null; customerId: string | null }): number;
+export function defaultQuoteExpiryDate(validityDays: number | string | null | undefined, today?: string, explicitDate?: string | null): string | null;
