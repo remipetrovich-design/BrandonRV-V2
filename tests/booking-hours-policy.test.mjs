@@ -9,8 +9,8 @@ test("allows bookings inside configured local operating hours",()=>{
 });
 
 test("rejects bookings before opening or when configured duration ends after closing",()=>{
- assert.match(bookingHoursError(new Date("2026-11-16T21:30:00Z"),null,settings)??"",/operating hours/i);
- assert.match(bookingHoursError(new Date("2026-11-16T05:30:00Z"),null,settings)??"",/operating hours/i);
+ assert.match(bookingHoursError(new Date("2026-11-15T19:30:00Z"),null,settings)??"",/operating hours/i);
+ assert.match(bookingHoursError(new Date("2026-11-16T07:30:00Z"),null,settings)??"",/operating hours/i);
 });
 
 test("rejects an incomplete or invalid opening-hours configuration",()=>{
