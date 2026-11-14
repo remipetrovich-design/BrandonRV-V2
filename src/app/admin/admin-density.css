@@ -13,7 +13,7 @@
 .brv-admin-frame .brv-admin-topbar { min-height: 54px; padding-inline: 20px; }
 .brv-admin-frame .brv-admin-content { padding: 20px clamp(18px, 2vw, 28px) 32px; }
 .brv-admin-frame .portal-page { min-height: 0; background: transparent; }
-.brv-admin-frame .portal-shell { width: 100%; max-width: 1440px !important; padding: 8px 0 28px; }
+.brv-admin-frame .portal-shell { display:block; width:100%; max-width:1440px !important; padding: 8px 0 28px; }
 .brv-admin-frame .portal-page-heading { margin: 0 0 18px; }
 .brv-admin-frame .portal-page-heading h1 { margin: 2px 0 5px; font-size: clamp(25px, 2.2vw, 32px); line-height: 1.12; letter-spacing: -.04em; }
 .brv-admin-frame .portal-page-heading > p:last-child { margin: 0; font-size: 12px; line-height: 1.55; }
@@ -613,3 +613,4 @@
 }
 .brv-admin-frame .portal-shell.brv-admin-page-inner--medium { max-width:1100px !important; }
 .brv-admin-frame .portal-shell.brv-admin-page-inner--narrow { max-width:1000px !important; }
+.brv-admin-frame .portal-shell.brv-admin-page-inner--compact { max-width:900px !important; }
