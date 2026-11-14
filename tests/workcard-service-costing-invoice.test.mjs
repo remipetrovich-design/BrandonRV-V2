@@ -30,3 +30,16 @@ test("quote creation links catalogue services and retains custom-priced lines",a
  assert.match(api,/service_id/);
  assert.match(api,/services/);
 });
+
+
+test("final invoice draft is created atomically before customer approval from approved actual Workcard entries",async()=>{
+ const api=await read("../src/app/api/admin/invoices/route.ts");
+ const migration=await read("../supabase/migrations/20261115150000_create_invoice_from_approved_workcard_rpc.sql");
+ assert.match(api,/rpc\("create_invoice_from_approved_workcard"/);
+ assert.match(api,/source_entry_id/);
+ assert.doesNotMatch(api,/\.from\("invoices"\)\.insert/);
+ assert.doesNotMatch(api,/\.from\("invoice_items"\)\.insert/);
+ assert.match(migration,/customer_approval_status <> 'pending'/);
+ assert.doesNotMatch(migration,/SELECT count\(\*\)::integer INTO v_entry_count[\s\S]*?FOR UPDATE;/);
+ assert.match(migration,/SELECT e\.id,e\.entry_type[\s\S]*?FOR UPDATE;/);
+});
