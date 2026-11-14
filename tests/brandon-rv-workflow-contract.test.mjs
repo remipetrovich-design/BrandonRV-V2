@@ -204,9 +204,9 @@ test("only registered customer accounts can request bookings",async()=>{
  const account=await source("../src/app/api/portal/appointments/route.ts");
  const guest=await source("../src/app/api/tickets/[id]/booking-request/route.ts");
  assert.ok(account.includes("existingBooking"));
- assert.ok(account.includes("working_days"));
- assert.ok(account.includes("unavailable_dates"));
- assert.ok(account.includes("travel_buffer_minutes"));
+ assert.ok(account.includes("validateBookingWindow"));
+ assert.ok(account.includes("booking-rules"));
+ assert.ok(account.includes("bookingWindowsConflict"));
  assert.ok(account.includes("appointments"));
  assert.match(guest,/Guest access is limited to quote responses and general enquiry messages/);
  assert.match(guest,/return jsonError\(.*403\)/);
