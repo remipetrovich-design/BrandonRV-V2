@@ -8,7 +8,7 @@ export function bookingHoursError(start, end, settings = {}) {
   const opening = String(booking.opening_time ?? ""), closing = String(booking.closing_time ?? "");
   if (!opening && !closing) return null;
   if (!opening || !closing) return "Configure both opening and closing times before accepting bookings.";
-  const validTime = value => /^([01]\\d|2[0-3]):[0-5]\\d$/.test(value);
+  const validTime = value => /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
   if (!validTime(opening) || !validTime(closing) || opening >= closing) return "Configure valid 24-hour opening and closing times before accepting bookings.";
   const startDate = start instanceof Date ? start : new Date(start);
   const duration = Number(booking.appointment_duration_minutes ?? 60);
