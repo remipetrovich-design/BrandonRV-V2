@@ -41,3 +41,5 @@ export function getInitialWorkcardState(
 ): { status: "scheduled" | "pending"; bookingConfirmed: boolean; enquiryStage: string };
 
 export function getEnquiryStageForWorkcardStatus(status: string): string | null;
+
+export function canTransitionWorkcardStatus(currentStatus: string, nextStatus: string): boolean;
