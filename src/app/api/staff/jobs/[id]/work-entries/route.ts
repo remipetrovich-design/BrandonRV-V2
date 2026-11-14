@@ -39,7 +39,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   if(!Number.isFinite(quantity)||quantity<=0||quantity>10000)return jsonError("Enter a valid quantity.");
   const {data:entry,error}=await access.db.from("job_work_entries").insert({
    business_id:membership.business_id,job_id:id,staff_id:access.staff?.id??null,created_by:user.id,
-   entry_type:entryType,description,quantity,unit_price:0,tax_rate:0,line_total:0,cost_unit_price:0,invoiceable:false,
+   entry_type:entryType,description,quantity,
    customer_visible:customerVisible
   }).select("id,entry_type,description,quantity,occurred_at,customer_visible").single();
   if(error||!entry)return jsonError("Could not save Work Order entry.",500);
