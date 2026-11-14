@@ -23,6 +23,7 @@ jobs:
           git clone --depth 1 https://github.com/remipetrovich-design/Brandon-RV-.git /tmp/brandon-rv-source
           rsync -a --delete --exclude='.git' /tmp/brandon-rv-source/ "$GITHUB_WORKSPACE/"
           rm -f "$GITHUB_WORKSPACE/.github/workflows/bootstrap-copy.yml"
+          rm -f "$GITHUB_WORKSPACE/.github/workflows/ci.yml"
           rm -f "$GITHUB_WORKSPACE/.github/workflows/supabase-migrations.yml"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
