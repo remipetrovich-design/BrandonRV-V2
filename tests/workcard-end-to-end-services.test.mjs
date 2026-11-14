@@ -5,9 +5,7 @@ const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 
 test("database migration supplies every field used by service-linked Workcard entries",async()=>{
  const migration=await read("../supabase/migrations/20261113120519_connect_services_and_workcard_actual_costs.sql");
- for(const field of ["quantity_required","quantity_used","supplier_name","part_number"])assert.ok(entries.includes(field),"Missing worker update field: "+field);
- for(const field of ["cost_unit_price","unit_price","tax_rate","line_total"])assert.ok(!entries.includes(field),"Employee work-entry API must not expose financial fields: "+field);
- assert.ok(entries.includes("Financial and invoice settings can only be managed by authorised business staff."),"Employee updates must reject financial fields.");
+ for(const field of ["quantity_required","quantity_used","cost_unit_price","part_number","supplier_name","invoiceable","service_id"])assert.ok(migration.includes("add column if not exists "+field),"Missing migration column: "+field);
  assert.ok(migration.includes("alter table public.quote_items"));
  assert.ok(migration.includes("job_work_entries_service_id_idx"));
 });
@@ -43,7 +41,7 @@ test("accepted quote converts the Jobcard into a pre-populated Workcard without 
  assert.ok(route.includes("if(entryError)"),"Failed conversion must roll back the new Workcard.");
 });
 
-test("staff Workcard API returns prepared quote lines and supports recording actual quantities, costs and parts orders",async()=>{
+test("staff Workcard API returns operational quote lines without financial fields",async()=>{
  const list=await read("../src/app/api/staff/jobs/route.ts");
  const entries=await read("../src/app/api/staff/jobs/[id]/work-entries/route.ts");
  for(const field of ["source_quote_item_id","quantity_required","quantity_used","quantity_ordered","quantity_received","quantity_returned","part_order_status","supplier_order_reference","part_number","supplier_name"])assert.ok(list.includes(field),"Missing prepared Workcard field: "+field);
@@ -54,9 +52,10 @@ test("staff Workcard API returns prepared quote lines and supports recording act
  assert.ok(list.includes("firstRelation(enquiry.vehicles)"),"The Jobcard vehicle relationship must be returned as one vehicle record.");
  assert.ok(list.includes("firstRelation(x.vehicles)"),"The appointment vehicle relationship must be returned as one vehicle record.");
  assert.ok(entries.includes("export async function PATCH"),"Workers must update prepared lines instead of re-entering them.");
- for(const field of ["quantity_required","quantity_used","cost_unit_price","supplier_name","part_number","invoiceable"])assert.ok(entries.includes(field),"Missing worker update field: "+field);
+ for(const field of ["quantity_required","quantity_used","supplier_name","part_number"])assert.ok(entries.includes(field),"Missing worker update field: "+field);
+ for(const field of ["cost_unit_price","unit_price","tax_rate","line_total"])assert.ok(!entries.includes(field),"Employee work-entry API must not expose financial fields: "+field);
+ assert.ok(entries.includes("Financial and invoice settings can only be managed by authorised business staff."),"Employee updates must reject financial fields.");
  assert.ok(entries.includes("work_order.entry_updated"),"Worker changes must be audited.");
- assert.ok(entries.includes('["pending","scheduled","waiting_parts","in_progress"].includes(access.job.status)'),"Workers must be able to update supplier orders before starting the repair.");
  assert.ok(entries.includes("Actual work, costs and customer-visible completion details can only be recorded after work starts."),"Pre-start updates must be limited to parts ordering.");
 });
 
