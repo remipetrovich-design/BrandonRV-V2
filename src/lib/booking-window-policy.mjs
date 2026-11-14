@@ -4,7 +4,7 @@ export function bookingWindowsConflict(start, end, existingStart, existingEnd, s
   if (!Number.isFinite(startMs) || !Number.isFinite(existingStartMs)) return false;
 
   const configuredDuration = Number(settings.booking?.appointment_duration_minutes ?? 60);
-  const configuredBuffer = Number(settings.booking?.travel_buffer_minutes ?? 15);
+  const configuredBuffer = Number(settings.booking?.travel_buffer_minutes ?? 30);
   const durationMinutes = Number.isFinite(configuredDuration) ? Math.min(480, Math.max(15, configuredDuration)) : 60;
   const bufferMinutes = Number.isFinite(configuredBuffer) ? Math.min(240, Math.max(0, configuredBuffer)) : 30;
   const endMs = end ? new Date(end).getTime() : startMs + durationMinutes * 60000;
