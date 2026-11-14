@@ -1,9 +1,11 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
+import {validateBusinessPolicies} from "@/lib/business-policy-engine.mjs";
 export const runtime="nodejs";
 const defaults={
  operating_hours:"",accepting_enquiries:true,booking_notice_hours:24,customer_message:"",
  booking:{working_days:[],opening_time:"",closing_time:"",appointment_duration_minutes:60,travel_buffer_minutes:30,maximum_advance_days:90,unavailable_dates:[],cancellation_notice_hours:24,cancellation_policy:"",approval_required:true},
- pricing:{labour_rate:null,parts_markup_percent:null,minimum_attendance_minutes:60,freight_policy:"at_cost",consumables_policy:"at_cost",gst_status:"not_configured",gst_rate:10}
+ pricing:{labour_rate:null,parts_markup_percent:null,minimum_attendance_minutes:60,freight_policy:"not_configured",consumables_policy:"not_configured",gst_status:"not_configured",gst_rate:10},
+ payment:{deposit_policy:"not_configured",deposit_value:null,deposit_due:"not_configured",parts_pre_payment:"not_configured",parts_booking_policy:"not_configured",payment_terms_days:null,quote_validity_days:null}
 };
 const isObject=(value:unknown):value is Record<string,any>=>!!value&&typeof value==="object"&&!Array.isArray(value);
 const time=(value:unknown)=>String(value??"");
@@ -13,7 +15,7 @@ export async function GET(){
  const {data,error}=await database().from("business_settings").select("settings,updated_at").eq("business_id",access.membership!.business_id).maybeSingle();
  if(error)return jsonError("Could not load business settings.",500);
  const saved=isObject(data?.settings)?data!.settings:{};
- return Response.json({settings:{...defaults,...saved,booking:{...defaults.booking,...(isObject(saved.booking)?saved.booking:{})},pricing:{...defaults.pricing,...(isObject(saved.pricing)?saved.pricing:{})}},updated_at:data?.updated_at??null});
+ return Response.json({settings:{...defaults,...saved,booking:{...defaults.booking,...(isObject(saved.booking)?saved.booking:{})},pricing:{...defaults.pricing,...(isObject(saved.pricing)?saved.pricing:{})},payment:{...defaults.payment,...(isObject(saved.payment)?saved.payment:{})}},updated_at:data?.updated_at??null});
 }
 export async function PATCH(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
@@ -50,20 +52,23 @@ export async function PATCH(request:Request){
   const labour_rate=optionalAmount(p.labour_rate);
   const parts_markup_percent=optionalAmount(p.parts_markup_percent);
   const minimum_attendance_minutes=number(p.minimum_attendance_minutes,60);
-  const freight_policy=String(p.freight_policy??"at_cost");
-  const consumables_policy=String(p.consumables_policy??"at_cost");
+  const freight_policy=String(p.freight_policy??"not_configured");
+  const consumables_policy=String(p.consumables_policy??"not_configured");
   const gst_status=String(p.gst_status??"not_configured");
   const gst_rate=number(p.gst_rate,10);
   if(labour_rate!==null&&(!Number.isFinite(labour_rate)||labour_rate<0||labour_rate>5000))return jsonError("Enter a valid labour rate.");
   if(parts_markup_percent!==null&&(!Number.isFinite(parts_markup_percent)||parts_markup_percent<0||parts_markup_percent>200))return jsonError("Parts markup must be 0 to 200 percent.");
   if(!Number.isInteger(minimum_attendance_minutes)||minimum_attendance_minutes<0||minimum_attendance_minutes>1440)return jsonError("Minimum attendance must be 0 to 1440 minutes.");
-  if(!["at_cost","quoted","included"].includes(freight_policy)||!["at_cost","quoted","included"].includes(consumables_policy))return jsonError("Select a valid freight and consumables policy.");
+  if(!["not_configured","at_cost","quoted","included"].includes(freight_policy)||!["not_configured","at_cost","quoted","included"].includes(consumables_policy))return jsonError("Select a valid freight and consumables policy.");
   if(!["not_configured","registered","not_registered"].includes(gst_status)||!Number.isFinite(gst_rate)||gst_rate<0||gst_rate>20)return jsonError("Check the GST configuration.");
+  const paymentResult=validateBusinessPolicies(isObject(input.payment)?input.payment:{});
+  if(!paymentResult.valid)return jsonError(paymentResult.errors[0]??"Check payment and parts policies.");
   const db=database();const {data:existing}=await db.from("business_settings").select("settings").eq("business_id",access.membership!.business_id).maybeSingle();
   const previous=isObject(existing?.settings)?existing!.settings:{};
   const settings={...defaults,...previous,operating_hours,accepting_enquiries,booking_notice_hours,customer_message,
    booking:{...defaults.booking,...(isObject(previous.booking)?previous.booking:{}),working_days,opening_time,closing_time,appointment_duration_minutes,travel_buffer_minutes,maximum_advance_days,unavailable_dates,cancellation_notice_hours,cancellation_policy,approval_required},
-   pricing:{...defaults.pricing,...(isObject(previous.pricing)?previous.pricing:{}),labour_rate,parts_markup_percent,minimum_attendance_minutes,freight_policy,consumables_policy,gst_status,gst_rate}};
+   pricing:{...defaults.pricing,...(isObject(previous.pricing)?previous.pricing:{}),labour_rate,parts_markup_percent,minimum_attendance_minutes,freight_policy,consumables_policy,gst_status,gst_rate},
+   payment:{...defaults.payment,...(isObject(previous.payment)?previous.payment:{}),...paymentResult.value}};
   const {error}=await db.from("business_settings").upsert({business_id:access.membership!.business_id,settings,updated_at:new Date().toISOString()},{onConflict:"business_id"});
   if(error)return jsonError("Could not save business settings.",500);
   await db.from("audit_events").insert({business_id:access.membership!.business_id,actor_user_id:access.user!.id,action:"business.settings.updated",entity_type:"business_settings",details:settings});
