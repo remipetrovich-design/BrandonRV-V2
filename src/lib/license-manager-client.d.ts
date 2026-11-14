@@ -5,7 +5,7 @@ export type LicenseValidation = {
  product?: string;
  component?: string;
  installationId?: string;
- authority?: "main" | "fallback";
+ authority?: "unified";
  checkedAt?: number;
  keyFingerprint?: string | null;
  runtime_policy?: Record<string,unknown>;
@@ -34,12 +34,12 @@ export class LicenseError extends Error {
  details:unknown;
  constructor(message:string,options?:{code?:string;status?:number;details?:unknown});
 }
-export const LICENSE_AUTHORITIES:Readonly<{main:string;fallback:string}>;
+export const LICENSE_API_BASE_URL: string;
 export function createLicenseClient(options:LicenseClientOptions):{
  readonly product:string;
  readonly component:string;
  readonly installationId:string;
- detectAuthority(options?:{force?:boolean}):Promise<{mode:"main"|"fallback";baseUrl:string;revision:string|null;checkedAt:number;health:unknown}>;
+ detectAuthority(options?:{force?:boolean}):Promise<{mode:"unified";baseUrl:string;revision:string|null;checkedAt:number;health:unknown}>;
  validate(input:{licenseKey:string;action?:LicenseAction;productVersion?:string;metadata?:Record<string,unknown>;telemetry?:Record<string,unknown>}):Promise<LicenseValidation>;
  activate(input:{licenseKey:string;productVersion?:string;metadata?:Record<string,unknown>}):Promise<LicenseValidation>;
  checkIn(input:{licenseKey:string;productVersion?:string;metadata?:Record<string,unknown>}):Promise<LicenseValidation>;
