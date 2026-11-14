@@ -1,6 +1,6 @@
 # Brandon RV V2
 
-This is the independent V2 development repository. The original `Brandon-RV-` repository and its production deployment are not modified by V2 work. V2 is not connected to Vercel yet. It is intended to use the existing Supabase project `thkxalrsklgademwrrlq` when its environment is configured, so database migrations and data-changing operations must be reviewed carefully and are never applied automatically from this repository.
+This is the independent V2 development repository. The original `Brandon-RV-` repository and its production deployment are not modified by V2 work. V2 uses its own dedicated Supabase project `lciylmfpcefdpsouoqvm` in Tokyo (`ap-northeast-1`), with separate database, authentication, storage, migration history and keys. V2 is not connected to a production Vercel deployment. Never point V2 at the original V1 Supabase project.
 
 Brandon RV is a mobile caravan and motorhome interior repair and accessories business based in Tamworth, NSW. This repository contains the public website, customer portal and shared staff/admin application.
 
@@ -39,7 +39,7 @@ Global role permissions are stored in \`user_roles\` and \`user_role_permissions
 
 ## Supabase migrations
 
-Database migrations are stored in `supabase/migrations/`. **V2 does not include an automatic Supabase migration workflow.** The V2 application is intended to connect to the existing Brandon RV Supabase project, so applying any migration from V2 could affect the database used by the original application. Review migration history and SQL first; do not apply V2 migrations until explicitly approved.
+Database migrations are stored in `supabase/migrations/` and belong exclusively to the dedicated V2 Supabase project `lciylmfpcefdpsouoqvm`. The application runtime does not apply migrations automatically. Review each migration and apply it only to the V2 project through the authorised database workflow. Never apply V2 migrations to V1.
 
 ### GitHub Actions secrets
 
@@ -51,9 +51,9 @@ Add these as repository Actions secrets:
 | `SUPABASE_DB_PASSWORD` | Database password for the target Supabase project |
 | `SUPABASE_PROJECT_ID` | Supabase project reference |
 
-The configured project reference is `thkxalrsklgademwrrlq`.
+The configured project reference is `lciylmfpcefdpsouoqvm`.
 
-**Migration status:** This repository is a code copy only. No V2 migration has been applied to Supabase. The existing database remains shared with the original application.
+**Migration status:** The dedicated V2 project has its own migration history. The inspected baseline records 62 applied migrations (61 repository migrations plus one V2 security patch). No V1 operational data was copied. See `docs/V2-DATABASE-ARCHITECTURE.md` for the inspected database snapshot.
 
 Do not commit access tokens, database passwords, service-role keys or other credentials to this repository.
 
@@ -137,7 +137,7 @@ Customer Enquiries and Quote Requests are ticket-backed records. Customers and s
 
 A preferred appointment time is only a request. Once the customer accepts a quote, staff create exactly one Workcard from that accepted quote. The Workcard goes through senior setup review before management assigns a worker; the worker must accept the assignment before arranging a booking. Management confirms the agreed date, start/end time and service location, then links that confirmed Booking to the existing Workcard. Booking confirmation never creates a second job record. The customer and staff/admin interfaces remain views over the same user identity and Supabase database.
 
-The migration is included as source history only. V2 changes must be checked against the shared Supabase migration history before any database deployment.
+The migration is part of V2 source history. Check the dedicated V2 project's migration history before applying subsequent database changes.
 
 
 ## Owner configuration and launch readiness (Phase 6)
@@ -146,7 +146,7 @@ The owner-facing Business Configuration area supports public business details, d
 
 Services have an explicit approval status: Approved for launch, Conditional, Assessment required, Deferred or Not offered. Only active, published services approved for launch are exposed to customers. Newly created services default to Assessment required and cannot be published until explicitly approved.
 
-The Phase 6 migration adds this service approval gate. It is forward-only. V2 does not apply it automatically; verify whether it is already present in the shared Supabase database before considering any migration action.
+The Phase 6 migration adds this service approval gate. It is forward-only. V2 does not apply it automatically; verify whether it is already present in the dedicated V2 database before considering any migration action.
 
 ## Launch readiness (Phase 7)
 
@@ -161,4 +161,4 @@ Staff with the required permission can create an intake record directly in the a
 
 Pipeline stages: New, Contacted, Awaiting Information, Assessment Required, Quote in Progress, Quote Sent, Awaiting Approval, Approved, Declined, Converted and Closed. Existing enquiry status values are retained for compatibility with the quote and booking workflows; stage changes update the corresponding legacy status and create an immutable stage-history entry.
 
-Staff assignment history and stage history are stored against the same enquiry record. Assignments are business-scoped and limited to active staff in the Brandon RV workspace. The unified enquiry migration is forward-only. V2 does not apply it automatically; verify the shared database migration history before considering any migration action.
+Staff assignment history and stage history are stored against the same enquiry record. Assignments are business-scoped and limited to active staff in the Brandon RV workspace. The unified enquiry migration is forward-only. V2 does not apply it automatically; verify the dedicated V2 database migration history before considering any migration action.
