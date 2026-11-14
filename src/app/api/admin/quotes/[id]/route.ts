@@ -1,5 +1,6 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
 import {sendEmail} from "@/lib/email";
+import {priceDocumentLines} from "@/lib/commercial-money.mjs";
 export const runtime="nodejs";
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
  const access=await authorizePermission("quotes.manage");if(access.response)return access.response;
@@ -51,9 +52,8 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const pricing=(settings?.settings as any)?.pricing??{},gstStatus=String(pricing.gst_status??"not_configured"),configuredRate=Number(pricing.gst_rate??10);
   if(items.some(x=>x.tax_rate>0)&&gstStatus!=="registered")return jsonError("GST cannot be added until the business is confirmed as GST registered.");
   if(gstStatus==="registered"&&items.some(x=>Math.abs(x.tax_rate-configuredRate)>0.001))return jsonError("Use the configured GST rate from Business Settings.");
-  const subtotal=Number(items.reduce((s,x)=>s+x.quantity*x.unit_price,0).toFixed(2));
-  const taxAmount=Number(items.reduce((s,x)=>s+x.quantity*x.unit_price*x.tax_rate/100,0).toFixed(2));
-  const total=Number((subtotal+taxAmount).toFixed(2));
+  const priced=priceDocumentLines(items);
+  const {subtotal,taxAmount,total}=priced;
   const expiry=body.expiryDate===undefined?undefined:(body.expiryDate?String(body.expiryDate):null);
   if(expiry&&(!/^\d{4}-\d{2}-\d{2}$/.test(expiry)||expiry<=new Date().toISOString().slice(0,10)))return jsonError("Quote expiry must be a future date.");
   const patch:any={subtotal,tax_amount:taxAmount,total,notes:String(body.notes??"").trim().slice(0,3000)||null,terms:String(body.terms??"").trim().slice(0,3000)||null,updated_at:new Date().toISOString()};
@@ -62,7 +62,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(updateError)return jsonError("Could not update quote.",500);
   const {error:deleteError}=await db.from("quote_items").delete().eq("quote_id",id);
   if(deleteError){await db.from("quotes").update({subtotal:quote.subtotal,tax_amount:quote.tax_amount,total:quote.total}).eq("id",id).eq("business_id",businessId);return jsonError("Could not replace quote lines. Previous totals were restored.",500);}
-  const rows=items.map(x=>({...x,line_total:Number((x.quantity*x.unit_price).toFixed(2)),quote_id:id}));
+  const rows=priced.lines.map(x=>({...x,quote_id:id}));
   const {error:insertError}=await db.from("quote_items").insert(rows);
   if(insertError){
    await db.from("quote_items").insert(oldItems.map((x:any)=>({description:x.description,quantity:x.quantity,unit_price:x.unit_price,tax_rate:x.tax_rate,line_total:x.line_total,sort_order:x.sort_order,item_type:x.item_type??"parts",service_id:x.service_id??null,quote_id:id})));
