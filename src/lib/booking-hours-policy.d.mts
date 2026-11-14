@@ -1,0 +1,1 @@
+export declare function bookingHoursError(start: Date | string, end: Date | string | null, settings?: { booking?: { opening_time?: string; closing_time?: string; appointment_duration_minutes?: number } }): string | null;\n
