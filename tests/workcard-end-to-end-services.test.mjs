@@ -5,7 +5,9 @@ const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 
 test("database migration supplies every field used by service-linked Workcard entries",async()=>{
  const migration=await read("../supabase/migrations/20261113120519_connect_services_and_workcard_actual_costs.sql");
- for(const field of ["quantity_required","quantity_used","cost_unit_price","part_number","supplier_name","invoiceable","service_id"])assert.ok(migration.includes("add column if not exists "+field),"Missing migration column: "+field);
+ for(const field of ["quantity_required","quantity_used","supplier_name","part_number"])assert.ok(entries.includes(field),"Missing worker update field: "+field);
+ for(const field of ["cost_unit_price","unit_price","tax_rate","line_total"])assert.ok(!entries.includes(field),"Employee work-entry API must not expose financial fields: "+field);
+ assert.ok(entries.includes("Financial and invoice settings can only be managed by authorised business staff."),"Employee updates must reject financial fields.");
  assert.ok(migration.includes("alter table public.quote_items"));
  assert.ok(migration.includes("job_work_entries_service_id_idx"));
 });
@@ -44,7 +46,8 @@ test("accepted quote converts the Jobcard into a pre-populated Workcard without 
 test("staff Workcard API returns prepared quote lines and supports recording actual quantities, costs and parts orders",async()=>{
  const list=await read("../src/app/api/staff/jobs/route.ts");
  const entries=await read("../src/app/api/staff/jobs/[id]/work-entries/route.ts");
- for(const field of ["source_quote_item_id","quantity_required","quantity_used","quantity_ordered","quantity_received","quantity_returned","part_order_status","supplier_order_reference","cost_unit_price","part_number","supplier_name","invoiceable"])assert.ok(list.includes(field),"Missing prepared Workcard field: "+field);
+ for(const field of ["source_quote_item_id","quantity_required","quantity_used","quantity_ordered","quantity_received","quantity_returned","part_order_status","supplier_order_reference","part_number","supplier_name"])assert.ok(list.includes(field),"Missing prepared Workcard field: "+field);
+ for(const field of ["cost_unit_price","unit_price","tax_rate","line_total","invoiceable"])assert.ok(!list.includes(field),"Employee Workcards must not expose financial fields: "+field);
  assert.ok(list.includes("const firstRelation="),"Nested Supabase relations must be normalised to single records before returning Workcards.");
  assert.ok(list.includes("firstRelation(x.quotes)"),"The quote relationship must be returned as one quote record.");
  assert.ok(list.includes("firstRelation(quote?.enquiries)"),"The original Jobcard relationship must be returned as one Jobcard record.");
@@ -68,7 +71,8 @@ test("Workcard part-order fields preserve ordered, received and outstanding quan
 
 test("worker Workcard displays prepared scope and parts, then records actual completion details",async()=>{
  const ui=await read("../src/components/staff-work-orders.tsx");
- for(const token of ["quantity_required","quantity_used","cost_unit_price","part_number","supplier_name","invoiceable","Save prepared item","Save parts order","Parts required before starting","Work completed summary","Submit Workcard & sign off"])assert.ok(ui.includes(token),"Missing worker Workcard field or workflow: "+token);
+ for(const token of ["quantity_required","quantity_used","part_number","supplier_name","Save prepared item","Save parts order","Parts required before starting","Work completed summary","Submit Workcard & sign off"])assert.ok(ui.includes(token),"Missing worker Workcard field or workflow: "+token);
+ for(const token of ["cost_unit_price","Customer charge","invoiceable","line_total"])assert.ok(!ui.includes(token),"Employee UI must not expose financial fields: "+token);
 });
 
 test("Parts needed exposes independent add, edit, update and delete controls with research fields",async()=>{
@@ -156,9 +160,8 @@ test("worker Workcard includes the original Jobcard description, contact context
 test("workers cannot change accepted quantities or customer prices outside an approved variation",async()=>{
  const route=await read("../src/app/api/staff/jobs/[id]/work-entries/route.ts");
  assert.ok(route.includes("const quantityRequired=Number(current.quantity_required)"),"Approved quantities must remain fixed.");
- assert.ok(route.includes("const unitPrice=Number(current.unit_price)"),"Customer prices must remain fixed to the approved quote.");
+ assert.ok(route.includes("Financial and invoice settings can only be managed by authorised business staff."),"Workers must not be able to submit customer prices or invoice controls.");
  assert.ok(route.includes("Actual use exceeds the approved quantity"),"Extra quantity requires an approved variation.");
- assert.ok(route.includes("Only items from an accepted quote or approved variation can be marked invoiceable"),"Unapproved worker-added lines cannot be invoiced.");
  assert.ok(route.includes("quantityUsed>quantityReceived-quantityReturned"),"Workers cannot record use beyond parts actually received and retained.");
 });
 
