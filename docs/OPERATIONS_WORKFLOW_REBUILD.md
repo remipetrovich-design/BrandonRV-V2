@@ -6,6 +6,10 @@ Brandon RV launches as a mobile caravan and motorhome interior repair/accessory 
 
 The public service menu must be driven by approved service records. A vehicle category never authorises a repair. The customer must provide make, model, year, registration/VIN where available, location, symptoms, requested work, site/access details and photos where useful. A preferred visit time is not a booking.
 
+## V2 database isolation
+
+V2 must connect to a new, dedicated Supabase project. It must not reuse V1's database, authentication, storage, API keys or migration history. The V2 repository owns all schema migrations and they are applied only to the new V2 project. Preserve the full V2 feature set; this rebuild is about making all systems work together, not removing modules.
+
 ## Reuse-first data architecture
 
 Do not create parallel Jobcard and Workcard tables if existing records can safely provide the same identity and lifecycle.
