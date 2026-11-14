@@ -1,5 +1,5 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
-import {prepareQuoteLines,validateQuoteTaxPolicy,nextQuoteRevision} from "@/lib/quote-engine.mjs";
+import {prepareQuoteLines,validateQuoteTaxPolicy,nextQuoteRevision,defaultQuoteExpiryDate} from "@/lib/quote-engine.mjs";
 export const runtime="nodejs";
 export async function GET(){
  const access=await authorizePermission("quotes.manage");if(access.response)return access.response;
@@ -89,8 +89,8 @@ export async function POST(request:Request){
   if(serviceIds.length){const {data:linkedServices,error:serviceLookupError}=await db.from("services").select("id").eq("business_id",businessId).eq("is_active",true).in("id",serviceIds);if(serviceLookupError||new Set((linkedServices??[]).map(x=>x.id)).size!==new Set(serviceIds).size)return jsonError("One or more selected service presets are unavailable for this business.");}
   const lines=quotePricing.lines;
   const {subtotal,taxAmount,total}=quotePricing;
-  const quoteNumber="BRV-Q-"+Date.now().toString(36).toUpperCase()+"-"+crypto.randomUUID().slice(0,4).toUpperCase();
-  const {data:quote,error}=await db.from("quotes").insert({business_id:businessId,customer_id:customerId,user_id:quoteUserId,enquiry_id:enquiry?.id??null,quote_number:quoteNumber,revision_number:revisionNumber,supersedes_quote_id:supersedesQuoteId,prepared_by:access.user!.id,senior_approval_status:"pending",status:"draft",expiry_date:expiryDate,subtotal,tax_amount:taxAmount,total,notes:notes||null,terms:terms||null}).select("id,quote_number,total,revision_number,enquiry_id,customer_id").single();
+  let effectiveExpiryDate: string | null = expiryDate;\n  try{effectiveExpiryDate=defaultQuoteExpiryDate(configured.payment&&typeof configured.payment==="object"?configured.payment.quote_validity_days:null,new Date().toISOString().slice(0,10),expiryDate);}catch(error){return jsonError(error instanceof Error?error.message:"Invalid quote validity setting.");}\n  const quoteNumber="BRV-Q-"+Date.now().toString(36).toUpperCase()+"-"+crypto.randomUUID().slice(0,4).toUpperCase();
+  const {data:quote,error}=await db.from("quotes").insert({business_id:businessId,customer_id:customerId,user_id:quoteUserId,enquiry_id:enquiry?.id??null,quote_number:quoteNumber,revision_number:revisionNumber,supersedes_quote_id:supersedesQuoteId,prepared_by:access.user!.id,senior_approval_status:"pending",status:"draft",expiry_date:effectiveExpiryDate,subtotal,tax_amount:taxAmount,total,notes:notes||null,terms:terms||null}).select("id,quote_number,total,revision_number,enquiry_id,customer_id").single();
   if(error||!quote){console.error("Quote insert failed",{error,enquiryId,customerId});return jsonError("Could not create quote.",500);}
   const {error:itemError}=await db.from("quote_items").insert(lines.map(item=>({...item,quote_id:quote.id})));
   if(itemError){console.error("Quote line insert failed",itemError);await db.from("quotes").delete().eq("id",quote.id).eq("business_id",businessId);return jsonError("Could not save quote lines. The draft was rolled back.",500);}
