@@ -2,10 +2,17 @@
 
 This is the active V2 implementation plan. Work only in `BrandonRV-V2`. Do not inspect or modify V1. Preserve the existing UI and the two portal areas: (1) Main Website with Customer Portal, and (2) Employee / Business Portal.
 
+## Initial operating model
+- Initial internal operating team: Chris (business owner) and Lucas (technical/developer support). Customer accounts are not limited to two.
+- Keep one canonical identity in `public.users`; customers and staff are compatibility views/roles on that identity, not separate login systems.
+- Keep the ability to add staff later, but defer payroll, leave, onboarding, employee assets and complex HR workflows from launch-critical scope.
+- Supplier accounts and purchasing remain future scope. Do not make supplier management a launch dependency.
+
 ## Infrastructure and operating boundaries
 - V2 repository: `remipetrovich-design/BrandonRV-V2`, branch `main`.
 - Supabase project: `Brandon RV` (`thkxalrsklgademwrrlq`). It is currently shared with V1.
-- The existing database has a populated `public` schema with business, customer, quote, booking, job/Workcard, invoice, payment, workforce, permission, settings, and audit tables. `public.audit_events` already exists and has RLS enabled.
+- The existing database has 57 base tables in `public`; all reported RLS enabled. `public.users` is the canonical identity table, `customers` and `staff` are views, `user_roles`/`user_role_permissions`/`user_permission_grants` are the active application authorization model, and `public.audit_events` already exists. See [V2 Database Architecture](./V2-DATABASE-ARCHITECTURE.md) for the inspected inventory and relationship map.
+- Supabase reports 60 migrations applied. The repository contains those 60 migration files plus `20261115090000_supervisor_approval_authority.sql`, which was not recorded as applied at inspection.
 - Keep V2 changes isolated by naming and scoping any new V2-specific database objects. Review RLS, grants, foreign keys, and impact on V1 before proposing schema changes.
 - Do not apply Supabase migrations or alter live schema without explicit approval. Migration files may be prepared in the V2 repository for review.
 - Do not deploy to production unless explicitly requested.
@@ -31,4 +38,4 @@ This is the active V2 implementation plan. Work only in `BrandonRV-V2`. Do not i
 ## Current implementation notes
 - Preliminary quote and Workcard engines, booking rules, business-policy configuration, and a shared audit table already exist. These are foundations, not a declaration that Stages 1–3 are complete.
 - The unified License Manager API base is hardcoded as `https://incendiarynetworks.cc/api/v1`; the live endpoint contract still needs independent verification.
-- Next work: complete Stage 1 by reviewing and standardising validation, permission checks, audit writes, atomic database operations and idempotent request handling. Reuse existing tables and RPCs where suitable; only add a V2-scoped table if inspection proves it is needed.
+- Stage 1 has started with a verified database inventory and a documented canonical user/staff model. Next: standardise validation, permission checks, audit writes, atomic database operations and idempotent request handling. Reuse existing tables and RPCs where suitable; only add a V2-scoped table if inspection proves it is needed. Do not mass-change the two existing user records until their identities and intended role assignments have been verified.
