@@ -131,7 +131,9 @@ test("Workcard variations also retain service links through customer acceptance"
 
 test("final invoice uses actual Workcard entries, never the original quote total",async()=>{
  const invoice=await read("../src/app/api/admin/invoices/route.ts");
- for(const field of ['from("job_work_entries")','eq("invoiceable",true)',"quantity_used","invoice.created_from_actual_work"])assert.ok(invoice.includes(field));
+ const migration=await read("../supabase/migrations/20261115150000_create_invoice_from_approved_workcard_rpc.sql");
+ for(const field of ['from("job_work_entries")','eq("invoiceable",true)',"quantity_used",'rpc("create_invoice_from_approved_workcard"',"source_entry_id"])assert.ok(invoice.includes(field));
+ assert.ok(migration.includes("'invoice.draft_created_from_actual_work'"));
  assert.ok(!invoice.includes("quote.subtotal"));
  assert.ok(!invoice.includes("quote.total"));
 });
