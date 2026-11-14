@@ -91,7 +91,7 @@ See `.env.example` for the supported configuration:
 
 ## Transactional email and staff invitations
 
-The production website origin is **https://brandon-rv.vercel.app**. Set `NEXT_PUBLIC_APP_URL` to this exact origin in the Vercel production environment. Account verification, password reset and staff invitation links use this configured origin, with the production URL as the safe fallback; they must not be generated from an API request host or preview deployment.
+V2 uses `NEXT_PUBLIC_APP_URL` for account verification, password reset and staff invitation links when configured. If it is blank, links use the current request origin. Set it to the V2 production URL when V2 is connected to Vercel; do not set it to the original Brandon RV production URL.
 
 Transactional mail is sent through the existing OrbitFS Mail integration. Configure `ORBITFS_MAIL_URL` and `BRANDONSRV_MAIL_API_KEY` in the Vercel environment. The email-template admin page is available under Admin → Business configuration → Email templates and requires `business.settings.manage`.
 
@@ -103,7 +103,7 @@ The shared email renderer applies Brandon RV branding to automated and manually-
 
 Staff invitations are created by authorised staff administrators from People/Staff management. Each invitation is single-use, expires after seven days and is tied to the invited email address and selected staff role. The invitation email uses the managed `staff_invitation` template and links to:
 
-`https://brandon-rv.vercel.app/portal/accept-staff-invitation?token=...`
+`[V2_APP_ORIGIN]/portal/accept-staff-invitation?token=...`
 
 If the invitee already has an active customer account, they sign in with that account and accept the invitation; staff access is added to the existing identity without replacing customer records or history. If they do not have an account, they register as a customer using the invited email address. Email verification, when enabled, carries the invitation token forward; after verification they return to the invitation acceptance page. The invitation is validated again at acceptance, including email match, expiry, revocation and single-use status. The new account remains a customer account with staff access added as an employment/role extension.
 
