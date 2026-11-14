@@ -59,10 +59,11 @@ test("service presets create service or labour quote lines rather than parts lin
  assert.match(editor,/itemType:"labour"/);
  assert.match(editor,/itemType:e.target.value/);
  const jobs=await read("../src/app/api/admin/jobs/route.ts");
- const engine=await read("../src/lib/workcard-engine.mjs");
- assert.match(jobs,/buildPlannedWorkEntries/);
- assert.match(engine,/entry_type: itemType/);
- assert.match(engine,/\["labour", "parts"\]/);
+ const migration=await read("../supabase/migrations/20261115110000_create_workcard_from_accepted_quote_rpc.sql");
+ assert.match(jobs,/rpc\("create_workcard_from_accepted_quote"/);
+ assert.match(migration,/INSERT INTO public.job_work_entries/);
+ assert.match(migration,/qi\.item_type/);
+ assert.match(migration,/qi\.service_id/);
 });
 
 test("Jobcard pipeline includes procurement, booking, work, quality, invoice and payment stages",async()=>{
