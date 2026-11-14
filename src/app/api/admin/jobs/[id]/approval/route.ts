@@ -1,4 +1,4 @@
-import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
+import {authorizePermission,database,jsonError,sameOrigin,userHasPermission} from "@/lib/auth";
 export const runtime="nodejs";
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
  const access=await authorizePermission("jobs.manage");if(access.response)return access.response;
@@ -7,11 +7,12 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  if(error||!job)return jsonError("Workcard not found.",404);
  const {data:photos}=await database().from("job_attachments").select("id,file_name,mime_type,storage_path,customer_visible,created_at").eq("business_id",access.membership!.business_id).eq("job_id",id).order("created_at",{ascending:false});
  const attachments=await Promise.all((photos??[]).map(async file=>{const {data:signed}=await database().storage.from("brandon-rv-private").createSignedUrl(file.storage_path,300);return {...file,url:signed?.signedUrl??null};}));
- return Response.json({job,attachments,workerSignedOffByCurrentUser:job.worker_signed_off_by===access.user!.id});
+ const canApprove=await userHasPermission(access.user!.id,"jobs.approve");
+ return Response.json({job,attachments,workerSignedOffByCurrentUser:job.worker_signed_off_by===access.user!.id,canApprove});
 }
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
- const access=await authorizePermission("jobs.manage");if(access.response)return access.response;
+ const access=await authorizePermission("jobs.approve");if(access.response)return access.response;
  try{
   const {id}=await params,body=await request.json();
   const decision=String(body.decision??""),note=String(body.note??"").trim().slice(0,2000);
