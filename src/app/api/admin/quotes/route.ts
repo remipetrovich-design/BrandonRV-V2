@@ -1,4 +1,5 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
+import {priceDocumentLines} from "@/lib/commercial-money.mjs";
 export const runtime="nodejs";
 export async function GET(){
  const access=await authorizePermission("quotes.manage");if(access.response)return access.response;
@@ -90,10 +91,9 @@ export async function POST(request:Request){
   const serviceIds=items.map(x=>x.serviceId).filter(Boolean) as string[];
   if(serviceIds.length){const {data:linkedServices,error:serviceLookupError}=await db.from("services").select("id").eq("business_id",businessId).eq("is_active",true).in("id",serviceIds);if(serviceLookupError||new Set((linkedServices??[]).map(x=>x.id)).size!==new Set(serviceIds).size)return jsonError("One or more selected service presets are unavailable for this business.");}
   if(items.some(item=>item.serviceId&&item.itemType!=="labour"))return jsonError("A service preset must be quoted as labour/service, not as a parts line.");
-  const lines:{description:string;quantity:number;unit_price:number;tax_rate:number;line_total:number;sort_order:number;item_type:string;service_id:string|null}[]=items.map((item,index:number)=>({description:item.description,quantity:item.quantity,unit_price:item.unitPrice,tax_rate:taxRate,line_total:Number((item.quantity*item.unitPrice).toFixed(2)),sort_order:index,item_type:item.itemType,service_id:item.serviceId}));
-  const subtotal=Number(lines.reduce((sum:number,item:{line_total:number})=>sum+item.line_total,0).toFixed(2));
-  const taxAmount=Number((lines.reduce((sum:number,item:{line_total:number;tax_rate:number})=>sum+item.line_total*item.tax_rate/100,0)).toFixed(2));
-  const total=Number((subtotal+taxAmount).toFixed(2));
+  const priced=priceDocumentLines(items.map((item,index:number)=>({description:item.description,quantity:item.quantity,unit_price:item.unitPrice,tax_rate:taxRate,sort_order:index,item_type:item.itemType,service_id:item.serviceId})));
+  const lines=priced.lines;
+  const {subtotal,taxAmount,total}=priced;
   const quoteNumber="BRV-Q-"+Date.now().toString(36).toUpperCase()+"-"+crypto.randomUUID().slice(0,4).toUpperCase();
   const {data:quote,error}=await db.from("quotes").insert({business_id:businessId,customer_id:customerId,user_id:quoteUserId,enquiry_id:enquiry?.id??null,quote_number:quoteNumber,revision_number:revisionNumber,supersedes_quote_id:supersedesQuoteId,prepared_by:access.user!.id,senior_approval_status:"pending",status:"draft",expiry_date:expiryDate,subtotal,tax_amount:taxAmount,total,notes:notes||null,terms:terms||null}).select("id,quote_number,total,revision_number,enquiry_id,customer_id").single();
   if(error||!quote){console.error("Quote insert failed",{error,enquiryId,customerId});return jsonError("Could not create quote.",500);}
