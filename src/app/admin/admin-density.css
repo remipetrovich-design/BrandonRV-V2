@@ -570,7 +570,7 @@
    warm Brandon RV identity; the authenticated workspace deliberately stays navy/blue. */
 .brv-admin-frame {
   --ink: #10283F;
-  --muted: #65788B;
+  --muted: #5D6F82;
   --paper: #F5F7F8;
   --white: #FFFFFF;
   --green: #1767AD;
@@ -584,7 +584,7 @@
   --brv-blue-light: #EAF3FA;
   --brv-surface: #FFFFFF;
   --brv-border: #DBE4EC;
-  --brv-muted: #65788B;
+  --brv-muted: #5D6F82;
 }
 .brv-admin-frame .brv-admin-roles .brv-admin-page-inner {
   width: 100%;
@@ -602,3 +602,14 @@
 @media (max-width:640px) {
   .brv-admin-frame .brv-admin-roles .auth-form { grid-template-columns:minmax(0,1fr); }
 }
+
+/* Shared admin page width: one workspace content column, without per-page inline layout styles. */
+.brv-admin-frame .portal-shell.brv-admin-page-inner {
+  display:block;
+  width:100%;
+  max-width:1180px !important;
+  margin:0;
+  padding:8px 0 28px;
+}
+.brv-admin-frame .portal-shell.brv-admin-page-inner--medium { max-width:1100px !important; }
+.brv-admin-frame .portal-shell.brv-admin-page-inner--narrow { max-width:1000px !important; }
