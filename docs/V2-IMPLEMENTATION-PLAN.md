@@ -10,10 +10,11 @@ This is the active V2 implementation plan. Work only in `BrandonRV-V2`. Do not i
 
 ## Infrastructure and operating boundaries
 - V2 repository: `remipetrovich-design/BrandonRV-V2`, branch `main`.
-- Supabase project: `Brandon RV` (`thkxalrsklgademwrrlq`). It is currently shared with V1.
-- The old shared Supabase project was inspected only to understand the existing V2 implementation. V2 is now required to use a separate Supabase project; V1's database, auth, storage and keys must remain untouched. See [V2 Database Architecture](./V2-DATABASE-ARCHITECTURE.md) for the intended relationship map and migration boundary. The new V2 project must receive a clean schema from this repository's migrations.
-- Keep V2 changes isolated by naming and scoping any new V2-specific database objects. Review RLS, grants, foreign keys, and impact on V1 before proposing schema changes.
-- Do not apply Supabase migrations or alter live schema without explicit approval. Migration files may be prepared in the V2 repository for review.
+- Supabase project: `Brandon-RV-V2` (`lciylmfpcefdpsouoqvm`), URL `https://lciylmfpcefdpsouoqvm.supabase.co`, region `ap-northeast-1` (Tokyo).
+- V2 now has its own database, migration history, auth/storage resources and keys. V1 (`thkxalrsklgademwrrlq`) remains separate and must not be inspected or modified.
+- The 61 repository migrations and one additional V2 security patch have been applied to the clean V2 project. No V1 data was copied. See [V2 Database Architecture](./V2-DATABASE-ARCHITECTURE.md) for the relationship map and migration boundary.
+- All future V2 schema changes must be committed to this repository and applied only to `lciylmfpcefdpsouoqvm`.
+- The user has explicitly authorised provisioning the V2 database and applying its schema. Continue applying reviewed migrations only to the dedicated V2 project; never to V1.
 - Do not deploy to production unless explicitly requested.
 - Stage 8 (full testing/hardening) is not authorised yet. Normal build, typecheck, and focused regression tests remain part of development and are not Stage 8.
 
@@ -37,4 +38,4 @@ This is the active V2 implementation plan. Work only in `BrandonRV-V2`. Do not i
 ## Current implementation notes
 - Preliminary quote and Workcard engines, booking rules, business-policy configuration, and a shared audit table already exist. These are foundations, not a declaration that Stages 1–3 are complete.
 - The unified License Manager API base is hardcoded as `https://incendiarynetworks.cc/api/v1`; the live endpoint contract still needs independent verification.
-- Stage 1 progress: documented the canonical user/staff model and V2 data architecture; V2 database isolation from V1 is now a required foundation step; added shared API validation helpers for UUIDs, calendar dates, plain objects, trimmed strings and finite numbers; adopted shared UUID/date validation in staff, quote, Workcard and customer APIs; corrected the audit-event persistence test to assert the wrapped database error through `cause`. CI run #112 passed tests, typecheck and build on commit `591e0b1`; later route refactors are running through CI separately. No schema migration was needed for this slice, and no live schema was changed. Next: standardise permission checks, audit writes, atomic multi-record operations and idempotent request handling. Reuse existing tables and RPCs where suitable; only add a V2-scoped table if inspection proves it is needed.
+- Stage 1 progress: shared API validation helpers, audit event helpers, business policy rules and domain engines are in the repository. The new V2 Supabase project is active and isolated from V1. All 61 existing repository migrations have been applied, plus a security patch restricting `revise_job_variation_quote` to `service_role`. The new database has 57 public base tables, all RLS-enabled, a private file bucket and the Brandon RV prelaunch workspace seed. No V1 operational records were copied. The mail delivery system remains paused. Next: finish connecting the application runtime to the new V2 URL/keys, then complete the enquiry → quote → Workcard → work details → approval → invoice/payment transaction paths. Stage 8 remains unauthorised.
