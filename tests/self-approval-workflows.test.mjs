@@ -13,7 +13,7 @@ test("authorised staff can approve quotes and completed Workcards they prepared 
  assert.doesNotMatch(migration,/prepared_by\s*=\s*p_actor_user_id/);
  assert.doesNotMatch(migration,/worker_signed_off_by\s*=\s*p_actor_user_id/);
  assert.match(quoteRoute,/authorizePermission\("quotes\.approve"\)/);
- assert.match(workcardRoute,/authorizePermission\("jobs\.manage"\)/);
+ assert.match(workcardRoute,/authorizePermission\("jobs\.approve"\)/);
  assert.doesNotMatch(workcardUi,/cannot approve their own work/);
  assert.match(workcardUi,/Approve Workcard/);
 });
@@ -23,5 +23,5 @@ test("Workcard setup review remains available to authorised managers without a c
  const route=await source("../src/app/api/admin/jobs/[id]/workcard-review/route.ts");
  assert.match(migration,/CREATE OR REPLACE FUNCTION public\.review_workcard_setup/);
  assert.doesNotMatch(migration,/created_by|prepared_by|reviewed_by\s*=\s*p_actor_user_id/);
- assert.match(route,/authorizePermission\("jobs\.manage"\)/);
+ assert.match(route,/authorizePermission\("jobs\.approve"\)/);
 });
