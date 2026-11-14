@@ -13,8 +13,8 @@ export async function GET(){
  ]);
  if(enquiryError||quoteError||serviceError||customerError)return jsonError("Could not load quote records, customers or service presets.",500);
  const settings=businessSettings?.settings&&typeof businessSettings.settings==="object"?businessSettings.settings as Record<string,any>:{};
- const pricing=settings.pricing&&typeof settings.pricing==="object"?settings.pricing:{};
- return Response.json({enquiries:enquiries??[],quotes:quotes??[],customers:customers??[],pricing:{gst_status:pricing.gst_status??"not_configured",gst_rate:Number(pricing.gst_rate??10),labour_rate:pricing.labour_rate??null,parts_markup_percent:pricing.parts_markup_percent??null},services:services??[]});
+ const pricing=settings.pricing&&typeof settings.pricing==="object"?settings.pricing:{};\n const payment=settings.payment&&typeof settings.payment==="object"?settings.payment:{};
+ return Response.json({enquiries:enquiries??[],quotes:quotes??[],customers:customers??[],pricing:{gst_status:pricing.gst_status??"not_configured",gst_rate:Number(pricing.gst_rate??10),labour_rate:pricing.labour_rate??null,parts_markup_percent:pricing.parts_markup_percent??null},payment:{quote_validity_days:payment.quote_validity_days??null},services:services??[]});
 }
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
