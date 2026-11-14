@@ -27,8 +27,8 @@ test("saved business policies merge without erasing unrelated existing settings"
 test("deposit policies require a valid value only when fixed or percentage is selected",()=>{
   assert.equal(validateBusinessPolicies({deposit_policy:"not_configured",deposit_value:null}).valid,true);
   assert.equal(validateBusinessPolicies({deposit_policy:"none",deposit_value:null}).valid,true);
-  assert.equal(validateBusinessPolicies({deposit_policy:"percentage",deposit_value:25}).valid,true);
-  assert.equal(validateBusinessPolicies({deposit_policy:"fixed",deposit_value:150}).valid,true);
+  assert.equal(validateBusinessPolicies({deposit_policy:"percentage",deposit_value:25,deposit_due:"before_parts_order"}).valid,true);
+  assert.equal(validateBusinessPolicies({deposit_policy:"fixed",deposit_value:150,deposit_due:"before_parts_order"}).valid,true);
   assert.equal(validateBusinessPolicies({deposit_policy:"percentage",deposit_value:null}).valid,false);
   assert.equal(validateBusinessPolicies({deposit_policy:"percentage",deposit_value:101}).valid,false);
   assert.equal(validateBusinessPolicies({deposit_policy:"fixed",deposit_value:-1}).valid,false);
