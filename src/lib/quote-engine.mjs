@@ -77,3 +77,18 @@ export function nextQuoteRevision(prior, { enquiryId, customerId }) {
   }
   return revision + 1;
 }
+
+export function defaultQuoteExpiryDate(validityDays, today = new Date().toISOString().slice(0, 10), explicitDate = null) {
+  if (explicitDate) return String(explicitDate);
+  if (validityDays === null || validityDays === undefined || validityDays === "") return null;
+  const days = Number(validityDays);
+  if (!Number.isInteger(days) || days < 1 || days > 365) {
+    throw new RangeError("Quote validity must be a whole number between 1 and 365 days.");
+  }
+  const base = new Date(String(today) + "T00:00:00.000Z");
+  if (!Number.isFinite(base.getTime()) || base.toISOString().slice(0, 10) !== String(today)) {
+    throw new RangeError("The quote issue date must be a valid calendar date.");
+  }
+  base.setUTCDate(base.getUTCDate() + days);
+  return base.toISOString().slice(0, 10);
+}
