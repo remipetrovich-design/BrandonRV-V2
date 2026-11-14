@@ -28,7 +28,19 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   for(const field of ["scheduled_start","scheduled_end"] as const){if(body[field]!==undefined){const value=body[field]?new Date(String(body[field])):null;if(value&&!Number.isFinite(value.getTime()))return jsonError("Enter a valid Workcard schedule.");patch[field]=value?.toISOString()??null;}}
   if(patch.scheduled_start&&patch.scheduled_end&&new Date(String(patch.scheduled_end))<=new Date(String(patch.scheduled_start)))return jsonError("Workcard end must be after its start.");
   if(Object.keys(patch).length===0)return jsonError("No Workcard changes supplied.");
-  const {data:result,error}=await db.rpc("update_workcard_with_jobcard_stage",{\n   p_business_id:businessId,\n   p_job_id:id,\n   p_actor_user_id:access.user!.id,\n   p_patch:patch\n  });\n  if(error){\n   console.error("Transactional Workcard update failed",error);\n   const status=error.code==="P0002"?404:error.code==="P0001"?409:error.code==="22023"?400:500;\n   return jsonError(status===404?"Workcard not found.":status===409?error.message||"This Workcard update is not permitted.":status===400?"Workcard update values are invalid.":"Could not update Workcard.",status);\n  }\n  if(!result?.job)return jsonError("Workcard update returned an incomplete result.",500);\n  return Response.json({job:result.job});
+  const {data:result,error}=await db.rpc("update_workcard_with_jobcard_stage",{
+   p_business_id:businessId,
+   p_job_id:id,
+   p_actor_user_id:access.user!.id,
+   p_patch:patch
+  });
+  if(error){
+   console.error("Transactional Workcard update failed",error);
+   const status=error.code==="P0002"?404:error.code==="P0001"?409:error.code==="22023"?400:500;
+   return jsonError(status===404?"Workcard not found.":status===409?error.message||"This Workcard update is not permitted.":status===400?"Workcard update values are invalid.":"Could not update Workcard.",status);
+  }
+  if(!result?.job)return jsonError("Workcard update returned an incomplete result.",500);
+  return Response.json({job:result.job});
  }catch{return jsonError("Could not update Workcard.",500);}
 }
 export async function DELETE(request:Request,{params}:{params:Promise<{id:string}>}){
