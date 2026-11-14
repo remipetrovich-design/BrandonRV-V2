@@ -14,7 +14,7 @@ export class LicenseError extends Error {
 const object = value => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 const policyOf = result => object(result && (result.runtime_policy || result.runtimePolicy));
 const transient = error => {
-  if (error.code === 'LICENSING_AUTHORITY_DISABLED' || error.code === 'SOURCE_MODE_STANDBY') return false;
+  if (error.code === 'LICENSING_AUTHORITY_DISABLED') return false;
   return !error.status || [408, 425, 429].includes(error.status) || error.status >= 500;
 };
 const fingerprintKey = async key => {
@@ -119,15 +119,8 @@ export function createLicenseClient(options = {}) {
       metadata: object(input.metadata), telemetry: object(input.telemetry)
     };
     try {
-      let selected = await detectAuthority({ force: true });
-      let result;
-      try {
-        result = await request(selected.baseUrl + '/license/validate', { method: 'POST', body: JSON.stringify(payload) });
-      } catch (error) {
-        if (error.code !== 'SOURCE_MODE_STANDBY') throw error;
-        selected = await detectAuthority({ force: true });
-        result = await request(selected.baseUrl + '/license/validate', { method: 'POST', body: JSON.stringify(payload) });
-      }
+      const selected = await detectAuthority({ force: true });
+      const result = await request(selected.baseUrl + '/license/validate', { method: 'POST', body: JSON.stringify(payload) });
       const normalized = { ...result, checkedAt: Date.now(), authority: selected.mode, installationId, product, keyFingerprint };
       if (result.valid !== true) throw new LicenseError(result.code || 'LICENSE_INVALID', {
         code: result.code || 'LICENSE_INVALID', status: 403, details: normalized
