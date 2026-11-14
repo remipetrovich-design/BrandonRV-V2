@@ -107,8 +107,10 @@ test("quote creation and revision editing both preserve service links and custom
  const detail=await read("../src/app/api/admin/quotes/[id]/route.ts");
  for(const field of ["Service preset","Custom service","unitPrice"])assert.ok(create.includes(field));
  for(const field of ["service_id","item_type","Custom line","serviceId:x.service_id"])assert.ok(edit.includes(field));
- assert.ok(api.includes("service_id:item.serviceId"));
- assert.ok(detail.includes("service_id"));
+ const engine=await read("../src/lib/quote-engine.mjs");
+ assert.ok(api.includes("prepareQuoteLines"));
+ assert.ok(engine.includes("service_id: serviceId ? String(serviceId) : null"));
+ assert.ok(detail.includes("prepareQuoteLines"));
 });
 
 test("Workcard variations also retain service links through customer acceptance",async()=>{
