@@ -74,3 +74,15 @@ export function getEnquiryStageForWorkcardStatus(status) {
   };
   return stages[String(status)] ?? null;
 }
+
+export function canTransitionWorkcardStatus(currentStatus, nextStatus) {
+  const transitions = {
+    pending: ["pending", "scheduled", "waiting_parts", "in_progress", "cancelled"],
+    scheduled: ["scheduled", "waiting_parts", "in_progress", "cancelled"],
+    waiting_parts: ["waiting_parts", "scheduled", "in_progress", "cancelled"],
+    in_progress: ["in_progress", "waiting_parts", "completed", "cancelled"],
+    completed: ["completed"],
+    cancelled: ["cancelled"]
+  };
+  return transitions[String(currentStatus)]?.includes(String(nextStatus)) ?? false;
+}
