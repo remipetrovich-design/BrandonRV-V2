@@ -4,9 +4,9 @@
 Brandon RV is a mobile caravan and motorhome interior repair and accessory service based in Tamworth NSW. The public brand earns trust and gathers accurate job details. The authenticated workspace helps a small team assess, quote, schedule, execute, approve and close work without a workshop-style enterprise interface.
 
 ## Two visual registers, one system
-The public website retains the established Brandon RV identity: warm neutral surfaces, deep green, orange accent and editorial serif display typography. Do not recolour the public brand to match the admin panel.
+The public website and customer portal retain the established Brandon RV identity: warm neutral surfaces, deep green, orange accent and editorial serif display typography. Do not recolour the public brand to match the admin panel. Public palette tokens are defined at the root in `brv-refresh.css`; the authenticated workspace overrides them only within `.brv-admin-frame`.
 
-The authenticated admin workspace uses a practical workshop-office register: navy structure, restrained blue actions, white work surfaces and cool neutral page backgrounds. The customer portal retains the public brand palette but follows the same spacing, typography hierarchy, controls and interaction rules. Staff tools use the compact operational register, with touch-safe actions for on-site use.
+The authenticated admin workspace uses a practical workshop-office register: navy structure, restrained blue actions, white work surfaces and cool neutral page backgrounds. The customer portal retains the public brand palette but follows the same spacing, typography hierarchy, controls and interaction rules. Contact details in the portal must come from business configuration or link to the contact form; never hardcode a phone number. Staff tools use the compact operational register, with touch-safe actions for on-site use.
 
 ## Operational palette
 - Navy: `#10283F` — admin navigation, headings and strong surfaces.
