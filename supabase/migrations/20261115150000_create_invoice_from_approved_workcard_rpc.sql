@@ -90,8 +90,7 @@ BEGIN
     FROM public.job_work_entries e
    WHERE e.business_id=p_business_id AND e.job_id=p_job_id
      AND e.invoiceable=true AND e.quantity_used>0
-     AND e.entry_type IN ('labour','parts')
-   FOR UPDATE;
+     AND e.entry_type IN ('labour','parts');
 
   FOR v_item IN SELECT value FROM pg_catalog.jsonb_array_elements(p_items)
   LOOP
