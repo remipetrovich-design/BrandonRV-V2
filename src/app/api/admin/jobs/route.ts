@@ -1,5 +1,4 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
-import {buildPlannedWorkEntries,getInitialWorkcardState} from "@/lib/workcard-engine.mjs";
 export const runtime="nodejs";
 
 export async function GET(request:Request){
@@ -27,58 +26,25 @@ export async function POST(request:Request){
  try{
   const body=await request.json(),quoteId=String(body.quoteId??"");
   if(!/^[0-9a-f-]{36}$/i.test(quoteId))return jsonError("Select a customer-accepted quote.");
-  const db=database(),businessId=access.membership!.business_id;
-  const {data:quote,error:quoteError}=await db.from("quotes").select("id,business_id,customer_id,user_id,enquiry_id,quote_number,status,quote_items(id,description,quantity,unit_price,tax_rate,item_type,service_id)").eq("id",quoteId).eq("business_id",businessId).eq("quote_kind","standard").eq("status","accepted").maybeSingle();
-  if(quoteError||!quote||!quote.enquiry_id)return jsonError("Only a customer-accepted quote can create a Workcard.",409);
-  const {data:enquiry}=await db.from("enquiries").select("id,request_type,request_number,customer_id,user_id,contact_name,email,description,vehicle_id,archived_at,stage,status").eq("id",quote.enquiry_id).eq("business_id",businessId).maybeSingle();
-  if(!enquiry||enquiry.request_type!=="quote_request"||enquiry.archived_at)return jsonError("The linked Quote Request Jobcard is no longer active.",409);
-  const {data:existing}=await db.from("jobs").select("id,job_number,title,status,senior_approval_status,quote_id").eq("business_id",businessId).eq("quote_id",quote.id).maybeSingle();
-  if(existing)return Response.json({job:existing,alreadyCreated:true});
-  const title=String(body.title??("Work for "+quote.quote_number)).trim().slice(0,180);
-  const defaultScope=(quote.quote_items??[]).map((item:any)=>item.description).join("\n")||enquiry.description;
-  const scope=String(body.scope??defaultScope).trim().slice(0,5000);
-  if(title.length<3||scope.length<3)return jsonError("Enter a Workcard title and approved scope of work.");
-  // jobs.job_number is NOT NULL and has no database default. Generate it here.
+  const title=String(body.title??"").trim().slice(0,180)||null;
+  const scope=String(body.scope??"").trim().slice(0,5000)||null;
   const jobNumber="BRV-WC-"+new Date().toISOString().slice(2,10).replaceAll("-","")+"-"+crypto.randomUUID().replaceAll("-","").slice(0,8).toUpperCase();
-  const {data:linkedAppointment,error:appointmentLookupError}=await db.from("appointments").select("id,status,starts_at,ends_at").eq("business_id",businessId).eq("quote_id",quote.id).in("status",["requested","confirmed","rescheduled"]).order("created_at",{ascending:false}).limit(1).maybeSingle();
-  if(appointmentLookupError)return jsonError("Could not link the existing customer booking to the new Workcard.",500);
-  const initialState=getInitialWorkcardState(quote.quote_items??[],linkedAppointment?.status??null);
-  const jobId=crypto.randomUUID();
-  const plannedEntries=buildPlannedWorkEntries(quote.quote_items??[],{businessId,jobId,createdBy:access.user!.id});
-  const {data:job,error}=await db.from("jobs").insert({
-   id:jobId,business_id:businessId,customer_id:quote.customer_id??enquiry.customer_id??null,
-   user_id:quote.user_id??enquiry.user_id??null,guest_name:enquiry.contact_name,guest_email:enquiry.email,
-   quote_id:quote.id,appointment_id:linkedAppointment?.id??null,scheduled_start:initialState.bookingConfirmed?linkedAppointment?.starts_at??null:null,scheduled_end:initialState.bookingConfirmed?linkedAppointment?.ends_at??null:null,job_number:jobNumber,title,scope_of_work:scope,status:initialState.status,senior_approval_status:"not_submitted",workcard_review_status:"pending_review"
-  }).select("id,job_number,title,status,senior_approval_status,quote_id").single();
-  if(error||!job){
-   console.error("Workcard insert failed",error);
-   if(error?.code==="23505"){
-    const {data:duplicate}=await db.from("jobs").select("id,job_number,title,status,senior_approval_status,quote_id").eq("business_id",businessId).eq("quote_id",quote.id).maybeSingle();
-    if(duplicate)return Response.json({job:duplicate,alreadyCreated:true});
-   }
-   return jsonError("Could not create Workcard.",500);
+  const db=database(),businessId=access.membership!.business_id;
+  const {data,error}=await db.rpc("create_workcard_from_accepted_quote",{
+   p_business_id:businessId,
+   p_quote_id:quoteId,
+   p_actor_user_id:access.user!.id,
+   p_job_number:jobNumber,
+   p_title:title,
+   p_scope:scope
+  });
+  if(error){
+   console.error("Atomic Workcard conversion failed",error);
+   const status=error.code==="P0001"?409:error.code==="22023"?400:500;
+   return jsonError(status===409?"This accepted quote cannot currently be converted into a Workcard. Check the linked Jobcard and existing Workcard.":status===400?"The accepted quote does not contain valid Workcard details.":"Could not create Workcard.",status);
   }
-  // Quote lines remain planned only; actual use and invoiceability start at zero.
-  if(plannedEntries.length){
-   const {error:entryError}=await db.from("job_work_entries").insert(plannedEntries);
-   if(entryError){
-    console.error("Prepared Workcard entry creation failed",entryError);
-    await db.from("jobs").delete().eq("id",job.id).eq("business_id",businessId);
-    return jsonError("Could not prepare the Workcard from the accepted quote. No incomplete Workcard was kept.",500);
-   }
-  }
-  const {error:jobcardError}=await db.from("enquiries").update({stage:initialState.enquiryStage,status:"converted",updated_at:new Date().toISOString()}).eq("id",enquiry.id).eq("business_id",businessId);
-  if(jobcardError){
-   console.error("Jobcard conversion update failed",jobcardError);
-   await db.from("job_work_entries").delete().eq("job_id",job.id).eq("business_id",businessId);
-   await db.from("jobs").delete().eq("id",job.id).eq("business_id",businessId);
-   return jsonError("Could not link the Workcard back to its original Jobcard. No incomplete conversion was kept.",500);
-  }
-  if(enquiry.stage!=="converted"){
-   await db.from("enquiry_stage_history").insert({business_id:businessId,enquiry_id:enquiry.id,from_stage:enquiry.stage??null,to_stage:initialState.enquiryStage,changed_by:access.user!.id,note:"Accepted quote converted into a prepared Workcard."});
-  }
-  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.created_from_accepted_quote",entity_type:"job",entity_id:job.id,details:{quote_id:quote.id,enquiry_id:enquiry.id,review_status:"pending_review",prepared_entry_count:plannedEntries.length}});
-  return Response.json({job},{status:201});
+  if(!data?.job)return jsonError("Workcard conversion returned an incomplete result.",500);
+  return Response.json({job:data.job,alreadyCreated:Boolean(data.alreadyCreated)},{status:data.alreadyCreated?200:201});
  }catch(error){
   console.error("Workcard creation failed",error);
   return jsonError("Could not create Workcard.",500);
