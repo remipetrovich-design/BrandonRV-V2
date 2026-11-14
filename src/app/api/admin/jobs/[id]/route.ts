@@ -1,6 +1,6 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
 import {isUuid} from "@/lib/api-validation.mjs";
-import {getEnquiryStageForWorkcardStatus,canTransitionWorkcardStatus} from "@/lib/workcard-engine.mjs";
+import {canTransitionWorkcardStatus} from "@/lib/workcard-engine.mjs";
 export const runtime="nodejs";
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
  const access=await authorizePermission("jobs.manage");if(access.response)return access.response;
@@ -17,7 +17,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const body=await request.json(),db=database(),businessId=access.membership!.business_id;
   const {data:current,error:loadError}=await db.from("jobs").select("id,status,quote_id,senior_approval_status,worker_signed_off_at,customer_approval_status").eq("id",id).eq("business_id",businessId).maybeSingle();
   if(loadError||!current)return jsonError("Workcard not found.",404);
-  const patch:Record<string,unknown>={updated_at:new Date().toISOString()};
+  const patch:Record<string,unknown>={};
   if(body.title!==undefined){const v=String(body.title).trim();if(v.length<3||v.length>180)return jsonError("Workcard title must be between 3 and 180 characters.");patch.title=v;}
   if(body.scope_of_work!==undefined){const v=String(body.scope_of_work).trim();if(v.length<3||v.length>5000)return jsonError("Work scope must be between 3 and 5000 characters.");if(current.worker_signed_off_at)return jsonError("A signed-off Workcard cannot have its approved scope overwritten. Record a variation instead.",409);patch.scope_of_work=v;}
   if(body.customer_visible_notes!==undefined)patch.customer_visible_notes=String(body.customer_visible_notes).trim().slice(0,3000)||null;
@@ -27,22 +27,8 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(body.status!==undefined){const next=String(body.status);if(!["pending","scheduled","in_progress","waiting_parts","completed","cancelled"].includes(next))return jsonError("Invalid Workcard status.");if(!canTransitionWorkcardStatus(current.status,next))return jsonError("This Workcard cannot move from "+String(current.status).replaceAll("_"," ")+" to "+next.replaceAll("_"," ")+".",409);if(next==="completed"&&current.senior_approval_status!=="approved"&&current.senior_approval_status!=="legacy_approved")return jsonError("Senior approval is required before completing a Workcard.",409);if(next==="completed"&&current.customer_approval_status!=="approved")return jsonError("Customer approval is required before completing a Workcard.",409);patch.status=next;}
   for(const field of ["scheduled_start","scheduled_end"] as const){if(body[field]!==undefined){const value=body[field]?new Date(String(body[field])):null;if(value&&!Number.isFinite(value.getTime()))return jsonError("Enter a valid Workcard schedule.");patch[field]=value?.toISOString()??null;}}
   if(patch.scheduled_start&&patch.scheduled_end&&new Date(String(patch.scheduled_end))<=new Date(String(patch.scheduled_start)))return jsonError("Workcard end must be after its start.");
-  if(Object.keys(patch).length===1)return jsonError("No Workcard changes supplied.");
-  const {data:job,error}=await db.from("jobs").update(patch).eq("id",id).eq("business_id",businessId).select("id,job_number,title,status,priority,scheduled_start,scheduled_end,scope_of_work,customer_visible_notes,internal_notes").single();
-  if(error||!job)return jsonError("Could not update Workcard.",500);
-  if(body.status!==undefined&&current.quote_id){
-   const {data:quote}=await db.from("quotes").select("enquiry_id").eq("id",current.quote_id).eq("business_id",businessId).maybeSingle();
-   const nextStage=getEnquiryStageForWorkcardStatus(String(body.status));
-   if(quote?.enquiry_id&&nextStage){
-    const {data:enquiry}=await db.from("enquiries").select("stage").eq("id",quote.enquiry_id).eq("business_id",businessId).maybeSingle();
-    if(enquiry&&enquiry.stage!==nextStage){
-     await db.from("enquiries").update({stage:nextStage,status:nextStage==="cancelled"?"closed":"converted",archived_at:nextStage==="cancelled"?new Date().toISOString():null,updated_at:new Date().toISOString()}).eq("id",quote.enquiry_id).eq("business_id",businessId);
-     await db.from("enquiry_stage_history").insert({business_id:businessId,enquiry_id:quote.enquiry_id,from_stage:enquiry.stage,to_stage:nextStage,changed_by:access.user!.id,note:"Pipeline advanced from Workcard status: "+nextStage.replaceAll("_"," ")});
-    }
-   }
-  }
-  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.updated",entity_type:"job",entity_id:id,details:{fields:Object.keys(patch)}});
-  return Response.json({job});
+  if(Object.keys(patch).length===0)return jsonError("No Workcard changes supplied.");
+  const {data:result,error}=await db.rpc("update_workcard_with_jobcard_stage",{\n   p_business_id:businessId,\n   p_job_id:id,\n   p_actor_user_id:access.user!.id,\n   p_patch:patch\n  });\n  if(error){\n   console.error("Transactional Workcard update failed",error);\n   const status=error.code==="P0002"?404:error.code==="P0001"?409:error.code==="22023"?400:500;\n   return jsonError(status===404?"Workcard not found.":status===409?error.message||"This Workcard update is not permitted.":status===400?"Workcard update values are invalid.":"Could not update Workcard.",status);\n  }\n  if(!result?.job)return jsonError("Workcard update returned an incomplete result.",500);\n  return Response.json({job:result.job});
  }catch{return jsonError("Could not update Workcard.",500);}
 }
 export async function DELETE(request:Request,{params}:{params:Promise<{id:string}>}){
