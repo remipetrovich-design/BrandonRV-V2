@@ -38,3 +38,29 @@ test("transactional Workcard RPC rejects unsupported fields and enforces complet
   assert.ok(migration.includes("Customer approval is required before completing a Workcard."));
   assert.ok(migration.includes("A signed-off Workcard cannot have its approved scope overwritten."));
 });
+
+test("admin Workcard deletion locks and removes only untouched records with its audit event in one transaction", async () => {
+  const route = await read("../src/app/api/admin/jobs/[id]/route.ts");
+  const migration = await read("../supabase/migrations/20261115140000_delete_untouched_workcard_rpc.sql");
+  const deletion = route.slice(route.indexOf("export async function DELETE"));
+
+  assert.ok(deletion.includes('rpc("delete_untouched_workcard"'), "The route must call the atomic deletion RPC.");
+  assert.ok(!deletion.includes('.from("jobs").delete('), "The route must not delete outside the transaction.");
+  assert.ok(!deletion.includes('.from("audit_events").insert('), "The route must not write audit separately.");
+  for (const token of [
+    "FOR UPDATE",
+    "status <> 'pending'",
+    "worker_signed_off_at IS NOT NULL",
+    "public.invoices",
+    "public.job_tasks",
+    "public.job_assignments",
+    "public.job_attachments",
+    "public.supplier_orders",
+    "public.expenses",
+    "public.time_entries",
+    "INSERT INTO public.audit_events",
+    "DELETE FROM public.jobs",
+    "REVOKE ALL ON FUNCTION",
+    "TO service_role"
+  ]) assert.ok(migration.includes(token), "Atomic Workcard deletion is missing: " + token);
+});
