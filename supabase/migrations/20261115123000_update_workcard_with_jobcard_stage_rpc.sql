@@ -153,7 +153,7 @@ BEGIN
     business_id, actor_user_id, action, entity_type, entity_id, details
   ) VALUES (
     p_business_id, p_actor_user_id, 'workcard.updated', 'job', p_job_id,
-    pg_catalog.jsonb_build_object('fields', pg_catalog.jsonb_object_keys(p_patch)::text[])
+    pg_catalog.jsonb_build_object('fields', ARRAY(SELECT pg_catalog.jsonb_object_keys(p_patch)))
   );
 
   RETURN pg_catalog.jsonb_build_object(
