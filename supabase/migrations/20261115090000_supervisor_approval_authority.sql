@@ -7,6 +7,7 @@ ON CONFLICT (permission_key) DO UPDATE SET description=EXCLUDED.description;
 -- Supervisors can approve customer quotes. Team Leaders and workshop staff do not.
 INSERT INTO public.user_role_permissions(role_key,permission_key)
 VALUES
+ ('supervisor','quotes.view'),
  ('supervisor','quotes.approve'),
  ('office_supervisor','quotes.approve'),
  ('office_manager','quotes.approve'),
