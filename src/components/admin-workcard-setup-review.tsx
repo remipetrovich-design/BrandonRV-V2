@@ -2,7 +2,7 @@
 import {useEffect,useState} from "react";
 type Review={workcard_review_status:string;workcard_review_note:string|null;workcard_reviewed_at:string|null};
 export default function AdminWorkcardSetupReview({jobId}:{jobId:string}){
- const [review,setReview]=useState<Review|null>(null),[note,setNote]=useState(""),[notice,setNotice]=useState(""),[busy,setBusy]=useState(false);
+ const [review,setReview]=useState<Review|null>(null),[canApprove,setCanApprove]=useState(false),[note,setNote]=useState(""),[notice,setNotice]=useState(""),[busy,setBusy]=useState(false);
  async function load(){try{const r=await fetch("/api/admin/jobs/"+jobId+"/workcard-review",{cache:"no-store"});const d=await r.json();if(!r.ok){setNotice(d.error??"Could not load Workcard review.");return;}setReview(d.job);setCanApprove(d.canApprove===true);}catch{setNotice("Could not load Workcard review.");}}
  useEffect(()=>{void load();},[jobId]);
  async function decide(decision:"approved"|"changes_requested"){if(decision==="changes_requested"&&note.trim().length<5){setNotice("Describe the changes required.");return;}setBusy(true);setNotice("");try{const r=await fetch("/api/admin/jobs/"+jobId+"/workcard-review",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({decision,note})});const d=await r.json();if(!r.ok){setNotice(d.error??"Could not save review.");return;}setNotice(decision==="approved"?"Workcard approved. It can now be assigned to a worker.":"Workcard returned for changes.");setNote("");await load();}catch{setNotice("Could not save review.");}finally{setBusy(false);}}
