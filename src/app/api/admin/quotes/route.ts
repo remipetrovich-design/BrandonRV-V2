@@ -1,5 +1,5 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
-import {priceDocumentLines} from "@/lib/commercial-money.mjs";
+import {prepareQuoteLines,validateQuoteTaxPolicy,nextQuoteRevision} from "@/lib/quote-engine.mjs";
 export const runtime="nodejs";
 export async function GET(){
  const access=await authorizePermission("quotes.manage");if(access.response)return access.response;
@@ -31,17 +31,16 @@ export async function POST(request:Request){
   const expiryDate=body.expiryDate?String(body.expiryDate):null;
   const supersedesQuoteId=body.supersedesQuoteId?String(body.supersedesQuoteId):null;
   if((enquiryId&&!/^[0-9a-f-]{36}$/i.test(enquiryId))||(!enquiryId&&!/^[0-9a-f-]{36}$/i.test(requestedCustomerId))||items.length<1||items.length>30)return jsonError("Select a customer when creating a standalone quote, and add between 1 and 30 quote lines.");
-  if(items.some((item:{description:string;quantity:number;unitPrice:number;itemType:string})=>item.description.length<3||item.description.length>500||!Number.isFinite(item.quantity)||item.quantity<=0||item.quantity>10000||!Number.isFinite(item.unitPrice)||item.unitPrice<0||item.unitPrice>10000000||!["labour","parts"].includes(item.itemType)))return jsonError("Each quote line needs a description, type, positive quantity and valid unit price.");
+
   if(!Number.isFinite(taxRate)||taxRate<0||taxRate>100)return jsonError("Enter a valid tax rate.");
   if(expiryDate&&(!/^\d{4}-\d{2}-\d{2}$/.test(expiryDate)||expiryDate<=new Date().toISOString().slice(0,10)))return jsonError("Quote expiry must be a valid future date.");
+  let quotePricing;
+  try{quotePricing=prepareQuoteLines(items,taxRate);}catch(error){return jsonError(error instanceof Error?error.message:"Check the quote line items.");}
   const db=database(),businessId=access.membership!.business_id;
   const {data:businessSettings}=await db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle();
   const configured=businessSettings?.settings&&typeof businessSettings.settings==="object"?businessSettings.settings as Record<string,any>:{};
   const pricing=configured.pricing&&typeof configured.pricing==="object"?configured.pricing:{};
-  const gstStatus=String(pricing.gst_status??"not_configured");
-  const configuredGstRate=Number(pricing.gst_rate??10);
-  if(gstStatus!=="registered"&&taxRate>0)return jsonError("GST cannot be added until the business GST position is confirmed and marked as registered in Business Settings.");
-  if(gstStatus==="registered"&&Math.abs(taxRate-configuredGstRate)>0.001)return jsonError("Use the configured GST rate from Business Settings for this quote.");
+  try{validateQuoteTaxPolicy([taxRate],pricing);}catch(error){return jsonError(error instanceof Error?error.message:"Invalid GST configuration.");}
   const {data:enquiry,error:enquiryLookupError}=enquiryId
    ?await db.from("enquiries").select("id,request_number,request_type,user_id,customer_id,contact_name,email,phone,status,stage,archived_at").eq("id",enquiryId).eq("business_id",businessId).eq("request_type","quote_request").is("archived_at",null).maybeSingle()
    :{data:null,error:null};
@@ -84,16 +83,12 @@ export async function POST(request:Request){
   let revisionNumber=1;
   if(supersedesQuoteId){
    const {data:prior}=await db.from("quotes").select("id,enquiry_id,customer_id,revision_number,status").eq("id",supersedesQuoteId).eq("business_id",businessId).maybeSingle();
-   if(!prior||prior.enquiry_id!==(enquiry?.id??null)||prior.customer_id!==customerId)return jsonError("A quote revision must belong to the same customer and Jobcard relationship.",409);
-   if(["accepted","converted"].includes(prior.status))return jsonError("An accepted quote cannot be revised. Use the variation approval workflow for additional work.",409);
-   revisionNumber=Number(prior.revision_number??1)+1;
+   try{revisionNumber=nextQuoteRevision(prior,{enquiryId:enquiry?.id??null,customerId});}catch(error){return jsonError(error instanceof Error?error.message:"This quote cannot be revised.",409);}
   }
-  const serviceIds=items.map(x=>x.serviceId).filter(Boolean) as string[];
+  const serviceIds=quotePricing.lines.map(x=>x.service_id).filter(Boolean) as string[];
   if(serviceIds.length){const {data:linkedServices,error:serviceLookupError}=await db.from("services").select("id").eq("business_id",businessId).eq("is_active",true).in("id",serviceIds);if(serviceLookupError||new Set((linkedServices??[]).map(x=>x.id)).size!==new Set(serviceIds).size)return jsonError("One or more selected service presets are unavailable for this business.");}
-  if(items.some(item=>item.serviceId&&item.itemType!=="labour"))return jsonError("A service preset must be quoted as labour/service, not as a parts line.");
-  const priced=priceDocumentLines(items.map((item,index:number)=>({description:item.description,quantity:item.quantity,unit_price:item.unitPrice,tax_rate:taxRate,sort_order:index,item_type:item.itemType,service_id:item.serviceId})));
-  const lines=priced.lines;
-  const {subtotal,taxAmount,total}=priced;
+  const lines=quotePricing.lines;
+  const {subtotal,taxAmount,total}=quotePricing;
   const quoteNumber="BRV-Q-"+Date.now().toString(36).toUpperCase()+"-"+crypto.randomUUID().slice(0,4).toUpperCase();
   const {data:quote,error}=await db.from("quotes").insert({business_id:businessId,customer_id:customerId,user_id:quoteUserId,enquiry_id:enquiry?.id??null,quote_number:quoteNumber,revision_number:revisionNumber,supersedes_quote_id:supersedesQuoteId,prepared_by:access.user!.id,senior_approval_status:"pending",status:"draft",expiry_date:expiryDate,subtotal,tax_amount:taxAmount,total,notes:notes||null,terms:terms||null}).select("id,quote_number,total,revision_number,enquiry_id,customer_id").single();
   if(error||!quote){console.error("Quote insert failed",{error,enquiryId,customerId});return jsonError("Could not create quote.",500);}
