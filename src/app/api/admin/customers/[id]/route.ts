@@ -1,5 +1,5 @@
 import {currentUser,currentMembership,database,userHasPermission,userHasPermissions,jsonError,sameOrigin,normalizeEmail} from "@/lib/auth";
-import {isUuid} from "@/lib/api-validation.mjs";
+import {isUuid,isCalendarDate} from "@/lib/api-validation.mjs";
 import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
 const STAFF_ROLE_KEYS=["apprentice","senior_worker","office","supervisor","manager","owner","website_developer"];
