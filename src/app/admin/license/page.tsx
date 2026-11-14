@@ -9,8 +9,5 @@ export default async function AdminLicensePage(){
  if(!user)redirect("/portal/sign-in");
  if(!(await userHasPermission(user.id,"business.settings.manage")))redirect("/admin");
  const state=await getApplicationLicenseState();
- return <div className="admin-page">
-  <div className="page-heading"><div><p className="eyebrow">SYSTEM HEALTH</p><h1>Application licence</h1><p>Monitor the Brandon RV business installation licence and recheck it against the active License Manager.</p></div></div>
-  <LicenseMonitor initialState={state}/>
- </div>;
+ return <main className="portal-page"><div className="portal-shell brv-admin-page-inner"><div className="portal-page-heading"><p className="eyebrow"><span className="eyebrow-line"/> SYSTEM HEALTH</p><h1>Application <em>licence.</em></h1><p>Monitor the Brandon RV business installation licence and recheck it against the active License Manager.</p></div><LicenseMonitor initialState={state}/></div></main>;
 }
