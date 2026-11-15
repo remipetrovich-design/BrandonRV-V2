@@ -104,15 +104,18 @@ test('the licensing client uses the single consolidated License Manager API endp
  assert.doesNotMatch(types,/fallback/);
 });
 
-test('the licensing client uses the single consolidated License Manager API endpoint',()=>{
+
+
+test('the installed A.L.I.S. client follows the current License Manager source-mode and pulse contract',()=>{
  const client=read('../src/lib/license-manager-client.js');
  const types=read('../src/lib/license-manager-client.d.ts');
- assert.match(client,/LICENSE_API_BASE_URL = 'https:\/\/incendiarynetworks\.cc\/api\/v1'/);
- assert.match(client,/baseUrl \+ '\/license\/health'/);
- assert.match(client,/baseUrl \+ '\/license\/validate'/);
+ assert.match(client,/source-configuration/);
+ assert.match(client,/LICENSE_AUTHORITIES\[mode\]/);
+ assert.match(client,/\/license\/health/);
+ assert.match(client,/\/license\/validate/);
+ assert.match(client,/\/license\/pulse/);
+ assert.match(client,/PULSE_ACK_FAILED/);
+ assert.match(types,/LICENSE_AUTHORITIES/);
+ assert.match(types,/"main" \| "fallback"/);
  assert.doesNotMatch(client,/lm\.incendiarynetworks\.cc/);
- assert.doesNotMatch(client,/source-configuration/);
- assert.doesNotMatch(client,/SOURCE_MODE_STANDBY/);
- assert.match(types,/LICENSE_API_BASE_URL/);
- assert.doesNotMatch(types,/fallback/);
 });
