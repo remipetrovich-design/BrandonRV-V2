@@ -53,6 +53,7 @@ Brandon RV is one application, one V2 Supabase project and one repository. The f
 - Service list and pricing: “Placeholder 4 chris to fill later”.
 - GST registration and rate: “Placeholder 4 chris to fill later”. Do not assume GST applies or invent a rate.
 - Supplier names and ordering arrangements: “Future thing”.
+- Supplier foundation: maintain supplier contact records and activation status using the existing `suppliers` table. Existing supplier-order and Workcard part-tracking records remain available, but supplier-specific API credentials, catalogues, order submission, status synchronisation, acknowledgements and automated receiving are explicitly deferred until the external supplier is selected and its integration method is known.
 - Parts, freight and deposits paid before ordering: configurable in Business Settings; do not hardcode policy.
 - Approval authority: Supervisors+.
 - Do not promise job completion until critical parts and site access are confirmed.
