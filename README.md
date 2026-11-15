@@ -53,7 +53,7 @@ Add these as repository Actions secrets:
 
 The configured V2 project reference is `lciylmfpcefdpsouoqvm`.
 
-**Migration status:** The dedicated V2 project has its own migration history; the latest inspected snapshot records 65 applied migration records. No V1 operational data was copied. See `docs/V2-DATABASE-ARCHITECTURE.md` for the inspected database snapshot.
+**Migration status:** The dedicated V2 project has its own migration history; the latest inspected snapshot records 66 applied migration records. No V1 operational data was copied. See `docs/V2-DATABASE-ARCHITECTURE.md` for the inspected database snapshot.
 
 Do not commit access tokens, database passwords, service-role keys or other credentials to this repository.
 
