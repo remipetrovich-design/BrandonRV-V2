@@ -21,11 +21,35 @@ Use the same V2 Supabase project in every Vercel environment intended for use. D
 
 ## GitHub Actions
 
-The current `.github/workflows/v2-checks.yml` runs `npm test`, `npm run typecheck` and `npm run build`. It does not connect to Supabase, run migrations, deploy the application or read environment secrets.
+The standard `.github/workflows/v2-checks.yml` workflow runs tests, typecheck and build. It does not access Supabase or deploy the application.
 
-**GitHub Actions currently requires no repository secrets and no repository variables.** Do not add secrets unless a future workflow explicitly references them.
+A separate `.github/workflows/manual-deploy-migrate.yml` workflow has been added for an Owner or Website Developer to request a manual production deployment from the admin panel. It is deliberately dormant:
+- It runs only through `workflow_dispatch`; ordinary pushes and Vercel deployments do not apply migrations.
+- Both the Vercel application flag and GitHub repository variable `BRANDON_RV_MANUAL_DEPLOY_ENABLED` must be explicitly set to `true`.
+- The admin action is visible only to Owner and Website Developer accounts and requires a server-side GitHub dispatch token.
+- The workflow builds the application first, links only Supabase project `lciylmfpcefdpsouoqvm`, previews pending migrations, applies them with `supabase db push --linked`, then deploys the verified build to Vercel Production.
+- Supabase migration history skips migrations already applied. The workflow never runs `db reset`, never targets V1 and never applies seed data.
+- The workflow checks all required credentials and Vercel project identifiers before it changes the database. It requires the GitHub `production` environment.
 
-Do not add the old `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` or V1 project reference from previous setup notes. There is no active `supabase-migrations.yml` workflow in this repository.
+### Required configuration when activation is approved
+
+Vercel server-side environment variables:
+- `BRANDON_RV_MANUAL_DEPLOY_ENABLED=false` — leave false until explicitly activated.
+- `GITHUB_ACTIONS_DISPATCH_TOKEN` — fine-grained GitHub token with Actions: write for this repository. Never expose it to the browser.
+
+GitHub repository variable:
+- `BRANDON_RV_MANUAL_DEPLOY_ENABLED=false` — independent workflow activation gate.
+
+GitHub Actions secrets:
+- `SUPABASE_ACCESS_TOKEN` — Supabase personal access token for the CLI.
+- `SUPABASE_DB_PASSWORD` — database password for the dedicated V2 project.
+- `VERCEL_TOKEN` — Vercel deployment token.
+- `VERCEL_ORG_ID` — Vercel team or account ID.
+- `VERCEL_PROJECT_ID` — Vercel project ID for Brandon RV V2.
+
+Configure the GitHub `production` environment and its approval protection before activation. The Supabase project reference is fixed in the workflow as `lciylmfpcefdpsouoqvm`; do not replace it with the V1 reference. Keep all credentials out of source control.
+
+No migration or deployment is triggered by adding these files. Do not turn either activation gate on until the Vercel project and credentials have been confirmed.
 
 ## V2 infrastructure boundaries
 

@@ -79,7 +79,7 @@ Available scripts:
 
 ## Environment variables
 
-The root `.env.example` is the complete list of application runtime variables. See [Environment and pre-deployment setup](./docs/PRODUCTION_SETUP.md) for the exact purpose of each variable and whether it belongs in GitHub Actions or Vercel. The current GitHub Actions workflow requires no secrets. Runtime variables belong in local `.env.local` and, when hosting is configured, in Vercel. Never commit actual secret values.
+The root `.env.example` is the complete list of application runtime variables. See [Environment and pre-deployment setup](./docs/PRODUCTION_SETUP.md) for the exact purpose of each variable and whether it belongs in GitHub Actions or Vercel. The standard V2 checks workflow requires no secrets. The separate manual deploy workflow is dormant and requires dedicated GitHub Actions secrets and activation gates; see [Environment and pre-deployment setup](./docs/PRODUCTION_SETUP.md). Runtime variables belong in local `.env.local` and, when hosting is configured, in Vercel. Never commit actual secret values.
 
 ## Transactional email and staff invitations
 
