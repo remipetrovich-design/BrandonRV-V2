@@ -4,7 +4,7 @@ This document lists deployment configuration only. V2 is not deployed. Do not de
 
 ## Vercel environment variables
 
-The root `.env.example` is the deployment variable inventory. Configure values in Vercel Project Settings → Environment Variables when the Vercel project/account has been confirmed.
+The root `.env.example` is the deployment variable inventory. **Section A is for Vercel only; Section B is for GitHub Actions only. Do not paste the whole file into Vercel.** Configure Section A in Vercel Project Settings → Environment Variables after the correct V2 project has been linked to this repository.
 
 | Variable | Requirement | Purpose |
 | --- | --- | --- |
@@ -31,21 +31,21 @@ A separate `.github/workflows/manual-deploy-migrate.yml` workflow has been added
 - Supabase migration history skips migrations already applied. The workflow never runs `db reset`, never targets V1 and never applies seed data.
 - The workflow checks all required credentials and Vercel project identifiers before it changes the database. It requires the GitHub `production` environment.
 
-### Required configuration when activation is approved
+### Required configuration for the manual deploy workflow (keep disabled until ready)
 
-Vercel server-side environment variables:
+**Vercel Project Settings → Environment Variables (Production; add Preview only if deliberately used):**
 - `BRANDON_RV_MANUAL_DEPLOY_ENABLED=false` — leave false until explicitly activated.
 - `GITHUB_ACTIONS_DISPATCH_TOKEN` — fine-grained GitHub token with Actions: write for this repository. Never expose it to the browser.
 
-GitHub repository variable:
+**GitHub repository → Settings → Secrets and variables → Actions → Variables:**
 - `BRANDON_RV_MANUAL_DEPLOY_ENABLED=false` — independent workflow activation gate.
 
-GitHub Actions secrets:
+**GitHub repository → Settings → Secrets and variables → Actions → Secrets:**
 - `SUPABASE_ACCESS_TOKEN` — Supabase personal access token for the CLI.
 - `SUPABASE_DB_PASSWORD` — database password for the dedicated V2 project.
 - `VERCEL_TOKEN` — Vercel deployment token.
 - `VERCEL_ORG_ID` — Vercel team or account ID.
-- `VERCEL_PROJECT_ID` — Vercel project ID for Brandon RV V2.
+- `VERCEL_PROJECT_ID` — Vercel project ID linked to the `BrandonRV-V2` repository.
 
 Configure the GitHub `production` environment and its approval protection before activation. The Supabase project reference is fixed in the workflow as `lciylmfpcefdpsouoqvm`; do not replace it with the V1 reference. Keep all credentials out of source control.
 
@@ -55,7 +55,7 @@ No migration or deployment is triggered by adding these files. Do not turn eithe
 
 - Repository: `remipetrovich-design/BrandonRV-V2`, branch `main`.
 - Supabase: `Brandon-RV-V2`, project ref `lciylmfpcefdpsouoqvm`, region Tokyo (`ap-northeast-1`).
-- Vercel: hosting has not been configured or deployed.
+- Vercel: an existing project named `brandon-rv` is present in the connected Vercel account, but it is linked to the different GitHub repository `remipetrovich-design/Brandon-RV-`, not `remipetrovich-design/BrandonRV-V2`. Its latest deployment is in an error state. Do not assume it is the V2 project or use its project ID until it is deliberately relinked or a separate V2 project is created and verified.
 - V1 project `thkxalrsklgademwrrlq` is separate and must never be used by V2.
 
 ## First owner setup
@@ -68,7 +68,7 @@ Brandon RV uses the existing external OrbitFS Mail and License Manager integrati
 
 ## Before any deployment
 
-- Confirm Vercel account/team and project ownership before creating or activating a Vercel project.
+- Confirm Vercel account/team and project ownership. Link or create the Vercel project for `remipetrovich-design/BrandonRV-V2`; do not accidentally deploy through the existing `brandon-rv` project while it remains linked to `remipetrovich-design/Brandon-RV-`.
 - Confirm all configured Supabase values point only to project `lciylmfpcefdpsouoqvm`.
 - Configure Vercel variables for only the environments that will actually be used.
 - Keep the owner setup secret temporary.
