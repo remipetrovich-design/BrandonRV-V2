@@ -4,7 +4,7 @@ This document lists deployment configuration only. V2 is not deployed. Do not de
 
 ## Vercel environment variables
 
-The root `.env.example` is the deployment variable inventory. **Section A is for Vercel only; Section B is for GitHub Actions only. Do not paste the whole file into Vercel.** Configure Section A in Vercel Project Settings → Environment Variables after the correct V2 project has been linked to this repository.
+The root `.env.example` contains only standard dotenv `KEY=VALUE` entries for Vercel runtime variables and can be imported directly in Vercel Project Settings → Environment Variables. Blank values are placeholders to fill in after import. GitHub Actions secrets and variables are documented separately below and are deliberately excluded from `.env.example`.
 
 | Variable | Requirement | Purpose |
 | --- | --- | --- |
@@ -21,10 +21,10 @@ Use the same V2 Supabase project in every Vercel environment intended for use. D
 
 ## GitHub Actions
 
-The standard `.github/workflows/v2-checks.yml` workflow runs tests, typecheck and build. It does not access Supabase or deploy the application.
+The standard `.github/workflows/v2-checks.yml` workflow runs tests, typecheck and build. Vercel Git-based automatic deployments are intended to remain **enabled** for normal application changes. These ordinary Vercel deployments do not apply Supabase migrations; database migrations are applied only through the separate manual migration workflow described below.
 
 A separate `.github/workflows/manual-deploy-migrate.yml` workflow has been added for an Owner or Website Developer to request a manual production deployment from the admin panel. It is deliberately dormant:
-- It runs only through `workflow_dispatch`; ordinary pushes and Vercel deployments do not apply migrations.
+- It runs only through `workflow_dispatch`; ordinary Git pushes and Vercel automatic deployments remain enabled and do not apply migrations.
 - Both the Vercel application flag and GitHub repository variable `BRANDON_RV_MANUAL_DEPLOY_ENABLED` must be explicitly set to `true`.
 - The admin action is visible only to Owner and Website Developer accounts and requires a server-side GitHub dispatch token.
 - The workflow builds the application first, links only Supabase project `lciylmfpcefdpsouoqvm`, previews pending migrations, applies them with `supabase db push --linked`, then deploys the verified build to Vercel Production.
@@ -33,7 +33,7 @@ A separate `.github/workflows/manual-deploy-migrate.yml` workflow has been added
 
 ### Required configuration for the manual deploy workflow (keep disabled until ready)
 
-**Vercel Project Settings → Environment Variables (Production; add Preview only if deliberately used):**
+**Vercel Project Settings → Environment Variables (Production; add Preview only if deliberately used). These are also listed in the importable root `.env.example`:**
 - `BRANDON_RV_MANUAL_DEPLOY_ENABLED=false` — leave false until explicitly activated.
 - `GITHUB_ACTIONS_DISPATCH_TOKEN` — fine-grained GitHub token with Actions: write for this repository. Never expose it to the browser.
 
@@ -49,7 +49,7 @@ A separate `.github/workflows/manual-deploy-migrate.yml` workflow has been added
 
 Configure the GitHub `production` environment and its approval protection before activation. The Supabase project reference is fixed in the workflow as `lciylmfpcefdpsouoqvm`; do not replace it with the V1 reference. Keep all credentials out of source control.
 
-No migration or deployment is triggered by adding these files. Do not turn either activation gate on until the Vercel project and credentials have been confirmed.
+No migration or deployment is triggered by adding these files. Keep both manual-workflow activation gates false until the Vercel project and credentials have been confirmed. Do not disable Vercel Git-based automatic deployments; they remain the normal application deployment path and do not run database migrations.
 
 ## V2 infrastructure boundaries
 
