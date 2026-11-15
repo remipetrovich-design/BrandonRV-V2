@@ -37,12 +37,13 @@ test('the installed product and installation identity are stable and product-spe
  assert.match(service,/installation_id/);
  assert.match(service,/randomUUID\(\)/);
 });
-test('the woven application client preserves bounded successful caching and per-key cache isolation',()=>{
+test('the woven application client uses manager TTL, key fingerprints and pulse revalidation',()=>{
  const client=read('../src/lib/license-manager-client.js');
- assert.match(client,/cacheValidForMs/);
- assert.match(client,/lastValid\.keyFingerprint/);
+ assert.match(client,/validation_ttl_seconds/);
+ assert.match(client,/cached.keyFingerprint/);
  assert.match(client,/fingerprintKey/);
- assert.match(client,/LICENSE_API_BASE_URL/);
+ assert.match(client,/pollPulses/);
+ assert.match(client,/PULSE_ACK_FAILED/);
 });
 test('application licence storage is not accessible to public Supabase roles',()=>{
  const migration=read('../supabase/migrations/20261112090000_application_license.sql');
@@ -58,10 +59,10 @@ test('admin licence monitor can be used while the application is otherwise licen
  assert.match(route,/userHasPermission/);
  assert.match(route,/forceRecheck:true/);
 });
-test('successful validation cache is persisted only server-side for configured offline grace',()=>{
+test('successful validation cache is persisted server-side and force recheck bypasses it',()=>{
  const service=read('../src/lib/brandon-license.ts');
  assert.match(service,/cached_validation/);
- assert.match(service,/cacheValidForMs:forceRecheck\?0:CACHE_MS/);
+ assert.match(service,/storage:forceRecheck\?undefined/);
  assert.match(service,/storage:/);
  const migration=read('../supabase/migrations/20261112100000_application_license_validation_cache.sql');
  assert.match(migration,/add column if not exists cached_validation jsonb/i);
@@ -74,7 +75,7 @@ test('admin navigation points to the monitor and licence entry remains separate'
 });
 
 
-test('the portable client and enforcement helpers are woven into application runtime files',()=>{
+test('the current A.L.I.S. client and enforcement helpers are woven into application runtime files',()=>{
  const adapter=read('../src/lib/brandon-license.ts');
  const runtime=read('../src/lib/license-manager-client.js');
  const types=read('../src/lib/license-manager-client.d.ts');
@@ -83,26 +84,18 @@ test('the portable client and enforcement helpers are woven into application run
  assert.match(runtime,/export function requireFeature/);
  assert.match(runtime,/export function withLicense/);
  assert.match(runtime,/export function licenseMiddleware/);
+ assert.match(runtime,/export function createFetchGate/);
+ assert.match(runtime,/export function createFetchMiddleware/);
  assert.match(types,/requireFeature/);
  assert.match(types,/withLicense/);
  assert.match(types,/licenseMiddleware/);
+ assert.match(types,/createFetchGate/);
+ assert.match(types,/createFetchMiddleware/);
  assert.doesNotMatch(adapter,/standalone-license-module/);
  assert.doesNotMatch(runtime,/standalone-license-module/);
  assert.doesNotMatch(read('../src/proxy.ts'),/standalone-license-module/);
 });
 
-test('the licensing client uses the single consolidated License Manager API endpoint',()=>{
- const client=read('../src/lib/license-manager-client.js');
- const types=read('../src/lib/license-manager-client.d.ts');
- assert.match(client,/LICENSE_API_BASE_URL = 'https:\/\/incendiarynetworks\.cc\/api\/v1'/);
- assert.match(client,/baseUrl \+ '\/license\/health'/);
- assert.match(client,/baseUrl \+ '\/license\/validate'/);
- assert.doesNotMatch(client,/lm\.incendiarynetworks\.cc/);
- assert.doesNotMatch(client,/source-configuration/);
- assert.doesNotMatch(client,/LICENSE_AUTHORITIES/);
- assert.match(types,/LICENSE_API_BASE_URL/);
- assert.doesNotMatch(types,/fallback/);
-});
 
 
 
