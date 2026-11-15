@@ -18,7 +18,7 @@ test("supplier input trims optional contact fields and normalises email", () => 
     email: "sales@example.com",
     phone: "02 6000 0000",
     account_reference: "AC-12",
-    website: "https://example.com",
+    website: "https://example.com/",
     notes: "Preferred contact by email",
     is_active: true
   });
