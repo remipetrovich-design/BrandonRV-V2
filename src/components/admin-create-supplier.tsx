@@ -13,7 +13,8 @@ export default function AdminCreateSupplier() {
     event.preventDefault();
     setBusy(true);
     setNotice("");
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const payload = Object.fromEntries(
       ["name", "contact_name", "email", "phone", "account_reference", "website", "notes"]
         .map(key => [key, String(form.get(key) ?? "")])
@@ -29,7 +30,7 @@ export default function AdminCreateSupplier() {
         setNotice(data.error ?? "Could not create supplier.");
         return;
       }
-      event.currentTarget.reset();
+      formElement.reset();
       setOpen(false);
       router.refresh();
     } catch {
