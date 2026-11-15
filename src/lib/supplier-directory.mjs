@@ -48,7 +48,7 @@ export function normalizeSupplierInput(input, { partial = false } = {}) {
     let value = optionalText(input[field], field);
     if (field === "email" && value) {
       value = value.toLowerCase();
-      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(value)) throw new TypeError("Enter a valid supplier email address.");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) throw new TypeError("Enter a valid supplier email address.");
     }
     if (field === "website" && value) {
       let parsed;
