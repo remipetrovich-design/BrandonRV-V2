@@ -4,7 +4,6 @@ import {database} from "@/lib/auth";
 import {createLicenseClient,LicenseError} from "@/lib/license-manager-client.js";
 
 const PRODUCT_ID="brandon-rv";
-const CACHE_MS=60_000;
 type LicenseRecord={id:string;product_id:string;installation_id:string;encrypted_license_key:string;encryption_iv:string;encryption_tag:string};
 type LicenseState={valid:boolean;code:string;message:string;product:string;installationId?:string;authority?:string;expiresAt?:string|null;entitlements?:Record<string,unknown>;offlineGrace?:boolean};
 
@@ -29,9 +28,8 @@ function clientFor(installationId:string,forceRecheck=false){
  if(!client){
   const db=database();
   client=createLicenseClient({
-   product:PRODUCT_ID,component:PRODUCT_ID,installationId,
-   cacheValidForMs:forceRecheck?0:CACHE_MS,timeoutMs:7000,
-   storage:{
+   product:PRODUCT_ID,component:PRODUCT_ID,installationId,timeoutMs:7000,
+   storage:forceRecheck?undefined:{
     async get(){
      const {data,error}=await db.from("application_license").select("cached_validation").eq("id","primary").maybeSingle();
      if(error)throw error;
