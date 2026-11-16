@@ -20,7 +20,7 @@ test("first-install guard fails closed for unknown database state and never serv
  const proxy=await read("../src/proxy.ts");
  assert.ok(helper.includes("firstInstallDecision"));
  assert.ok(proxy.includes('return unavailableResponse(request,pathname)'));
- assert.ok(proxy.includes("requiresFirstOwnerSetup(count)"));
+ assert.ok(proxy.includes("firstInstallDecision(count,pathname)"));
  assert.ok(proxy.includes("/portal/sign-in"));
  assert.ok(proxy.includes("pathname===BOOTSTRAP_PATH"));
  assert.ok(proxy.includes("/\\.[^/]+$/"));
