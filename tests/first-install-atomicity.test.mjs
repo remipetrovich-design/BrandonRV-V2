@@ -7,6 +7,7 @@ test("first owner creation is serialized and inserts the owner and audit event a
  const migration=await read("../supabase/migrations/20261117160000_atomic_first_owner_bootstrap.sql");
  const route=await read("../src/app/api/auth/bootstrap-owner/route.ts");
  assert.ok(migration.includes("pg_advisory_xact_lock"));
+ assert.ok(migration.includes("LOCK TABLE public.users IN EXCLUSIVE MODE"));
  assert.ok(migration.includes("IF EXISTS (SELECT 1 FROM public.users)"));
  assert.ok(migration.includes("INSERT INTO public.users"));
  assert.ok(migration.includes("INSERT INTO public.audit_events"));
