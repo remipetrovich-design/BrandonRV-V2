@@ -87,6 +87,18 @@ BEGIN
     v_job_id := coalesce(v_job_id,v_order.job_id);
   END IF;
 
+  IF v_job_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.jobs WHERE id = v_job_id AND business_id = p_business_id
+  ) THEN
+    RAISE EXCEPTION 'The supplier order Workcard does not belong to this business.' USING ERRCODE = 'P0001';
+  END IF;
+
+  IF v_supplier_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.suppliers WHERE id = v_supplier_id AND business_id = p_business_id
+  ) THEN
+    RAISE EXCEPTION 'The supplier order supplier does not belong to this business.' USING ERRCODE = 'P0001';
+  END IF;
+
   INSERT INTO public.expenses
     (business_id,job_id,supplier_id,supplier_order_id,category,description,
      amount_ex_tax,tax_amount,total,expense_date,entered_by)
