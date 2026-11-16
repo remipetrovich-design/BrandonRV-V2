@@ -14,8 +14,8 @@ export async function proxy(request:NextRequest){
  const pathname=request.nextUrl.pathname;
  if(pathname===BOOTSTRAP_PATH||pathname.startsWith("/_next/")||/\.[^/]+$/.test(pathname))return NextResponse.next();
 
- const supabaseUrl=process.env.SUPABASE_URL??process.env.NEXT_PUBLIC_SUPABASE_URL;
- const serverKey=process.env.SUPABASE_SECRET_KEY??process.env.SUPABASE_SERVICE_ROLE_KEY;
+ const supabaseUrl=(process.env.SUPABASE_URL||process.env.NEXT_PUBLIC_SUPABASE_URL||"").trim();
+ const serverKey=(process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY||"").trim();
  if(pathname===SETUP_PATH&&(!supabaseUrl||!serverKey))return NextResponse.next();
  if(!supabaseUrl||!serverKey){
   console.error("First-install guard: Supabase server credentials are missing.");
