@@ -14,6 +14,7 @@ DECLARE
   v_user record;
 BEGIN
   PERFORM pg_catalog.pg_advisory_xact_lock(20261117160000::bigint);
+  LOCK TABLE public.users IN EXCLUSIVE MODE;
 
   IF p_email IS NULL OR p_email <> lower(trim(p_email))
      OR length(p_email) < 5 OR length(p_email) > 254
