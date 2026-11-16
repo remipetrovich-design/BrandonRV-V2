@@ -17,6 +17,8 @@ test("expenses can be recorded against the same supplier order and Workcard",asy
  assert.match(route,/rpc\("review_expense"/);
  assert.match(page,/AdminExpenses/);
  assert.match(component,/supplier_order_id/);
+ assert.match(route,/createSignedUrl/);
+ assert.match(migration,/p_storage_path NOT LIKE/);
 });
 
 test("expense approval is separate from recording and is business-scoped",async()=>{
