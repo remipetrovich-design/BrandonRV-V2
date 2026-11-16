@@ -78,6 +78,6 @@ Completed in this pass:
 - Removed the hardcoded customer support phone and portal footer location; the customer sidebar now directs customers to the enquiry form.
 - Improved public text accent contrast, workspace muted text contrast, keyboard focus treatment and reduced-motion support.
 
-No Vercel project was deployed or production environment activated. The UI pass changes presentation and route consolidation only; existing business logic and database workflows were retained.
+V2 is now deployed through the dedicated `brandon-rv-v2` Vercel project linked to this repository. The latest Production deployment was READY on 17 November 2026. The UI pass changes presentation and route consolidation only; existing business logic and database workflows were retained.
 
 Verification: GitHub Actions runs 166–183 completed successfully for the relevant UI and documentation commits, with tests, typecheck and build passing. Later commits remain subject to their own CI results. This is not a full end-to-end or accessibility certification; real browser rendering, customer/staff account workflows and responsive device checks remain to be completed before deployment.
