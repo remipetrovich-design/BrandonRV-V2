@@ -7,10 +7,10 @@ test("payroll preparation can prefill approved attendance hours for each pay per
  const migration=await read("../supabase/migrations/20261117130000_payroll_attendance_summary.sql");
  const route=await read("../src/app/api/hr/payroll/route.ts");
  const hub=await read("../src/components/admin-workforce-hub.tsx");
- assert.match(migration,/CREATE OR REPLACE FUNCTION public\.payroll_attendance_hours/);
+ assert.match(migration,/CREATE OR REPLACE FUNCTION public\.payroll_attendance_summaries/);
  assert.match(migration,/approved_at IS NOT NULL/);
  assert.match(migration,/Australia\/Sydney/);
- assert.match(route,/rpc\("payroll_attendance_hours"/);
+ assert.match(route,/rpc\("payroll_attendance_summaries"/);
  assert.match(route,/attendanceHours/);
  assert.match(hub,/Use approved attendance hours/);
 });
