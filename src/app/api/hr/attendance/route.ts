@@ -17,7 +17,7 @@ export async function POST(request:Request){
    const {data:open}=await db.from("attendance_entries").select("id").eq("business_id",businessId).eq("user_id",userId).is("clock_out",null).maybeSingle();
    if(open)return jsonError("You are already clocked in.",409);
    const {data,error}=await db.from("attendance_entries").insert({business_id:businessId,user_id:userId,clock_in:now}).select("id,clock_in,clock_out,break_minutes").single();
-   if(error||!data)return jsonError("Could not clock in.",500);return Response.json({entry:data},{status:201});
+   if(error||!data){if(error?.code==="23505")return jsonError("You are already clocked in.",409);return jsonError("Could not clock in.",500);}return Response.json({entry:data},{status:201});
   }
   if(body.action==="clock_out"){
    const {data:entry}=await db.from("attendance_entries").select("id,clock_in").eq("business_id",businessId).eq("user_id",userId).is("clock_out",null).maybeSingle();

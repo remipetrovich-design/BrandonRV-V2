@@ -8,8 +8,11 @@ export async function GET(){
  const ids=(periods??[]).map(x=>x.id);
  const result=ids.length?await db.from("payroll_items").select("id,payroll_period_id,user_id,ordinary_hours,overtime_hours,allowances,deductions,gross_amount,tax_withheld,superannuation_amount,net_amount,notes").eq("business_id",businessId).in("payroll_period_id",ids):{data:[],error:null};
  if(result.error)return jsonError("Could not load payroll entries.",500);
- const canManage=await userHasPermission(a.user!.id,"payroll.manage");const {data:employees}=canManage?await db.from("users").select("id,full_name,email,pay_rate,pay_frequency").eq("business_id",businessId).eq("employment_status","active").order("full_name"):{data:[]};
- return Response.json({periods:periods??[],items:result.data??[],employees:employees??[],canManage});
+ const canManage=await userHasPermission(a.user!.id,"payroll.manage");
+ const {data:employees}=canManage?await db.from("users").select("id,full_name,email,pay_rate,pay_frequency").eq("business_id",businessId).eq("employment_status","active").order("full_name"):{data:[]};
+ const summary=await db.rpc("payroll_attendance_summaries",{p_business_id:businessId,p_periods:(periods??[]).map(period=>({id:period.id,period_start:period.period_start,period_end:period.period_end}))});
+ if(summary.error)return jsonError("Could not calculate approved attendance hours.",500);
+ return Response.json({periods:periods??[],items:result.data??[],employees:employees??[],attendanceHours:Array.isArray(summary.data)?summary.data:[],canManage});
 }
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);

@@ -46,7 +46,7 @@ export default async function AdminLayout({children}:{children:ReactNode}) {
  const membership=await currentMembership(user.id);if(!membership)redirect("/portal");
  const permissionKeys=[...new Set([...navigation.flatMap(group=>group.items.map(item=>item.permission)),"jobs.complete","time.view","time.manage","time.clock","leave.view","leave.manage","payroll.view","payroll.manage","assets.view","assets.manage","onboarding.view","onboarding.manage","staff.manage"])];
  const permitted=await userHasPermissions(user.id,permissionKeys);
- const workforcePermissions=["time.clock","time.manage","leave.view","leave.manage","payroll.view","payroll.manage","assets.view","assets.manage","onboarding.view","onboarding.manage","staff.manage","staff.view"];
+ const workforcePermissions=["time.clock","time.view","time.manage","leave.view","leave.manage","payroll.view","payroll.manage","assets.view","assets.manage","onboarding.view","onboarding.manage","staff.manage","staff.view"];
  const canAccessWorkforce=workforcePermissions.some(permission=>permitted.has(permission));
  const canAccessStaff=permitted.has("staff.view")||permitted.has("staff.manage");
  const isOwnerOrDeveloper=isGlobalAdministrator(String(user.user_role??"").toLowerCase());
