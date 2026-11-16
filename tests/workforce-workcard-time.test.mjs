@@ -24,6 +24,8 @@ test("manager approval updates Workcard actual labour and job hours from approve
  assert.match(migration,/approved_at IS NOT NULL/);
  assert.match(migration,/SET quantity_used = v_hours/);
  assert.match(migration,/SET actual_hours = v_job_hours/);
+ assert.match(migration,/FROM public\.job_work_entries[\s\S]*entry_type = 'labour'/);
+ assert.match(migration,/work_entry_id IS NULL/);
  assert.match(route,/rpc\("approve_work_time_entry"/);
  assert.match(hub,/Approve time/);
 });
