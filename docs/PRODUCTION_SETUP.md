@@ -66,7 +66,7 @@ Brandon RV uses the existing external OrbitFS Mail integration. The mail integra
 
 ## Before any deployment
 
-- Confirm Vercel account/team and project ownership. Link or create the Vercel project for `remipetrovich-design/BrandonRV-V2`; do not accidentally deploy through the existing `brandon-rv` project while it remains linked to `remipetrovich-design/Brandon-RV-`.
+- Use the existing V2 Vercel project `brandon-rv-v2` linked to `remipetrovich-design/BrandonRV-V2`. Do not create another project or deploy V2 through the separate `brandon-rv` project linked to V1.
 - Confirm all configured Supabase values point only to project `lciylmfpcefdpsouoqvm`.
 - Configure Vercel variables for only the environments that will actually be used.
 - Keep the owner setup secret temporary.
