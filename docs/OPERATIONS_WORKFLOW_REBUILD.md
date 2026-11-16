@@ -60,7 +60,7 @@ The customer Jobcard view aggregates these related records. The staff Workcard v
 
 ## Current implementation evidence and remaining gaps
 
-Implemented on the draft branch:
+Implemented in V2 main and the dedicated V2 database (17 November 2026):
 - The public General Enquiry route is now `/general-enquiry`; the old `/contact` route redirects there. Logged-in customer details are prefilled. It creates a general enquiry only and has no quote, booking or reply-composer flow.
 - Request a Quote is a separate quote-only form. Signed-in customers can select saved vehicles; guests receive a secure Jobcard link with a time limit. The general-enquiry mode switch has been removed.
 - The existing `enquiries` row is the Jobcard identity. Customer accounts have a Jobcard register and a single Jobcard document that aggregates request details, quote revisions/line items, booking, Workcard, customer-visible work entries/photos, final approval, invoice items and messages. Guest users see the same core Jobcard stages in their secure request workspace.
@@ -74,13 +74,33 @@ Implemented on the draft branch:
 - A signed-in customer can approve or request changes to the final report. Customer decision and invoice issue are one database transaction; a failure cannot leave an approved Jobcard with an unissued invoice. Guest Workcard approval endpoints remain denied. Draft invoice details remain hidden until customer approval; the itemised invoice, GST and payments are then shown in the Jobcard.
 - Admin Jobcard detail is organised into separate Customer & Vehicle, Job Request, Conversation, Attachments, Activity and (for Quote Requests) Quote tabs. Workcard and quote controls remain permission-gated; the staff Workcard list opens one detailed record at a time. The public site styles remain separate. The Jobcard includes responsive and A4 print styling.
 
-Still required before the workflow can be called complete:
+Implemented transactional controls:
 - Formal variations are implemented as separate quote records linked to the Workcard. Senior approval and customer acceptance are required; the original accepted quote remains unchanged and the Workcard blocks the affected extra work until approval.
-- Successful closeout now records payments transactionally. A fully paid invoice closes and archives its quote-request Jobcard, records the stage-history and audit event, and revokes the guest access token. Part-paid invoices remain open.
+- Successful closeout records payments transactionally. A fully paid invoice closes and archives its quote-request Jobcard, records the stage-history and audit event, and revokes the guest access token. Part-paid invoices remain open.
 - Final customer approval and invoice issuance are transactionally locked together; payment recording and successful-closeout archive are also transactional.
+
+Still required before the workflow can be called complete:
 - Guest and signed-in workflows still need end-to-end testing against a migrated test database, including email delivery, signed file access, duplicate submissions, role boundaries and rollback behavior. The repository CI does not apply or execute the SQL migrations against a live database.
 - The A4 print output and all page widths/spacing still need browser-rendered visual QA at desktop, tablet and mobile breakpoints. The CSS and type/build checks do not by themselves prove every page looks correct in a live browser.
 - Existing completed Workcards are grandfathered as legacy-approved and clearly labelled as records without a separate historical senior sign-off.
+
+## Integrated business operations — 17 November 2026
+
+The following connected workflows are now merged into `main`. Their matching migrations are present in the dedicated V2 Supabase migration history.
+
+- **Jobcard pipeline transactions:** customer approval and final invoice issue share one database transaction. Invoice payment, balance updates, Jobcard stage history, audit events and paid-closeout archive are committed together. A failed transaction cannot leave the invoice and Jobcard pipeline out of sync.
+- **Supplier purchasing:** staff can create draft purchase orders from actual Workcard parts lines, mark orders as placed, record partial or complete quantities received, and synchronise ordered/received quantities back to the Workcard. The screen explicitly does not send an email or place an order with an external supplier. Supplier API/catalogue integration remains deferred until a supplier and integration method are selected.
+- **Workcard time tracking:** staff can run one active time entry at a time and optionally allocate work time to a specific Workcard labour line. Managers approve completed time; approved hours update the Workcard labour quantities and actual-hours total transactionally. Time entries against closed Workcards are blocked.
+- **Payroll preparation:** approved attendance hours can be summarised by payroll period using the Australia/Sydney timezone. This is an input only; the application does not calculate PAYG, superannuation, award entitlements or submit STP reports.
+- **Expense management:** authorised staff can record expenses, link them to suppliers, supplier orders and Workcards, review/revoke approval, and attach PDF/JPEG/PNG/WebP receipts in the private storage bucket. Receipt replacement and expense audit events are handled by the application.
+- **Business reporting:** a permission-gated, date-scoped report combines issued invoice value, recorded cash receipts, outstanding balances, approved/pending expenses, supplier commitments/receipts, completed Workcards, actual hours and new quote requests. It keeps invoiced value distinct from cash received and does not present supplier commitments as paid expenses.
+
+Verification recorded for this integration:
+- GitHub Actions passed tests, typecheck and production build for the connected workflow, expense workflow and reporting changes (PRs #11, #12 and #13).
+- The dedicated V2 migration history contains the corresponding pipeline, procurement, time tracking, attendance, expense and reporting migrations.
+- The business-report RPC was executed against the Brandon RV business in V2 and returned the expected date-scoped structure with zero totals and empty record lists. This verifies the reporting query path, not populated-data accuracy.
+- Supabase security advisors report no Health findings. The security advisor's RLS-without-policy findings correspond to server-only tables with no direct `anon` or `authenticated` table grants; the new privileged RPCs are executable only by `service_role`.
+- The remaining performance advisor findings include four unindexed foreign keys and unused-index notices. These are review items, not evidence of failed workflows.
 
 ## Delivery order
 
