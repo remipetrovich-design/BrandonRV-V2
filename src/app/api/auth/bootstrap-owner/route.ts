@@ -2,8 +2,8 @@ import {database,normalizeEmail,passwordHash,createSession,jsonError,sameOrigin}
 export const runtime="nodejs";
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
- const supabaseUrl=process.env.SUPABASE_URL??process.env.NEXT_PUBLIC_SUPABASE_URL;
- const serverKey=process.env.SUPABASE_SECRET_KEY??process.env.SUPABASE_SERVICE_ROLE_KEY;
+ const supabaseUrl=(process.env.SUPABASE_URL||process.env.NEXT_PUBLIC_SUPABASE_URL||"").trim();
+ const serverKey=(process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY||"").trim();
  if(!supabaseUrl||!serverKey)return jsonError("V2 Supabase server credentials are not configured.",503);
  try{
   const body=await request.json(),email=normalizeEmail(String(body.email??"")),fullName=String(body.fullName??"").trim(),password=String(body.password??"");
