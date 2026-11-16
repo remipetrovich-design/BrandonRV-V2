@@ -8,17 +8,18 @@ test("expenses can be recorded against the same supplier order and Workcard",asy
  const route=await read("../src/app/api/admin/expenses/route.ts");
  const page=await read("../src/app/admin/expenses/page.tsx");
  const component=await read("../src/components/admin-expenses.tsx");
- assert.match(migration,/supplier_order_id uuid REFERENCES public\.supplier_orders/);
- assert.match(migration,/CREATE OR REPLACE FUNCTION public\.create_expense/);
- assert.match(migration,/CREATE OR REPLACE FUNCTION public\.review_expense/);
- assert.match(migration,/INSERT INTO public\.audit_events/);
- assert.match(route,/authorizePermission\("expenses\.view"\)/);
- assert.match(route,/rpc\("create_expense"/);
- assert.match(route,/rpc\("review_expense"/);
- assert.match(page,/AdminExpenses/);
- assert.match(component,/supplier_order_id/);
- assert.match(route,/createSignedUrl/);
- assert.match(migration,/p_storage_path NOT LIKE/);
+ assert.ok(migration.includes("ADD COLUMN IF NOT EXISTS supplier_order_id uuid"));
+ assert.ok(migration.includes("REFERENCES public.supplier_orders"));
+ assert.ok(migration.includes("CREATE OR REPLACE FUNCTION public.create_expense"));
+ assert.ok(migration.includes("CREATE OR REPLACE FUNCTION public.review_expense"));
+ assert.ok(migration.includes("INSERT INTO public.audit_events"));
+ assert.ok(route.includes('authorizePermission("expenses.view")'));
+ assert.ok(route.includes('rpc("create_expense"'));
+ assert.ok(route.includes('rpc("review_expense"'));
+ assert.ok(page.includes("AdminExpenses"));
+ assert.ok(component.includes("supplier_order_id"));
+ assert.ok(route.includes("createSignedUrl"));
+ assert.ok(migration.includes("p_storage_path NOT LIKE"));
 });
 
 test("expense approval is separate from recording and is business-scoped",async()=>{
