@@ -58,6 +58,11 @@ BEGIN
     END IF;
   END IF;
 
+  IF (v_time.approved_at IS NOT NULL) = p_approved THEN
+    RETURN pg_catalog.jsonb_build_object('success',true,'approved',p_approved,
+      'job_id',v_time.job_id,'work_entry_id',v_time.work_entry_id);
+  END IF;
+
   UPDATE public.time_entries
      SET approved_at = CASE WHEN p_approved THEN v_now ELSE NULL END,
          approved_by = CASE WHEN p_approved THEN p_actor_user_id ELSE NULL END
@@ -65,6 +70,9 @@ BEGIN
      AND business_id = p_business_id;
 
   IF v_time.work_entry_id IS NOT NULL THEN
+    IF v_time.entry_type <> 'work' THEN
+      RAISE EXCEPTION 'Only work time can be allocated to a Workcard labour line.' USING ERRCODE = '22023';
+    END IF;
     SELECT id,job_id,entry_type,unit_price
       INTO v_work_entry
       FROM public.job_work_entries
