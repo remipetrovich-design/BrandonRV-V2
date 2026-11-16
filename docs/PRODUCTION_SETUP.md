@@ -1,6 +1,6 @@
 # Brandon RV V2 — deployment environment setup
 
-This document lists deployment configuration only. V2 is not deployed. Do not deploy, activate a Vercel project or connect a production domain as part of this setup work.
+This document lists deployment configuration for the existing V2 production deployment. V2 is deployed to the dedicated Vercel project `brandon-rv-v2`, linked to `remipetrovich-design/BrandonRV-V2`. The latest Production deployment was READY on 17 November 2026. This document does not authorise unrelated production deployments or domain changes.
 
 ## Vercel environment variables
 
