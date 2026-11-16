@@ -8,7 +8,7 @@ test("first owner creation is serialized and inserts the owner and audit event a
  const route=await read("../src/app/api/auth/bootstrap-owner/route.ts");
  assert.ok(migration.includes("pg_advisory_xact_lock"));
  assert.ok(migration.includes("LOCK TABLE public.users IN EXCLUSIVE MODE"));
- assert.ok(migration.includes("IF EXISTS (SELECT 1 FROM public.users)"));
+ assert.ok(migration.includes("IF EXISTS (SELECT 1 FROM public.users LIMIT 1)"));
  assert.ok(migration.includes("INSERT INTO public.users"));
  assert.ok(migration.includes("INSERT INTO public.audit_events"));
  assert.ok(migration.includes("GRANT EXECUTE ON FUNCTION public.bootstrap_first_owner"));
