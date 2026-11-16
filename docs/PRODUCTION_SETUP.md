@@ -1,6 +1,6 @@
 # Brandon RV V2 — deployment environment setup
 
-This document lists deployment configuration only. V2 is not deployed. Do not deploy, activate a Vercel project or connect a production domain as part of this setup work.
+This document lists deployment configuration for the existing V2 production deployment. V2 is deployed to the dedicated Vercel project `brandon-rv-v2`, linked to `remipetrovich-design/BrandonRV-V2`. The latest Production deployment was READY on 17 November 2026. This document does not authorise unrelated production deployments or domain changes.
 
 ## Vercel environment variables
 
@@ -16,6 +16,8 @@ The root `.env.example` contains only standard dotenv `KEY=VALUE` entries for Ve
 | `BRANDONSRV_MAIL_API_KEY` | Paused / do not configure now | Existing BrandonRV send-only external-system key. Do not create a replacement key. |
 
 Use the same V2 Supabase project in every Vercel environment intended for use. Do not configure V1 credentials. Keep all server secrets unprefixed by `NEXT_PUBLIC_`. Never commit real values to GitHub.
+
+**Current Production environment check (17 November 2026):** `SUPABASE_URL` and the temporary `BRANDON_RV_SETUP_SECRET` are configured. `SUPABASE_SERVICE_ROLE_KEY` exists but is blank. The first-install guard and server-side database access cannot work until the V2 service-role key is populated. Do not paste the key into chat or commit it to the repository.
 
 ## GitHub Actions
 
@@ -53,7 +55,7 @@ No migration or deployment is triggered by adding these files. Keep both manual-
 
 - Repository: `remipetrovich-design/BrandonRV-V2`, branch `main`.
 - Supabase: `Brandon-RV-V2`, project ref `lciylmfpcefdpsouoqvm`, region Tokyo (`ap-northeast-1`).
-- Vercel: an existing project named `brandon-rv` is present in the connected Vercel account, but it is linked to the different GitHub repository `remipetrovich-design/Brandon-RV-`, not `remipetrovich-design/BrandonRV-V2`. Its latest deployment is in an error state. Do not assume it is the V2 project or use its project ID until it is deliberately relinked or a separate V2 project is created and verified.
+- Vercel: the V2 project is `brandon-rv-v2` (`prj_ZI2MbFrpCJFovX9unahbN5WgLqTw`) in team `techteam36`, linked to `remipetrovich-design/BrandonRV-V2`. Its Production domains are `brandon-rv-v2.vercel.app`, `brandon-rv-v2-techteam36.vercel.app` and `brandon-rv-v2-git-main-techteam36.vercel.app`. The separate `brandon-rv` project is linked to the V1 repository and must not be used for V2.
 - V1 project `thkxalrsklgademwrrlq` is separate and must never be used by V2.
 
 ## First owner setup
@@ -66,7 +68,7 @@ Brandon RV uses the existing external OrbitFS Mail integration. The mail integra
 
 ## Before any deployment
 
-- Confirm Vercel account/team and project ownership. Link or create the Vercel project for `remipetrovich-design/BrandonRV-V2`; do not accidentally deploy through the existing `brandon-rv` project while it remains linked to `remipetrovich-design/Brandon-RV-`.
+- Use the existing V2 Vercel project `brandon-rv-v2` linked to `remipetrovich-design/BrandonRV-V2`. Do not create another project or deploy V2 through the separate `brandon-rv` project linked to V1.
 - Confirm all configured Supabase values point only to project `lciylmfpcefdpsouoqvm`.
 - Configure Vercel variables for only the environments that will actually be used.
 - Keep the owner setup secret temporary.

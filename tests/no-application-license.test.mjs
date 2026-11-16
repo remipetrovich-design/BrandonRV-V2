@@ -8,7 +8,6 @@ const read=path=>readFileSync(new URL(path,root),'utf8');
 
 test('the application has no bundled licence enforcement or activation surfaces',()=>{
  for(const path of [
-  'src/proxy.ts',
   'src/lib/brandon-license.ts',
   'src/lib/license-manager-client.js',
   'src/lib/license-manager-client.d.ts',
@@ -22,6 +21,10 @@ test('the application has no bundled licence enforcement or activation surfaces'
   'standalone-license-module.zip'
  ]) assert.equal(exists(path),false,path+' should not exist');
 
+ const proxy=read('src/proxy.ts');
+ assert.match(proxy,/requiresFirstOwnerSetup/);
+ assert.match(proxy,/\/setup/);
+ assert.doesNotMatch(proxy,/license|licence/i);
  const adminLayout=read('src/app/admin/layout.tsx');
  assert.doesNotMatch(adminLayout,/\/admin\/license|Application licence/i);
  const env=read('.env.example');
