@@ -1,6 +1,6 @@
 # Brandon RV V2
 
-This is the independent V2 development repository. The original `Brandon-RV-` repository and its production deployment are not modified by V2 work. V2 uses its own dedicated Supabase project `lciylmfpcefdpsouoqvm` in Tokyo (`ap-northeast-1`), with separate database, authentication, storage, migration history and keys. V2 is not connected to a production Vercel deployment. Never point V2 at the original V1 Supabase project.
+This is the independent V2 development repository. The original `Brandon-RV-` repository and its production deployment are not modified by V2 work. V2 uses its own dedicated Supabase project `lciylmfpcefdpsouoqvm` in Tokyo (`ap-northeast-1`), with separate database, authentication, storage, migration history and keys. V2 is deployed to its own Vercel project, `brandon-rv-v2`, linked to this repository. Its latest Production deployment was READY on 17 November 2026. Never use the V1 Vercel project for V2. Never point V2 at the original V1 Supabase project.
 
 Brandon RV is a mobile caravan and motorhome interior repair and accessories business based in Tamworth, NSW. This repository contains the public website, customer portal and shared staff/admin application.
 
