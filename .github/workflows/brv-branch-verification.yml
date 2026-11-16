@@ -31,6 +31,11 @@ jobs:
           node-version: 22
           cache: ''
 
+      - name: Install and verify 12ui CLI
+        run: |
+          curl -fsSL https://12ui.com/install-cli.sh | sh
+          "$HOME/.local/bin/12ui" --version
+
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
