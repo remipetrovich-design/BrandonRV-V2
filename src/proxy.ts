@@ -5,7 +5,7 @@ import {firstInstallDecision} from "@/lib/first-install.mjs";
 const SETUP_PATH="/setup";
 const BOOTSTRAP_PATH="/api/auth/bootstrap-owner";
 
-function unavailableResponse(request:NextRequest,pathname:string){
+function unavailableResponse(pathname:string){
  if(pathname.startsWith("/api/"))return NextResponse.json({error:"V2 database service is unavailable. Check the server configuration."},{status:503,headers:{"Cache-Control":"no-store"}});
  return new NextResponse("V2 is temporarily unavailable because the database service could not be verified.",{status:503,headers:{"Cache-Control":"no-store"}});
 }
@@ -19,7 +19,7 @@ export async function proxy(request:NextRequest){
  if(pathname===SETUP_PATH&&(!supabaseUrl||!serverKey))return NextResponse.next();
  if(!supabaseUrl||!serverKey){
   console.error("First-install guard: Supabase server credentials are missing.");
-  return unavailableResponse(request,pathname);
+  return unavailableResponse(pathname);
  }
 
  try{
