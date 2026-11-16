@@ -30,7 +30,7 @@ export async function GET(){
 }
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
- const ctx=await staffContext();if(ctx.error)return ctx.error;const {user,membership,staff,db}=ctx;
+ const ctx=await staffContext();if(ctx.error)return ctx.error;const {membership,staff,db}=ctx;
  try{
   const body=await request.json(),action=String(body.action??""),now=new Date();
   if(action==="start"){
