@@ -12,8 +12,6 @@ The root `.env.example` contains only standard dotenv `KEY=VALUE` entries for Ve
 | `SUPABASE_SERVICE_ROLE_KEY` | Required | Server-only Supabase access. Keep encrypted and never expose to browser code. |
 | `NEXT_PUBLIC_APP_URL` | Recommended | Canonical hosted V2 origin for account verification, reset and invitation links. |
 | `BRANDON_RV_SETUP_SECRET` | Temporary | Required only for first-owner creation through `/setup`; remove immediately after successful setup. |
-| `BRANDON_RV_LICENSE_ENCRYPTION_SECRET` | Required before licence storage/activation | Encryption key material for the locally stored licence key. Generate a unique cryptographically-random value of at least 32 characters. |
-| `BRANDON_RV_VERSION` | Optional | Product version sent to the existing License Manager; defaults to `1.0.0`. |
 | `ORBITFS_MAIL_URL` | Paused / do not configure now | Existing OrbitFS Mail service URL. |
 | `BRANDONSRV_MAIL_API_KEY` | Paused / do not configure now | Existing BrandonRV send-only external-system key. Do not create a replacement key. |
 
@@ -64,7 +62,6 @@ The V2 database currently has no user accounts. When the application is delibera
 
 ## External systems
 
-Brandon RV uses the existing external OrbitFS Mail and License Manager integrations. The License Manager remains the licensing authority; do not introduce a duplicate licensing engine or invent a replacement License Manager URL. The mail integration is send-only and uses the existing sender identity assigned by the external system; sender addresses are resolved from that system and must not be duplicated in Brandon RV configuration. Mail remains paused and must not be configured or activated until separately authorised.
 
 ## Before any deployment
 
@@ -73,7 +70,6 @@ Brandon RV uses the existing external OrbitFS Mail and License Manager integrati
 - Configure Vercel variables for only the environments that will actually be used.
 - Keep the owner setup secret temporary.
 - Keep mail disabled.
-- Confirm the existing License Manager integration is reachable before licence activation.
 - Apply only reviewed migrations to V2.
 - Run the authorised readiness checks and verify real customer/staff workflows before production use.
 

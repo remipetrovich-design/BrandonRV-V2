@@ -17,7 +17,6 @@ Brandon RV is one application, one V2 Supabase project and one repository. The f
 3. **Workshop Operations** — Workcard setup/review, assignments, worker acceptance, tasks, actual labour and parts, time, attachments, tests, variations, approvals, completion and handover.
 4. **Business Operations** — business settings, service catalogue, service areas, supplier/procurement functions, workforce/HR functions, financial administration, notifications, dashboards and reports. Existing capabilities are retained; launch priority is based on the real business workflow.
 
-**External dependency — OrbitFS License Manager:** the existing licensing module is already integrated. Its own API is responsible for licence validation and enforcement. Brandon RV uses the existing integration; do not build a second licensing engine, duplicate licence records, or reimplement the License Manager's enforcement. Licensing changes are deferred unless a concrete integration defect is identified.
 
 ## Record relationships and business workflow
 - One quote request creates one original Jobcard using the existing `enquiries` record. Do not create a duplicate Jobcard table or record.
@@ -59,14 +58,12 @@ Brandon RV is one application, one V2 Supabase project and one repository. The f
 - Do not promise job completion until critical parts and site access are confirmed.
 
 ## Verified implementation baseline and current gaps
-- Existing repository includes customer and employee portals, quote and Workcard domain logic, booking rules, business policy configuration, audit helpers, a dedicated V2 database schema, and a License Manager integration. Existing code and schema must be inspected before adding replacements.
 - The accepted-quote → Workcard conversion uses `create_workcard_from_accepted_quote`, which locks the quote and creates the Workcard, planned work entries, Jobcard stage history and audit event in one database transaction. The route calls this RPC and returns the existing Workcard on a retry.
 - The V2 database snapshot recorded in [V2 Database Architecture](./V2-DATABASE-ARCHITECTURE.md) includes 57 RLS-enabled public base tables, three compatibility views, a private storage bucket and 66 applied migration records. This is a structural snapshot, not proof that every feature is complete.
 - The Workcard PATCH path calls `update_workcard_with_jobcard_stage`, a service-role-only database function that locks the Workcard and commits the Workcard update, linked Jobcard stage/history and audit event in one transaction. The migration is applied to V2; function privileges and fixed search path were verified, and a transactional smoke test passed. GitHub Actions run 143 passed tests, typecheck and build.
 - The Workcard DELETE path now calls `delete_untouched_workcard`. The migration is applied to V2 and a database smoke test confirmed that the pending Workcard is deleted and its audit event is written; temporary test records were cleaned up. The function also blocks deletion when assignments, tasks, attachments, invoices, supplier orders, expenses, time entries or actual/invoiceable work exist. GitHub Actions run 146 passed all 246 tests, typecheck and build for the DELETE-route implementation.
 - The admin invoice route calls `create_invoice_from_approved_workcard`. A fresh live V2 inspection confirmed that the function is installed and its migration version `20261114201059` is applied; it locks the Workcard, checks the submitted lines against actual invoiceable Workcard entries, creates the draft invoice and invoice items, and writes the audit event in one transaction. The applied migration source file was missing from the GitHub repository. Branch `build/atomic-invoice-creation` restores that exact applied migration as `20261114201059_create_invoice_from_approved_workcard_rpc.sql` and adds focused regression tests. This is migration-source reconciliation, not a new database function or a new live schema change.
 - Documentation must distinguish implemented code, partially implemented code, outstanding work and unverified runtime behavior. A database table, route or UI control alone does not establish that a complete workflow works.
-- Do not claim live License Manager validation, external mail delivery, production deployment or end-to-end workflows are verified unless they have actually been exercised.
 
 ## UI consistency implementation — 15 November 2026
 
@@ -78,7 +75,6 @@ Completed in this pass:
 - Removed duplicate nested admin topbars from email templates, service areas and service catalogue pages; the shared AdminShell remains the single authenticated workspace header.
 - Redirected legacy customer-enquiry, general-enquiry and quote-request admin URLs into the canonical Enquiries register with the correct filter.
 - Standardised admin content wrappers and removed the extra blank portal-sidebar grid column from pages rendered inside AdminShell.
-- Aligned role management and application licence pages with the shared admin page-heading/layout pattern.
 - Removed the hardcoded customer support phone and portal footer location; the customer sidebar now directs customers to the enquiry form.
 - Improved public text accent contrast, workspace muted text contrast, keyboard focus treatment and reduced-motion support.
 

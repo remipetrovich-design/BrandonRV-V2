@@ -38,7 +38,6 @@ const navigation:AdminNavGroup[]=[
   {label:"Email templates",href:"/admin/email-templates",permission:"business.settings.manage",icon:"settings"},
   {label:"Integrations",href:"/admin/integrations",permission:"business.settings.manage",icon:"business"},
   {label:"Settings",href:"/admin/settings",permission:"business.settings.manage",icon:"settings"},
-  {label:"Application licence",href:"/admin/license",permission:"business.settings.manage",icon:"access"},
   {label:"Deployment control",href:"/admin/deployment",permission:"deployment.manage",icon:"settings"}
  ]}
 ];
