@@ -7,7 +7,7 @@ const BOOTSTRAP_PATH="/api/auth/bootstrap-owner";
 
 export async function proxy(request:NextRequest){
  const pathname=request.nextUrl.pathname;
- if(pathname===SETUP_PATH||pathname===BOOTSTRAP_PATH||pathname.startsWith("/_next/")||pathname==="/favicon.ico"||pathname==="/robots.txt"||pathname==="/sitemap.xml"){
+ if(pathname===SETUP_PATH||pathname===BOOTSTRAP_PATH||pathname.startsWith("/_next/")||/\\.[^/]+$/.test(pathname)){
   return NextResponse.next();
  }
  const supabaseUrl=process.env.SUPABASE_URL;
