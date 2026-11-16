@@ -37,7 +37,7 @@ BEGIN
            AND (p.paid_at AT TIME ZONE 'Australia/Sydney')::date BETWEEN p_from AND p_to
       ),
       'outstanding',(
-        SELECT pg_catalog.round(coalesce(sum(pg_catalog.greatest(i.total-i.amount_paid,0)),0),2)
+        SELECT pg_catalog.round(coalesce(sum(greatest(i.total-i.amount_paid,0)),0),2)
           FROM public.invoices i
          WHERE i.business_id=p_business_id
            AND i.issue_date <= p_to
