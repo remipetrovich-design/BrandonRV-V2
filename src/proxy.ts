@@ -1,6 +1,6 @@
 import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
-import {firstInstallDecision} from "@/lib/first-install.mjs";
+import {firstInstallDecision,requiresFirstOwnerSetup} from "@/lib/first-install.mjs";
 
 const SETUP_PATH="/setup";
 const BOOTSTRAP_PATH="/api/auth/bootstrap-owner";
@@ -26,9 +26,10 @@ export async function proxy(request:NextRequest){
   const db=createClient(supabaseUrl,serverKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
   const {count,error}=await db.from("users").select("id",{count:"exact",head:true});
   if(error||count===null)throw error??new Error("User count could not be verified.");
+  const needsFirstOwner=requiresFirstOwnerSetup(count);
   const decision=firstInstallDecision(count,pathname);
-  if(decision==="unavailable")return unavailableResponse(request,pathname);
-  if(decision==="setup"){
+  if(decision==="unavailable")return unavailableResponse(pathname);
+  if(needsFirstOwner&&decision==="setup"){
    if(pathname.startsWith("/api/"))return NextResponse.json({error:"Complete first-time owner setup before using the application."},{status:503,headers:{"Cache-Control":"no-store"}});
    const setupUrl=request.nextUrl.clone();setupUrl.pathname=SETUP_PATH;setupUrl.search="";
    return NextResponse.redirect(setupUrl);
