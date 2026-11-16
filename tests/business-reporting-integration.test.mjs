@@ -31,5 +31,5 @@ test("report data is business-scoped and does not treat draft invoices or unappr
  assert.ok(migration.includes("status NOT IN ('draft','void')"));
  assert.ok(migration.includes("approved_at IS NOT NULL"));
  assert.ok(migration.includes("approved_at IS NULL"));
- assert.ok(migration.includes("p_to >= p_from"));
+ assert.ok(migration.includes("p_to < p_from"));
 });
