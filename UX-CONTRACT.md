@@ -104,7 +104,6 @@ Use one shared shell, content width and spacing system across admin, customer an
 - Printable Jobcard and Workcard use an A4-friendly document layout with repeated headers, legible tables and sensible page breaks. Print hides navigation, controls and private notes from customer copies.
 
 ### Navigation
-- Admin navigation has five responsibility groups: Operations (Enquiries & requests, Quotes, Workcards, Bookings & calendar); Customers & vehicles (Customers, Vehicles); Finance & purchasing (Invoices & payments, Expenses, Suppliers, Supplier orders); People & access (Employees, Workforce, User roles & permissions); Business setup (Business profile, Services & scope, Service areas, Website editor, Email templates, Integrations, Settings, Application licence).
 - Use one canonical Enquiries & requests destination. General enquiries, customer enquiries and quote requests are filters within that register, not duplicate sidebar entries.
 - Use the term **Workcards** in the interface. Workcard and Workorder remain one operational record.
 - Every navigation item is filtered by its corresponding permission. Hiding a link is a convenience only; each page and API mutation must independently enforce the same permission server-side.

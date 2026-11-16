@@ -54,9 +54,7 @@ The supporting business administration:
 
 Keep existing supplier and workforce features. Their presence in the application does not make them launch blockers. Implement their workflows in priority order without deleting modules or assuming supplier accounts, prices, GST settings or employment arrangements that have not been confirmed.
 
-## External integration: OrbitFS License Manager
 
-The License Manager is an existing external module and remains the licensing authority. Brandon RV uses the already-integrated module/API. Licence validation and enforcement are handled by the License Manager through its own API. Do not create a Brandon RV licensing engine, duplicate licence records or reproduce enforcement rules in the business application. Licensing work is deferred unless a specific integration issue is identified.
 
 ## Shared infrastructure
 

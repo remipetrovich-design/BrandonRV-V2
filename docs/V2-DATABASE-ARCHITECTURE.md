@@ -15,7 +15,6 @@ Inspected 15 November 2026 after initial V2 provisioning:
 - No customer, employee or operational records have been copied from V1.
 - One private Storage bucket exists: `brandon-rv-private`.
 - 66 migration records are applied, including the V2 RPC-permission security patch, atomic Workcard update/deletion, and atomic invoice-creation migrations.
-- The database includes the enquiry, quote, booking, Workcard, job work detail, variations, approvals, workforce/HR, suppliers/procurement, invoice/payment, audit, notification, licensing and website structures.
 - Email template schema and six default templates exist, but the external mail delivery system remains paused and has not been re-enabled.
 
 All tables are RLS-enabled. Some internal/service-only tables intentionally have no user-facing RLS policies; their table grants are restricted to `service_role`, with no `anon` or `authenticated` table grants. This is a structural snapshot, not a claim that every workflow is production-ready.
@@ -87,7 +86,6 @@ The system must remain capable of adding staff later, but launch workflows shoul
 - `audit_events` is the existing append-oriented audit history. Reuse it; do not create a duplicate audit table.
 - `notifications` and `notification_preferences` manage in-app notifications.
 - `documents` stores customer/job/quote/invoice document metadata.
-- `application_license` stores the encrypted application licence state and is separate from customer/business workflow data.
 
 ## Current table inventory
 
@@ -103,7 +101,6 @@ The system must remain capable of adding staff later, but launch workflows shoul
 | Workforce (optional/deferred) | `availability_blocks`, `attendance_entries`, `leave_types`, `leave_balances`, `leave_requests`, `employee_assets`, `hr_onboarding_tasks`, `payroll_periods`, `payroll_items` |
 | Procurement (future) | `suppliers`, `supplier_orders`, `supplier_order_items` |
 | Operations/comms | `audit_events`, `notifications`, `notification_preferences`, `email_templates`, `documents` |
-| Licensing | `application_license` |
 
 ## Product and operating decisions
 
