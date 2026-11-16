@@ -25,7 +25,7 @@ test("expenses can be recorded against the same supplier order and Workcard",asy
 test("expense approval is separate from recording and is business-scoped",async()=>{
  const migration=await read("../supabase/migrations/20261117140000_finance_expense_procurement_link.sql");
  assert.match(migration,/p_business_id uuid[\s\S]*p_expense_id uuid[\s\S]*p_approved boolean/);
- assert.match(migration,/WHERE id = p_expense_id AND business_id = p_business_id/);
- assert.match(migration,/approved_by = CASE WHEN p_approved THEN p_actor_user_id ELSE NULL END/);
- assert.match(migration,/approved_at = CASE WHEN p_approved THEN v_now ELSE NULL END/);
+ assert.ok(migration.includes("WHERE id = p_expense_id AND business_id = p_business_id"));
+ assert.ok(migration.includes("approved_by = CASE WHEN p_approved THEN p_actor_user_id ELSE NULL END"));
+ assert.ok(migration.includes("approved_at = CASE WHEN p_approved THEN v_now ELSE NULL END"));
 });
