@@ -12,7 +12,7 @@ test("business reporting combines invoices, received payments, approved expenses
  assert.ok(migration.includes("CREATE OR REPLACE FUNCTION public.business_financial_report"));
  assert.ok(migration.includes("Australia/Sydney"));
  assert.ok(migration.includes("approved_at IS NOT NULL"));
- assert.ok(migration.includes("status = 'recorded'"));
+ assert.ok(migration.includes("status='recorded'"));
  assert.ok(migration.includes("supplier_orders"));
  assert.ok(migration.includes("actual_hours"));
  assert.ok(!migration.includes("pg_catalog.greatest"));
@@ -27,7 +27,7 @@ test("business reporting combines invoices, received payments, approved expenses
 
 test("report data is business-scoped and does not treat draft invoices or unapproved expenses as actuals",async()=>{
  const migration=await read("../supabase/migrations/20261117150000_business_financial_reporting.sql");
- assert.ok(migration.includes("business_id = p_business_id"));
+ assert.ok(migration.includes("business_id=p_business_id"));
  assert.ok(migration.includes("status NOT IN ('draft','void')"));
  assert.ok(migration.includes("approved_at IS NOT NULL"));
  assert.ok(migration.includes("approved_at IS NULL"));
