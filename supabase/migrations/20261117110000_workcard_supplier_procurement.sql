@@ -23,7 +23,8 @@ CREATE INDEX IF NOT EXISTS supplier_order_items_work_entry_idx
 
 CREATE OR REPLACE FUNCTION public.sync_job_work_entry_procurement(
   p_business_id uuid,
-  p_work_entry_id uuid
+  p_work_entry_id uuid,
+  p_actor_user_id uuid
 )
 RETURNS void
 LANGUAGE plpgsql
@@ -31,6 +32,14 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
+  v_job_id uuid;
+  v_job record;
+  v_entry record;
+  v_enquiry record;
+  v_enquiry_id uuid;
+  v_appointment_status text;
+  v_next_job_status text;
+  v_next_stage text;
   v_ordered numeric(12,2);
   v_received numeric(12,2);
   v_supplier_name text;
@@ -38,7 +47,33 @@ DECLARE
   v_ordered_at timestamptz;
   v_expected_at date;
   v_received_at timestamptz;
+  v_now timestamptz := pg_catalog.clock_timestamp();
 BEGIN
+  SELECT job_id INTO v_job_id
+    FROM public.job_work_entries
+   WHERE id = p_work_entry_id AND business_id = p_business_id;
+  IF NOT FOUND THEN
+    RETURN;
+  END IF;
+
+  SELECT id,status,appointment_id,quote_id
+    INTO v_job
+    FROM public.jobs
+   WHERE id = v_job_id AND business_id = p_business_id
+   FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN;
+  END IF;
+
+  SELECT id,quantity_required
+    INTO v_entry
+    FROM public.job_work_entries
+   WHERE id = p_work_entry_id AND job_id = v_job_id AND business_id = p_business_id
+   FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN;
+  END IF;
+
   SELECT coalesce(sum(oi.quantity),0), coalesce(sum(oi.quantity_received),0)
     INTO v_ordered, v_received
     FROM public.supplier_order_items oi
@@ -71,9 +106,72 @@ BEGIN
          supplier_order_reference = v_order_number,
          ordered_at = v_ordered_at,
          expected_at = v_expected_at,
-         received_at = CASE WHEN v_ordered > 0 AND v_received >= v_ordered THEN coalesce(v_received_at,pg_catalog.clock_timestamp()) ELSE NULL END
+         received_at = CASE WHEN v_ordered > 0 AND v_received >= v_ordered THEN coalesce(v_received_at,v_now) ELSE NULL END
    WHERE id = p_work_entry_id
      AND business_id = p_business_id;
+
+  IF v_job.status = 'waiting_parts'
+     AND NOT EXISTS (
+       SELECT 1
+         FROM public.job_work_entries parts
+        WHERE parts.job_id = v_job.id
+          AND parts.business_id = p_business_id
+          AND parts.entry_type = 'parts'
+          AND parts.quantity_required > parts.quantity_received
+     ) THEN
+    SELECT status INTO v_appointment_status
+      FROM public.appointments
+     WHERE id = v_job.appointment_id AND business_id = p_business_id;
+
+    v_next_job_status := CASE
+      WHEN v_appointment_status IN ('confirmed','rescheduled') THEN 'scheduled'
+      ELSE 'pending'
+    END;
+    v_next_stage := CASE WHEN v_next_job_status = 'scheduled' THEN 'booked' ELSE 'workcard_created' END;
+
+    UPDATE public.jobs
+       SET status = v_next_job_status,
+           updated_at = v_now
+     WHERE id = v_job.id AND business_id = p_business_id AND status = 'waiting_parts';
+
+    v_enquiry_id := NULL;
+    IF v_job.quote_id IS NOT NULL THEN
+      SELECT enquiry_id INTO v_enquiry_id
+        FROM public.quotes
+       WHERE id = v_job.quote_id AND business_id = p_business_id;
+    END IF;
+    IF v_enquiry_id IS NULL AND v_job.appointment_id IS NOT NULL THEN
+      SELECT enquiry_id INTO v_enquiry_id
+        FROM public.appointments
+       WHERE id = v_job.appointment_id AND business_id = p_business_id;
+    END IF;
+
+    IF v_enquiry_id IS NOT NULL THEN
+      SELECT id,stage,request_type,archived_at
+        INTO v_enquiry
+        FROM public.enquiries
+       WHERE id = v_enquiry_id AND business_id = p_business_id
+       FOR UPDATE;
+      IF FOUND AND v_enquiry.request_type = 'quote_request' AND v_enquiry.archived_at IS NULL
+         AND v_enquiry.stage IS DISTINCT FROM v_next_stage THEN
+        UPDATE public.enquiries
+           SET stage = v_next_stage,
+               updated_at = v_now
+         WHERE id = v_enquiry_id AND business_id = p_business_id;
+        INSERT INTO public.enquiry_stage_history
+          (business_id,enquiry_id,from_stage,to_stage,changed_by,note)
+        VALUES
+          (p_business_id,v_enquiry_id,v_enquiry.stage,v_next_stage,p_actor_user_id,
+           'All required parts have been received; the Workcard has been released from the parts hold.');
+      END IF;
+    END IF;
+
+    INSERT INTO public.audit_events
+      (business_id,actor_user_id,action,entity_type,entity_id,details)
+    VALUES
+      (p_business_id,p_actor_user_id,'workcard.parts_received_and_released','job',v_job.id,
+       pg_catalog.jsonb_build_object('status',v_next_job_status,'stage',v_next_stage));
+  END IF;
 END;
 $$;
 
@@ -254,7 +352,7 @@ BEGIN
     RAISE EXCEPTION 'Choose a valid supplier order action.' USING ERRCODE = '22023';
   END IF;
 
-  SELECT id,status,order_number
+  SELECT id,status,order_number,job_id
     INTO v_order
     FROM public.supplier_orders
    WHERE id = p_order_id
@@ -272,6 +370,16 @@ BEGIN
       RAISE EXCEPTION 'Only a draft supplier order can be marked ordered.' USING ERRCODE = 'P0001';
     END IF;
 
+    IF v_order.job_id IS NOT NULL THEN
+      SELECT id,status,worker_signed_off_at INTO v_job
+        FROM public.jobs
+       WHERE id = v_order.job_id AND business_id = p_business_id
+       FOR UPDATE;
+      IF NOT FOUND OR v_job.status IN ('completed','cancelled') OR v_job.worker_signed_off_at IS NOT NULL THEN
+        RAISE EXCEPTION 'The linked Workcard is closed and cannot receive this order.' USING ERRCODE = 'P0001';
+      END IF;
+    END IF;
+
     FOR v_item IN
       SELECT id,work_entry_id,quantity
         FROM public.supplier_order_items
@@ -279,15 +387,14 @@ BEGIN
        ORDER BY id
     LOOP
       IF v_item.work_entry_id IS NOT NULL THEN
-        SELECT e.id,e.entry_type,e.quantity_required,e.quantity_ordered,e.job_id,j.status
+        SELECT e.id,e.entry_type,e.quantity_required,e.quantity_ordered,e.job_id
           INTO v_entry
           FROM public.job_work_entries e
-          JOIN public.jobs j ON j.id = e.job_id
          WHERE e.id = v_item.work_entry_id
            AND e.business_id = p_business_id
-           AND j.business_id = p_business_id
-         FOR UPDATE OF e,j;
-        IF NOT FOUND OR v_entry.entry_type <> 'parts' OR v_entry.status IN ('completed','cancelled')
+           AND e.job_id = v_order.job_id
+         FOR UPDATE;
+        IF NOT FOUND OR v_entry.entry_type <> 'parts'
            OR v_entry.quantity_ordered + v_item.quantity > v_entry.quantity_required THEN
           RAISE EXCEPTION 'A Workcard part has changed or no longer has enough outstanding quantity. Review the draft order.' USING ERRCODE = 'P0001';
         END IF;
@@ -302,8 +409,9 @@ BEGIN
       SELECT DISTINCT work_entry_id
         FROM public.supplier_order_items
        WHERE order_id = p_order_id AND work_entry_id IS NOT NULL
+       ORDER BY work_entry_id
     LOOP
-      PERFORM public.sync_job_work_entry_procurement(p_business_id,v_item.work_entry_id);
+      PERFORM public.sync_job_work_entry_procurement(p_business_id,v_item.work_entry_id,p_actor_user_id);
     END LOOP;
   ELSE
     IF v_order.status = 'cancelled' THEN
@@ -359,7 +467,7 @@ BEGIN
     RAISE EXCEPTION 'Enter a valid received quantity.' USING ERRCODE = '22023';
   END IF;
 
-  SELECT id,status,order_number
+  SELECT id,status,order_number,job_id
     INTO v_order
     FROM public.supplier_orders
    WHERE id = p_order_id AND business_id = p_business_id
@@ -414,11 +522,11 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.sync_job_work_entry_procurement(uuid,uuid) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.sync_job_work_entry_procurement(uuid,uuid,uuid) FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION public.create_supplier_order(uuid,uuid,uuid,uuid,date,text,jsonb) FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION public.transition_supplier_order(uuid,uuid,uuid,text) FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION public.receive_supplier_order_item(uuid,uuid,uuid,uuid,numeric) FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION public.sync_job_work_entry_procurement(uuid,uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION public.sync_job_work_entry_procurement(uuid,uuid,uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.create_supplier_order(uuid,uuid,uuid,uuid,date,text,jsonb) TO service_role;
 GRANT EXECUTE ON FUNCTION public.transition_supplier_order(uuid,uuid,uuid,text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.receive_supplier_order_item(uuid,uuid,uuid,uuid,numeric) TO service_role;
