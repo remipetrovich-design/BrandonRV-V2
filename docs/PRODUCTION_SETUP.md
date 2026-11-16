@@ -17,6 +17,8 @@ The root `.env.example` contains only standard dotenv `KEY=VALUE` entries for Ve
 
 Use the same V2 Supabase project in every Vercel environment intended for use. Do not configure V1 credentials. Keep all server secrets unprefixed by `NEXT_PUBLIC_`. Never commit real values to GitHub.
 
+**Current Production environment check (17 November 2026):** `SUPABASE_URL` and the temporary `BRANDON_RV_SETUP_SECRET` are configured. `SUPABASE_SERVICE_ROLE_KEY` exists but is blank. The first-install guard and server-side database access cannot work until the V2 service-role key is populated. Do not paste the key into chat or commit it to the repository.
+
 ## GitHub Actions
 
 The standard `.github/workflows/v2-checks.yml` workflow runs tests, typecheck and build. Vercel Git-based automatic deployments are intended to remain **enabled** for normal application changes. These ordinary Vercel deployments do not apply Supabase migrations; database migrations are applied only through the separate manual migration workflow described below.
