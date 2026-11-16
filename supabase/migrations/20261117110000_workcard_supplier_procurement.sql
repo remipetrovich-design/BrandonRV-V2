@@ -279,7 +279,7 @@ BEGIN
        ORDER BY id
     LOOP
       IF v_item.work_entry_id IS NOT NULL THEN
-        SELECT id,entry_type,quantity_required,quantity_ordered,job_id,status
+        SELECT e.id,e.entry_type,e.quantity_required,e.quantity_ordered,e.job_id,j.status
           INTO v_entry
           FROM public.job_work_entries e
           JOIN public.jobs j ON j.id = e.job_id
