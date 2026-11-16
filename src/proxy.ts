@@ -42,7 +42,7 @@ export async function proxy(request:NextRequest){
  }catch(error){
   console.error("First-install guard could not verify the account state.",error);
   if(pathname===SETUP_PATH)return NextResponse.next();
-  return unavailableResponse(request,pathname);
+  return unavailableResponse(pathname);
  }
 }
 export const config={matcher:["/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)"]};
