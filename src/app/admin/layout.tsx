@@ -22,6 +22,7 @@ const navigation:AdminNavGroup[]=[
  ]},
  {title:"Finance & purchasing",items:[
   {label:"Invoices & payments",href:"/admin/invoices",permission:"invoices.view",icon:"finance"},
+  {label:"Business reports",href:"/admin/reports",permission:"reports.view",icon:"finance"},
   {label:"Expenses",href:"/admin/expenses",permission:"expenses.view",icon:"expense"},
   {label:"Suppliers",href:"/admin/suppliers",permission:"suppliers.view",icon:"supplier"},
   {label:"Supplier orders",href:"/admin/supplier-orders",permission:"suppliers.view",icon:"supplier"}

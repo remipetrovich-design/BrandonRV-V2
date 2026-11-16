@@ -8,7 +8,7 @@ export const dynamic="force-dynamic";
 export default async function AdminDashboard() {
  const user=await currentUser();if(!user)redirect("/portal/sign-in");
  const membership=await currentMembership(user.id);if(!membership)redirect("/portal");
- const keys=["enquiries.view","appointments.view","jobs.view","quotes.view","invoices.view","suppliers.view","business.settings.manage","website.manage","settings.manage"];
+ const keys=["enquiries.view","appointments.view","jobs.view","quotes.view","invoices.view","reports.view","suppliers.view","business.settings.manage","website.manage","settings.manage"];
  const allowed=await userHasPermissions(user.id,keys);
  const db=database();const businessId=membership.business_id;
  const [snapshot,staffProfile]=await Promise.all([
@@ -30,6 +30,7 @@ export default async function AdminDashboard() {
   {label:"Manage Workcards",detail:"Track approved Workcards and progress",href:"/admin/jobs",permission:"jobs.manage"},
   {label:"Prepare a quote",detail:"Create and send an itemised quote",href:"/admin/quotes",permission:"quotes.view"},
   {label:"Invoices & payments",detail:"Issue invoices and record payments",href:"/admin/invoices",permission:"invoices.view"},
+  {label:"Business reports",detail:"Review actual revenue, costs, supplier commitments and Workcard output",href:"/admin/reports",permission:"reports.view"},
   {label:"Supplier orders",detail:"Track parts, delivery and supplier costs",href:"/admin/supplier-orders",permission:"suppliers.view"}
  ].filter(item=>allowed.has(item.permission));
  const setupLinks=[
