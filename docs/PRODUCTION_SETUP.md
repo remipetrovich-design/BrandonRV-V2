@@ -62,6 +62,7 @@ The V2 database currently has no user accounts. When the application is delibera
 
 ## External systems
 
+Brandon RV uses the existing external OrbitFS Mail integration. The mail integration is send-only and uses the existing sender identity assigned by the external system; sender addresses are resolved from that system and must not be duplicated in Brandon RV configuration. Mail remains paused and must not be configured or activated until separately authorised.
 
 ## Before any deployment
 
