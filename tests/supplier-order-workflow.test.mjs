@@ -23,6 +23,9 @@ test("supplier order placement and goods receipt synchronise Workcard procuremen
  assert.match(migration,/CREATE OR REPLACE FUNCTION public\.sync_job_work_entry_procurement/);
  assert.match(migration,/quantity_ordered = v_ordered/);
  assert.match(migration,/quantity_received = v_received/);
+ assert.match(migration,/All required parts have been received; the Workcard has been released from the parts hold/);
+ assert.match(migration,/workcard.parts_received_and_released/);
+ assert.match(migration,/FOR UPDATE/);
  assert.match(transition,/rpc\("transition_supplier_order"/);
  assert.match(receive,/rpc\("receive_supplier_order_item"/);
 });
