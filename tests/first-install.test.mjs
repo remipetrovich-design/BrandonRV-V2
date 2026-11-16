@@ -20,3 +20,13 @@ test("unknown account counts fail closed",()=>{
   assert.equal(canCreateFirstOwner(count),false);
  }
 });
+
+test("first-install routing distinguishes setup, existing accounts and unavailable state",async()=>{
+ const {firstInstallDecision}=await import("../src/lib/first-install.mjs");
+ assert.equal(firstInstallDecision(0,"/"),"setup");
+ assert.equal(firstInstallDecision(0,"/setup"),"allow");
+ assert.equal(firstInstallDecision(0,"/api/auth/bootstrap-owner"),"allow");
+ assert.equal(firstInstallDecision(1,"/setup"),"sign-in");
+ assert.equal(firstInstallDecision(1,"/portal/sign-in"),"allow");
+ for(const count of [null,undefined,-1,1.5,NaN])assert.equal(firstInstallDecision(count,"/"),"unavailable");
+});
