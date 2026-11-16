@@ -6,7 +6,7 @@ const money=(value:number)=>new Intl.NumberFormat("en-AU",{style:"currency",curr
 const date=(value:string)=>value?new Date(value.length===10?value+"T00:00:00":value).toLocaleDateString("en-AU"):"—";
 export default function AdminBusinessReports({initialFrom,initialTo}:{initialFrom:string;initialTo:string}){
  const [from,setFrom]=useState(initialFrom),[to,setTo]=useState(initialTo),[report,setReport]=useState<Report|null>(null),[busy,setBusy]=useState(false),[notice,setNotice]=useState("");
- const load=useCallback(async(start:string,end:string)=>{setBusy(true);setNotice("");try{const r=await fetch("/api/admin/reports?from="+encodeURIComponent(start)+"&to="+encodeURIComponent(end));const d=await r.json();if(!r.ok)throw new Error(d.error??"Could not load reports.");setReport(d);}catch(e){setNotice(e instanceof Error?e.message:"Could not load reports.");}finally{setBusy(false);}},[from,to]);
+ const load=useCallback(async(start:string,end:string)=>{setBusy(true);setNotice("");try{const r=await fetch("/api/admin/reports?from="+encodeURIComponent(start)+"&to="+encodeURIComponent(end));const d=await r.json();if(!r.ok)throw new Error(d.error??"Could not load reports.");setReport(d);}catch(e){setNotice(e instanceof Error?e.message:"Could not load reports.");}finally{setBusy(false);}},[]);
  useEffect(()=>{void load(initialFrom,initialTo);},[initialFrom,initialTo,load]);
  const summary=report?.summary;
  const metrics=[
