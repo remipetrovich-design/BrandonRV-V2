@@ -18,8 +18,6 @@ test('the application has no bundled licence enforcement or activation surfaces'
   'src/app/api/admin/license/route.ts',
   'src/components/license-manager-panel.tsx',
   'src/components/admin-license-monitor.tsx',
-  'supabase/migrations/20261112090000_application_license.sql',
-  'supabase/migrations/20261112100000_application_license_validation_cache.sql',
   'tests/application-license-contract.test.mjs',
   'standalone-license-module.zip'
  ]) assert.equal(exists(path),false,path+' should not exist');
@@ -30,4 +28,6 @@ test('the application has no bundled licence enforcement or activation surfaces'
  assert.doesNotMatch(env,/BRANDON_RV_LICENSE|BRANDON_RV_VERSION/);
  const setup=read('src/app/api/auth/bootstrap-owner/route.ts');
  assert.match(setup,/ceo_founder/);
+ const removal=read('supabase/migrations/20261116164445_remove_legacy_application_license.sql');
+ assert.match(removal,/DROP TABLE IF EXISTS public\.application_license/i);
 });
