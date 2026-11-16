@@ -8,7 +8,7 @@ type OrderItem={id:string;work_entry_id:string|null;description:string;sku:strin
 type Order={id:string;order_number:string;created_at:string;status:string;ordered_at:string|null;expected_at:string|null;received_at:string|null;subtotal:number;tax_amount:number;total:number;notes:string|null;supplier:{id:string;name:string}|null;job:{id:string;job_number:string;title:string}|null;items:OrderItem[]};
 type Selection={selected:boolean;quantity:string;unitCost:string;taxRate:string};
 const money=(value:number)=>new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD"}).format(Number(value??0));
-export default function AdminSupplierOrders({canManage}:{canManage:boolean}){
+export default function AdminSupplierOrders({canManage,canCreate}:{canManage:boolean;canCreate:boolean}){
  const [orders,setOrders]=useState<Order[]>([]),[suppliers,setSuppliers]=useState<Supplier[]>([]),[jobs,setJobs]=useState<Job[]>([]);
  const [jobId,setJobId]=useState(""),[supplierId,setSupplierId]=useState(""),[expectedAt,setExpectedAt]=useState(""),[notes,setNotes]=useState("");
  const [entries,setEntries]=useState<WorkEntry[]>([]),[selection,setSelection]=useState<Record<string,Selection>>({});
@@ -22,7 +22,7 @@ export default function AdminSupplierOrders({canManage}:{canManage:boolean}){
  async function transition(order:Order,status:"ordered"|"cancelled"){setBusy(true);setNotice("");try{const r=await fetch("/api/admin/supplier-orders/"+order.id,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status})});const d=await r.json();if(!r.ok)throw new Error(d.error??"Could not update supplier order.");setNotice(status==="ordered"?"Order marked as placed with supplier.":"Supplier order cancelled.");await refresh();}catch(e){setNotice(e instanceof Error?e.message:"Could not update supplier order.");}finally{setBusy(false);}}
  async function receive(order:Order,item:OrderItem){setBusy(true);setNotice("");try{const quantity=Number(receiveValues[item.id]??(Number(item.quantity)-Number(item.quantity_received)));const r=await fetch("/api/admin/supplier-orders/"+order.id+"/receive",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({itemId:item.id,quantity})});const d=await r.json();if(!r.ok)throw new Error(d.error??"Could not record received goods.");setNotice("Goods received. The linked Workcard part has been updated.");setReceiveValues(current=>({...current,[item.id]:""}));await refresh();}catch(e){setNotice(e instanceof Error?e.message:"Could not record received goods.");}finally{setBusy(false);}}
  return <div className="admin-supplier-orders">
-  {canManage&&<section className="portal-panel"><div className="portal-panel-heading"><div><span className="panel-kicker">WORKCARD PROCUREMENT</span><h2>Create supplier order</h2></div></div>
+  {canCreate&&<section className="portal-panel"><div className="portal-panel-heading"><div><span className="panel-kicker">WORKCARD PROCUREMENT</span><h2>Create supplier order</h2></div></div>
    <form className="auth-form" onSubmit={createOrder}>
     <div className="form-grid"><label>Supplier<select value={supplierId} onChange={e=>setSupplierId(e.target.value)} required><option value="">Select supplier</option>{suppliers.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
      <label>Workcard<select value={jobId} onChange={e=>setJobId(e.target.value)} required><option value="">Select Workcard</option>{jobs.map(j=><option key={j.id} value={j.id}>{j.job_number} · {j.title}</option>)}</select></label>
