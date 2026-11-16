@@ -7,6 +7,7 @@ export async function GET(request:Request){
  const db=database(),businessId=access.membership!.business_id;
  const jobId=new URL(request.url).searchParams.get("jobId");
  if(jobId){
+  if(!(await userHasPermission(access.user!.id,"jobs.view")))return jsonError("Workcard access required.",403);
   if(!isUuid(jobId))return jsonError("Select a valid Workcard.");
   const {data:job,error:jobError}=await db.from("jobs").select("id,status,worker_signed_off_at").eq("id",jobId).eq("business_id",businessId).maybeSingle();
   if(jobError||!job)return jsonError("Workcard not found.",404);
@@ -28,6 +29,7 @@ export async function GET(request:Request){
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const access=await authorizePermission("suppliers.manage");if(access.response)return access.response;
+ if(!(await userHasPermission(access.user!.id,"jobs.view")))return jsonError("Workcard access required.",403);
  try{
   const body=await request.json(),supplierId=String(body.supplierId??""),jobId=String(body.jobId??"");
   if(!isUuid(supplierId)||!isUuid(jobId))return jsonError("Choose a supplier and Workcard.");
