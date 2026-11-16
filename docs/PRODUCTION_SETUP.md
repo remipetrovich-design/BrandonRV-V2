@@ -53,7 +53,7 @@ No migration or deployment is triggered by adding these files. Keep both manual-
 
 - Repository: `remipetrovich-design/BrandonRV-V2`, branch `main`.
 - Supabase: `Brandon-RV-V2`, project ref `lciylmfpcefdpsouoqvm`, region Tokyo (`ap-northeast-1`).
-- Vercel: an existing project named `brandon-rv` is present in the connected Vercel account, but it is linked to the different GitHub repository `remipetrovich-design/Brandon-RV-`, not `remipetrovich-design/BrandonRV-V2`. Its latest deployment is in an error state. Do not assume it is the V2 project or use its project ID until it is deliberately relinked or a separate V2 project is created and verified.
+- Vercel: the V2 project is `brandon-rv-v2` (`prj_ZI2MbFrpCJFovX9unahbN5WgLqTw`) in team `techteam36`, linked to `remipetrovich-design/BrandonRV-V2`. Its Production domains are `brandon-rv-v2.vercel.app`, `brandon-rv-v2-techteam36.vercel.app` and `brandon-rv-v2-git-main-techteam36.vercel.app`. The separate `brandon-rv` project is linked to the V1 repository and must not be used for V2.
 - V1 project `thkxalrsklgademwrrlq` is separate and must never be used by V2.
 
 ## First owner setup
