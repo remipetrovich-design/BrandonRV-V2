@@ -1,5 +1,4 @@
 import {database,normalizeEmail,passwordHash,createSession,jsonError,sameOrigin} from "@/lib/auth";
-import {canCreateFirstOwner} from "@/lib/first-install.mjs";
 export const runtime="nodejs";
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
