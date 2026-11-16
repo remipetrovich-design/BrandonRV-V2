@@ -346,6 +346,7 @@ DECLARE
   v_order record;
   v_item record;
   v_entry record;
+  v_job record;
   v_now timestamptz := pg_catalog.clock_timestamp();
 BEGIN
   IF p_next_status IS NULL OR p_next_status NOT IN ('ordered','cancelled') THEN
@@ -430,8 +431,9 @@ BEGIN
       SELECT DISTINCT work_entry_id
         FROM public.supplier_order_items
        WHERE order_id = p_order_id AND work_entry_id IS NOT NULL
+       ORDER BY work_entry_id
     LOOP
-      PERFORM public.sync_job_work_entry_procurement(p_business_id,v_item.work_entry_id);
+      PERFORM public.sync_job_work_entry_procurement(p_business_id,v_item.work_entry_id,p_actor_user_id);
     END LOOP;
   END IF;
 
@@ -509,7 +511,7 @@ BEGIN
    WHERE id = p_order_id AND business_id = p_business_id;
 
   IF v_item.work_entry_id IS NOT NULL THEN
-    PERFORM public.sync_job_work_entry_procurement(p_business_id,v_item.work_entry_id);
+    PERFORM public.sync_job_work_entry_procurement(p_business_id,v_item.work_entry_id,p_actor_user_id);
   END IF;
 
   INSERT INTO public.audit_events
