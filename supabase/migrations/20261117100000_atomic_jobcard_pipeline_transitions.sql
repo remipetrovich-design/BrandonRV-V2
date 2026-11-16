@@ -266,7 +266,7 @@ BEGIN
     IF FOUND AND v_enquiry.request_type = 'quote_request' AND v_enquiry.archived_at IS NULL THEN
       IF v_status = 'paid' THEN
         UPDATE public.enquiries
-           SET stage = 'closed',
+           SET stage = 'paid',
                status = 'closed',
                archived_at = v_now,
                guest_access_token_hash = NULL,
@@ -277,7 +277,7 @@ BEGIN
         INSERT INTO public.enquiry_stage_history
           (business_id, enquiry_id, from_stage, to_stage, changed_by, note)
         VALUES
-          (p_business_id, v_enquiry_id, v_enquiry.stage, 'closed', p_actor_user_id,
+          (p_business_id, v_enquiry_id, v_enquiry.stage, 'paid', p_actor_user_id,
            'Jobcard archived after final customer approval and full invoice payment.');
 
         v_archived := true;
