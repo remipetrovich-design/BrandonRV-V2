@@ -101,14 +101,21 @@ BEGIN
   END IF;
 
   IF v_time.job_id IS NOT NULL THEN
-    SELECT pg_catalog.round(coalesce(sum(duration_minutes),0)::numeric / 60,2)
-      INTO v_job_hours
-      FROM public.time_entries
-     WHERE job_id = v_time.job_id
-       AND business_id = p_business_id
-       AND entry_type = 'work'
-       AND ended_at IS NOT NULL
-       AND approved_at IS NOT NULL;
+    SELECT pg_catalog.round(
+      coalesce((SELECT sum(quantity_used)
+                  FROM public.job_work_entries
+                 WHERE job_id = v_time.job_id
+                   AND business_id = p_business_id
+                   AND entry_type = 'labour'),0)
+      + coalesce((SELECT sum(duration_minutes)::numeric / 60
+                    FROM public.time_entries
+                   WHERE job_id = v_time.job_id
+                     AND business_id = p_business_id
+                     AND work_entry_id IS NULL
+                     AND entry_type = 'work'
+                     AND ended_at IS NOT NULL
+                     AND approved_at IS NOT NULL),0),2)
+      INTO v_job_hours;
 
     UPDATE public.jobs
        SET actual_hours = v_job_hours,
