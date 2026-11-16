@@ -13,7 +13,7 @@ CREATE OR REPLACE FUNCTION public.respond_to_completed_workcard(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 DECLARE
   v_job record;
@@ -180,7 +180,7 @@ CREATE OR REPLACE FUNCTION public.record_invoice_payment(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 DECLARE
   v_invoice record;
