@@ -112,7 +112,7 @@ DECLARE
   v_description text;
   v_sku text;
 BEGIN
-  IF p_business_id IS NULL OR p_actor_user_id IS NULL OR p_supplier_id IS NULL
+  IF p_business_id IS NULL OR p_actor_user_id IS NULL OR p_supplier_id IS NULL OR p_items IS NULL
      OR pg_catalog.jsonb_typeof(p_items) <> 'array'
      OR pg_catalog.jsonb_array_length(p_items) < 1
      OR pg_catalog.jsonb_array_length(p_items) > 100 THEN
@@ -149,7 +149,7 @@ BEGIN
     (id,business_id,supplier_id,job_id,order_number,status,expected_at,subtotal,tax_amount,total,notes,created_by,created_at,updated_at)
   VALUES
     (v_order_id,p_business_id,p_supplier_id,p_job_id,v_order_number,'draft',p_expected_at,0,0,0,
-     NULLIF(pg_catalog.left(pg_catalog.trim(coalesce(p_notes,'')),3000),''),p_actor_user_id,v_now,v_now);
+     NULLIF(pg_catalog.left(pg_catalog.btrim(coalesce(p_notes,'')),3000),''),p_actor_user_id,v_now,v_now);
 
   FOR v_item IN SELECT value FROM pg_catalog.jsonb_array_elements(p_items)
   LOOP
@@ -172,8 +172,8 @@ BEGIN
       RAISE EXCEPTION 'A Workcard part cannot be ordered without its Workcard.' USING ERRCODE = '22023';
     END IF;
 
-    v_description := pg_catalog.left(pg_catalog.trim(coalesce(v_item->>'description','')),500);
-    v_sku := NULLIF(pg_catalog.left(pg_catalog.trim(coalesce(v_item->>'sku','')),100),'');
+    v_description := pg_catalog.left(pg_catalog.btrim(coalesce(v_item->>'description','')),500);
+    v_sku := NULLIF(pg_catalog.left(pg_catalog.btrim(coalesce(v_item->>'sku','')),100),'');
 
     IF v_work_entry_id IS NOT NULL THEN
       IF v_work_entry_id = ANY(v_seen) THEN
@@ -250,7 +250,7 @@ DECLARE
   v_entry record;
   v_now timestamptz := pg_catalog.clock_timestamp();
 BEGIN
-  IF p_next_status NOT IN ('ordered','cancelled') THEN
+  IF p_next_status IS NULL OR p_next_status NOT IN ('ordered','cancelled') THEN
     RAISE EXCEPTION 'Choose a valid supplier order action.' USING ERRCODE = '22023';
   END IF;
 
