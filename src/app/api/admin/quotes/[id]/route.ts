@@ -34,9 +34,11 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    if(quoteRecord&&customer?.email){
     const safeName=String(customer.full_name??customer.contact_name??"Customer").replace(/[&<>"]/g,"");
     const base=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;
-    const quoteUrl=quoteRecord.enquiry_id&&!quoteRecord.customer_id?base+"/request-status":base+"/portal/quotes";
-    const guestNote=quoteRecord.enquiry_id&&!quoteRecord.customer_id?"Use the secure Request Quote link and access code from your original confirmation email. ":"";
-    emailSent=await sendEmail({sender:"brandonrv",to:customer.email,subject:"Your Brandon RV quote "+quoteRecord.quote_number,html:`<p>Hi ${safeName},</p><p>Your Brandon RV quote ${quoteRecord.quote_number} is ready for review.</p><p>Quote total: <strong>${Number(quoteRecord.total).toFixed(2)} AUD</strong></p><p>${guestNote}<a href="${quoteUrl}">View your quote</a></p><p>Work is not booked until Brandon RV confirms scheduling.</p>`});
+    const guestQuote=!!quoteRecord.enquiry_id&&!quoteRecord.user_id;
+    const accessMarkup=guestQuote
+     ?"<p>Use the secure Request Quote link and access code from your original confirmation email to view and respond to this quote.</p>"
+     :'<p><a href="'+base+'/portal/quotes">View your quote</a></p>';
+    emailSent=await sendEmail({sender:"brandonrv",to:customer.email,subject:"Your Brandon RV quote "+quoteRecord.quote_number,html:`<p>Hi ${safeName},</p><p>Your Brandon RV quote ${quoteRecord.quote_number} is ready for review.</p><p>Quote total: <strong>${Number(quoteRecord.total).toFixed(2)} AUD</strong></p>${accessMarkup}<p>Work is not booked until Brandon RV confirms scheduling.</p>`});
    }
    return Response.json({success:true,emailSent});
   }
