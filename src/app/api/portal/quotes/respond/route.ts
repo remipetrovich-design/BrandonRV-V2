@@ -22,6 +22,7 @@ export async function POST(request:Request){
   if(error.code==="P0001")return Response.redirect(new URL(destination+"?notice=unavailable",request.url),303);
   return jsonError("Could not record your quote response. No changes were made.",500);
  }
+ if(data?.expired)return Response.redirect(new URL(destination+"?notice=expired",request.url),303);
  if(!data?.success)return jsonError("Could not confirm your quote response. No changes were made.",500);
  const notice=quote?.quote_kind==="variation"?(response==="declined"?"variation_declined":"variation_accepted"):(response==="declined"?"declined":"accepted");
  return Response.redirect(new URL(destination+"?notice="+notice,request.url),303);

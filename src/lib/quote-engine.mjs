@@ -67,8 +67,14 @@ export function nextQuoteRevision(prior, { enquiryId, customerId }) {
   if (!prior || prior.enquiry_id !== enquiryId || prior.customer_id !== customerId) {
     throw new Error("A quote revision must belong to the same customer and Jobcard relationship.");
   }
-  if (["accepted", "converted"].includes(String(prior.status))) {
-    throw new Error("An accepted quote cannot be revised. Use the variation approval workflow for additional work.");
+  if (["accepted", "converted", "declined", "superseded"].includes(String(prior.status))) {
+    throw new Error("This quote is no longer eligible for revision. Use the current active quote or the Workcard variation workflow.");
+  }
+  if (prior.status === "draft" && prior.senior_approval_status !== "changes_requested") {
+    throw new Error("A draft quote can only be revised after senior review has requested changes.");
+  }
+  if (!["sent", "expired", "draft"].includes(String(prior.status))) {
+    throw new Error("Only an issued, expired, or returned-for-changes quote can be revised.");
   }
 
   const revision = Number(prior.revision_number ?? 1);

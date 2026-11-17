@@ -54,7 +54,7 @@ const nextAction:Record<string,string>={
  closed:"The Jobcard is closed."
 };
 
-export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,canManageQuotes=false,canManageJobs=false,canManageBookings=false,canViewBookings=false}:{enquiryId:string;canManageEnquiries?:boolean;canManageQuotes?:boolean;canManageJobs?:boolean;canManageBookings?:boolean;canViewBookings?:boolean}){
+export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,canManageQuotes=false,canApproveQuotes=false,canManageJobs=false,canManageBookings=false,canViewBookings=false}:{enquiryId:string;canManageEnquiries?:boolean;canManageQuotes?:boolean;canApproveQuotes?:boolean;canManageJobs?:boolean;canManageBookings?:boolean;canViewBookings?:boolean}){
  const [record,setRecord]=useState<RecordData|null>(null),[customer,setCustomer]=useState<LinkedCustomer|null>(null),[vehicle,setVehicle]=useState<Vehicle|null>(null);
  const [staff,setStaff]=useState<Staff[]>([]),[assigned,setAssigned]=useState<string[]>([]),[history,setHistory]=useState<any[]>([]),[attachments,setAttachments]=useState<any[]>([]);
  const [quotes,setQuotes]=useState<Quote[]>([]),[workcard,setWorkcard]=useState<any>(null),[bookings,setBookings]=useState<any[]>([]),[bookingEdits,setBookingEdits]=useState<Record<string,{starts_at:string;location:string}>>({});
@@ -180,7 +180,7 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
 
   {isQuoteRequest&&canManageQuotes&&<section id="brv-panel-quote" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-quote" hidden={selectedTab!=="quote"}>
    <div className="portal-panel-heading"><div><span className="panel-kicker">QUOTE</span><h2>Quote history &amp; preparation</h2><p>Each revision is retained against this Jobcard. Issued quotes require separate senior approval.</p></div><button className="button button-primary" type="button" onClick={()=>setQuotePanelOpen(v=>!v)}>{quotePanelOpen?"Close quote form":"Create quote"}</button></div>
-   {activeQuotes.length?activeQuotes.map(q=><article className="brv-ticket-quote" key={q.id}><div><strong>{q.quote_number} · Revision {q.revision_number}</strong><span>{pretty(q.status)} · {money(q.total)}</span><small>{new Date(q.created_at).toLocaleDateString("en-AU")}</small></div><AdminQuoteManagement quoteId={q.id}/><AdminQuoteTools quoteId={q.id}/></article>):<p className="panel-footnote">No quotes have been created for this Jobcard.</p>}
+   {activeQuotes.length?activeQuotes.map(q=><article className="brv-ticket-quote" key={q.id}><div><strong>{q.quote_number} · Revision {q.revision_number}</strong><span>{pretty(q.status)} · {money(q.total)}</span><small>{new Date(q.created_at).toLocaleDateString("en-AU")}</small></div>{canManageQuotes&&<AdminQuoteManagement quoteId={q.id}/>} {canApproveQuotes&&<AdminQuoteTools quoteId={q.id} canIssue={canManageQuotes}/>}</article>):<p className="panel-footnote">No quotes have been created for this Jobcard.</p>}
    {quotePanelOpen&&<div className="brv-ticket-quote-create"><AdminCreateQuote initialEnquiryId={enquiryId} onCreated={()=>void load()}/></div>}
    
   </section>}
