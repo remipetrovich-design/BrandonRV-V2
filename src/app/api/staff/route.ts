@@ -1,9 +1,8 @@
 import {authorizePermission,database,jsonError,sameOrigin,userHasPermission} from "@/lib/auth";
-import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
 import {getWorkforceRankGroup} from "@/lib/workforce-rank-groups.mjs";
 import {isUuid,isCalendarDate} from "@/lib/api-validation.mjs";
 export const runtime="nodejs";
-const roleKeys=["ceo_founder","website_development_specialist","owner","website_developer"];
+const executiveRoleKeys=["ceo_founder","website_development_specialist","senior_manager","owner","website_developer"];
 const staffRoleKeys=["trial_apprentice","apprentice","senior_apprentice","team_leader","supervisor","office_admin","office_supervisor","office_manager","manager","senior_manager","website_development_specialist","ceo_founder"];
 const employmentTypes=["casual","part_time","full_time"];
 const employmentStatuses=["active","leave","suspended","terminated"];
@@ -26,7 +25,8 @@ export async function GET(){
  ]):[{data:[]},{data:[]}];
  const grantsByUser=new Map<string,string[]>();for(const grant of grants??[]){const current=grantsByUser.get(grant.user_id)??[];current.push(grant.permission_key);grantsByUser.set(grant.user_id,current);}
  const directory=(employees??[]).filter(x=>customerByUser.has(x.id)).map(x=>({...x,customer_id:customerByUser.get(x.id),workforce_group:getWorkforceRankGroup(x.user_role),additional_permissions:grantsByUser.get(x.id)??[]}));
- return Response.json({employees:directory,permissions:catalogue??[],canManageAccess:await userHasPermission(access.user!.id,"roles.manage"),roles:(roles??[]).filter(x=>x.role_key!=="customer"&&(isGlobalAdministrator(access.user?.user_role)||!roleKeys.includes(x.role_key))).sort((a,b)=>{const ai=staffRoleKeys.indexOf(a.role_key),bi=staffRoleKeys.indexOf(b.role_key);return (ai<0?99:ai)-(bi<0?99:bi)||a.name.localeCompare(b.name);})});
+ const canAssignExecutiveRoles=await userHasPermission(access.user!.id,"roles.assign_executive");
+ return Response.json({employees:directory,permissions:catalogue??[],canManageAccess:await userHasPermission(access.user!.id,"roles.manage"),canAssignExecutiveRoles,roles:(roles??[]).filter(x=>x.role_key!=="customer"&&(canAssignExecutiveRoles||!executiveRoleKeys.includes(x.role_key))).sort((a,b)=>{const ai=staffRoleKeys.indexOf(a.role_key),bi=staffRoleKeys.indexOf(b.role_key);return (ai<0?99:ai)-(bi<0?99:bi)||a.name.localeCompare(b.name);})});
 
 }
 export async function POST(){return jsonError("Staff access must be granted through a customer invitation.",410);}
@@ -38,7 +38,8 @@ export async function PATCH(request:Request){
   const db=database(),businessId=access.membership!.business_id;
   const {data:employee}=await db.from("users").select("id,user_role,employment_status,start_date,end_date,updated_at").eq("id",userId).eq("business_id",businessId).not("user_role","is",null).neq("user_role","customer").maybeSingle();
   if(!employee)return jsonError("Employee record not found.",404);
-  if(roleKeys.includes(String(employee.user_role))&&!isGlobalAdministrator(access.user?.user_role))return jsonError("Only CEO / Founder or Website Development Specialist can edit this account.",403);
+  const canAssignExecutiveRoles=await userHasPermission(access.user!.id,"roles.assign_executive");
+  if(executiveRoleKeys.includes(String(employee.user_role))&&!canAssignExecutiveRoles)return jsonError("You do not have permission to manage this executive account.",403);
   const updates:any={updated_at:new Date().toISOString()};
   const managesAccess=body.roleKey!==undefined||body.additionalPermissions!==undefined||body.department!==undefined||body.teamName!==undefined;
   if(managesAccess){const permissionAccess=await authorizePermission("roles.manage");if(permissionAccess.response)return permissionAccess.response;}
@@ -48,7 +49,7 @@ export async function PATCH(request:Request){
   if(body.customTitle!==undefined){const value=String(body.customTitle).trim();if(value.length>100)return jsonError("Custom title must be 100 characters or fewer.");updates.custom_title=value||null;}
   if(body.department!==undefined){const value=String(body.department).trim();if(value.length>100)return jsonError("Department must be 100 characters or fewer.");updates.department=value||null;}
   if(body.teamName!==undefined){const value=String(body.teamName).trim();if(value.length>100)return jsonError("Team name must be 100 characters or fewer.");updates.team_name=value||null;}
-  if(body.roleKey!==undefined){const value=String(body.roleKey);const {data:role}=await db.from("user_roles").select("role_key").eq("role_key",value).maybeSingle();if(!role||value==="customer")return jsonError("Select a valid staff role.");if(roleKeys.includes(value)&&!isGlobalAdministrator(access.user?.user_role))return jsonError("Only CEO / Founder or Website Development Specialist can assign executive access.",403);updates.user_role=value;}
+  if(body.roleKey!==undefined){const value=String(body.roleKey);const {data:role}=await db.from("user_roles").select("role_key").eq("role_key",value).maybeSingle();if(!role||value==="customer")return jsonError("Select a valid staff role.");if(executiveRoleKeys.includes(value)&&!canAssignExecutiveRoles)return jsonError("You do not have permission to assign this executive role.",403);updates.user_role=value;}
   if(body.employeeNumber!==undefined){const value=String(body.employeeNumber).trim();if(value.length>50)return jsonError("Employee number must be 50 characters or fewer.");updates.employee_number=value||null;}
   if(body.startDate!==undefined){const value=String(body.startDate);if(value&&!isCalendarDate(value))return jsonError("Enter a valid start date.");updates.start_date=value||null;}
   if(body.endDate!==undefined){const value=String(body.endDate);if(value&&!isCalendarDate(value))return jsonError("Enter a valid end date.");updates.end_date=value||null;}
