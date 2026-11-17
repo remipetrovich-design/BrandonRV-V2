@@ -24,3 +24,16 @@ test("rejects non-arrays, non-string values and malformed staff identifiers", ()
 test("rejects more than twenty submitted staff identifiers before deduplication", () => {
   assert.equal(normalizeWorkcardStaffIds(Array(21).fill(staffA)), null);
 });
+
+import { readFile } from "node:fs/promises";
+const read = path => readFile(new URL(path, import.meta.url), "utf8");
+
+test("admin Workcard assignment endpoint validates IDs before its tenant-scoped transaction", async () => {
+  const route = await read("../src/app/api/admin/jobs/[id]/assign/route.ts");
+  assert.match(route, /userHasPermission\(user\.id,\"jobs\.assign\"\)/);
+  assert.match(route, /normalizeWorkcardStaffIds\(body\.staffIds\)/);
+  assert.match(route, /p_business_id:membership\.business_id/);
+  assert.match(route, /p_actor_user_id:user\.id/);
+  assert.match(route, /p_staff_ids:ids/);
+  assert.match(route, /replace_workcard_assignments/);
+});
