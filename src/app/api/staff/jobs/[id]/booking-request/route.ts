@@ -36,7 +36,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   if(error||!appointment)return jsonError("Could not submit the booking request.",500);
   const {data:bookingResult,error:bookingError}=await db.rpc("update_jobcard_booking",{
    p_business_id:businessId,p_actor_user_id:user.id,p_enquiry_id:enquiry.id,p_appointment_id:appointment.id,
-   p_action:"request",p_starts_at:start.toISOString(),p_ends_at:null,p_location:location
+   p_action:"request",p_starts_at:start.toISOString(),p_ends_at:null,p_location:location,p_bypass_conflicts:false
   });
   if(bookingError){await db.from("appointments").delete().eq("id",appointment.id).eq("business_id",businessId);const status=bookingError.code==="P0001"?409:bookingError.code==="P0002"?404:500;return jsonError(bookingError.message??"Booking request could not be linked to the Workcard.",status);}
   return Response.json({success:true,appointment:bookingResult.appointment,message:"Booking request sent to management. The visit is not confirmed until the date, time and location are approved."},{status:201});

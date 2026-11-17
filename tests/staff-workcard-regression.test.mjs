@@ -5,10 +5,12 @@ const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 
 test("a confirmed booking with a start and location can start a Workcard without a promised finish",async()=>{
  const route=await read("../src/app/api/staff/jobs/[id]/status/route.ts");
- assert.match(route,/booking\.status!==\"confirmed\"/);
- assert.match(route,/!booking\.starts_at/);
- assert.match(route,/!booking\.location/);
- assert.doesNotMatch(route,/!booking\.ends_at/);
+ const migration=await read("../supabase/migrations/20261117210000_atomic_workcard_signoff_invoice.sql");
+ assert.match(route,/rpc\("start_workcard"/);
+ assert.match(migration,/v_booking\.status NOT IN \('confirmed','rescheduled'\)/);
+ assert.match(migration,/v_booking\.starts_at IS NULL/);
+ assert.match(migration,/length\(trim\(coalesce\(v_booking\.location,''\)\)\)<3/);
+ assert.doesNotMatch(migration,/v_booking\.ends_at IS NULL/);
 });
 
 test("worker booking requests do not store an implied preferred finish time",async()=>{
