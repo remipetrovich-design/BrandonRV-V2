@@ -151,3 +151,8 @@ Staff with the required permission can create an intake record directly in the a
 Pipeline stages: New, Contacted, Awaiting Information, Assessment Required, Quote in Progress, Quote Sent, Awaiting Approval, Approved, Declined, Converted and Closed. Existing enquiry status values are retained for compatibility with the quote and booking workflows; stage changes update the corresponding legacy status and create an immutable stage-history entry.
 
 Staff assignment history and stage history are stored against the same enquiry record. Assignments are business-scoped and limited to active staff in the Brandon RV workspace. The unified enquiry migration is forward-only. V2 does not apply it automatically; verify the dedicated V2 database migration history before considering any migration action.
+
+
+## Customer portal records
+
+See [Customer Portal Records & Release Boundaries](docs/CUSTOMER-PORTAL-RECORDS.md) for the customer record ownership model, Jobcard sequence, document access and release boundaries.
