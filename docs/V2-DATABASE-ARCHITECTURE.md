@@ -8,9 +8,9 @@ V2 now has its own Supabase project, database, migration history, auth/storage r
 
 ## Current database snapshot
 
-Inspected 17 November 2026 after V2 operational setup:
-- 58 base tables in `public` and 3 compatibility views (`customers`, `profiles`, `staff`).
-- All 58 base tables have Row Level Security enabled. No direct table grants are present for the Supabase `anon` or `authenticated` roles; application access is through the server-side API layer.
+Inspected 17 November 2026 after the MVP workflow migrations:
+- 60 base tables in `public` and 3 compatibility views (`customers`, `profiles`, `staff`).
+- All 60 base tables have Row Level Security enabled. No direct table grants are present for the Supabase `anon` or `authenticated` roles; application access is through the server-side API layer.
 - The business setting `accepting_enquiries` is explicitly enabled, while the business itself remains in `prelaunch` status.
 - One Brandon RV business/workspace record remains `prelaunch`, based in Tamworth NSW.
 - One active CEO/founder account exists. No customer or employee accounts have been copied from V1.
@@ -19,7 +19,8 @@ Inspected 17 November 2026 after V2 operational setup:
 - Eight website-builder pages exist and none are published.
 - No genuine enquiries, quotes, appointments, Workcards, invoices or payments exist. No fake customer records have been created.
 - One private Storage bucket exists: `brandon-rv-private`.
-- 76 migration records are applied, including the V2 RPC-permission security patch, Workcard lifecycle, procurement/time tracking, financial reporting, first-owner bootstrap and ALIS installation migrations.
+- 83 migration records are applied, including the V2 RPC-permission security patch, Workcard lifecycle, procurement/time tracking, financial reporting, first-owner bootstrap, ALIS installation, invoice lifecycle and latest Jobcard booking migrations.
+- Invoice lifecycle additions include `invoices.issued_at`, `invoices.issued_by`, `payments.payment_type`, `payments.idempotency_key`, `invoice_refunds` and `invoice_credits`. Both new tables have RLS enabled and are accessed through service-role-controlled server functions.
 - The email-template table has no configured rows. Bundled template rendering exists, but external Mail delivery remains paused.
 
 All tables are RLS-enabled. Some internal/service-only tables intentionally have no user-facing RLS policies; their table grants are restricted to `service_role`, with no `anon` or `authenticated` table grants. This is a structural snapshot, not a claim that every workflow is production-ready.
@@ -102,7 +103,7 @@ The system must remain capable of adding staff later, but launch workflows shoul
 | Customer intake | `vehicles`, `enquiries`, `enquiry_attachments`, `enquiry_assignments`, `enquiry_stage_history`, `customer_messages` |
 | Quotes/bookings | `quotes`, `quote_items`, `appointments` |
 | Workcards | `jobs`, `job_assignments`, `job_tasks`, `job_work_entries`, `job_attachments`, `time_entries` |
-| Finance | `invoices`, `invoice_items`, `payments`, `expenses` |
+| Finance | `invoices`, `invoice_items`, `payments`, `invoice_refunds`, `invoice_credits`, `expenses` |
 | Workforce (optional/deferred) | `availability_blocks`, `attendance_entries`, `leave_types`, `leave_balances`, `leave_requests`, `employee_assets`, `hr_onboarding_tasks`, `payroll_periods`, `payroll_items` |
 | Procurement (future) | `suppliers`, `supplier_orders`, `supplier_order_items` |
 | Operations/comms | `audit_events`, `notifications`, `notification_preferences`, `email_templates`, `documents` |
@@ -136,7 +137,7 @@ No new table is justified merely to duplicate existing users, staff, audit or me
 ## Safety and rollout rules
 
 - All schema changes are migration files committed to this V2 repository.
-- Do not apply migrations to Supabase from this workflow.
+- Apply reviewed migration files to the dedicated V2 project in dependency order as part of implementation; never apply them to V1. Production deployment and external integration activation remain separate approvals.
 - Do not delete or rewrite existing user, staff, customer, financial or audit records.
 - Do not drop legacy compatibility objects while the Supabase project is shared with V1.
 - Review foreign keys, RLS, grants and Data API exposure for every new table or function.
