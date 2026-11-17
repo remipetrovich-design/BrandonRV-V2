@@ -28,6 +28,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
    const result=await db.from("quotes").select("id,status,enquiry_id").eq("id",job.quote_id).eq("business_id",businessId).maybeSingle();quote=result.data;
    if(!quote||quote.status!=="accepted")return jsonError("The linked quote must be accepted before a booking can be confirmed.",409);
    enquiryId=quote.enquiry_id??null;
+   if(!enquiryId)return jsonError("This Workcard must be linked to a Quote Request Jobcard before booking.",409);
    if(enquiryId){const e=await db.from("enquiries").select("vehicle_id").eq("id",enquiryId).eq("business_id",businessId).maybeSingle();vehicleId=e.data?.vehicle_id??null;}
   }
   let existing:any=null;
@@ -65,14 +66,16 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
    if(inserted.error||!inserted.data){console.error("Workcard booking insert failed",inserted.error);return jsonError("Could not create booking.",500);}
    appointment=inserted.data;
   }
-  const linked=await db.from("jobs").update({appointment_id:appointment.id,scheduled_start:appointment.starts_at,scheduled_end:appointment.ends_at??null,status:"scheduled",updated_at:now}).eq("id",id).eq("business_id",businessId);
-  if(linked.error){
-   console.error("Workcard booking link failed",linked.error);
+  const {data:bookingResult,error:bookingError}=await db.rpc("update_jobcard_booking",{
+   p_business_id:businessId,p_actor_user_id:access.user!.id,p_enquiry_id:enquiryId!,p_appointment_id:appointment.id,
+   p_action:"confirm",p_starts_at:appointment.starts_at,p_ends_at:appointment.ends_at??null,p_location:appointment.location
+  });
+  if(bookingError){
    if(existing)await db.from("appointments").update({status:existing.status,starts_at:existing.starts_at,ends_at:existing.ends_at,location:existing.location,confirmed_by:existing.confirmed_by??null,confirmed_at:existing.confirmed_at??null,updated_at:existing.updated_at??new Date().toISOString()}).eq("id",appointment.id).eq("business_id",businessId);
    else await db.from("appointments").delete().eq("id",appointment.id).eq("business_id",businessId);
-   return jsonError("Booking was not saved because it could not be linked to the Workcard.",500);
+   const status=bookingError.code==="P0001"?409:bookingError.code==="P0002"?404:500;
+   return jsonError(bookingError.message??"Booking was not saved because the Workcard could not be updated.",status);
   }
-  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:existing?"workcard.booking_confirmed":"workcard.booking_created",entity_type:"job",entity_id:id,details:{job_number:job.job_number,appointment_id:appointment.id,booking_request_accepted:existing?.status==="requested",starts_at:appointment.starts_at,ends_at:appointment.ends_at,location}});
-  return Response.json({appointment,acceptedRequest:existing?.status==="requested"},{status:existing?200:201});
+  return Response.json({appointment:bookingResult.appointment,acceptedRequest:existing?.status==="requested",workcardsUpdated:bookingResult.workcardsUpdated},{status:existing?200:201});
  }catch(error){console.error("Workcard booking confirmation failed",error);return jsonError("Could not confirm or create booking.",500);}
 }
