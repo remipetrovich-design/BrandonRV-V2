@@ -36,3 +36,18 @@ test("role management is governed by roles.manage rather than a second role-name
  const auth=await source("../src/lib/auth.ts");
  assert.doesNotMatch(auth,/if\(isGlobalAdministrator\(String\(user\.user_role\)/);
 });
+
+test("developer deployment capabilities are separate from full application permissions",async()=>{
+ const migration=await source("../supabase/migrations/20261118130000_central_permission_overrides.sql");
+ assert.match(migration,/\('developer\.deploy'/);
+ assert.match(migration,/\('developer\.migrations\.manage'/);
+ assert.match(migration,/\('website_development_specialist','developer\.deploy'\)/);
+ assert.match(migration,/\('website_development_specialist','developer\.migrations\.manage'\)/);
+ const manual=await source("../src/app/api/admin/deployment/manual-deploy/route.ts");
+ const dispatch=await source("../src/app/api/admin/deployment/dispatch/route.ts");
+ const status=await source("../src/app/api/admin/deployment/status/route.ts");
+ assert.match(manual,/authorizePermission\("developer\.deploy"\)/);
+ assert.match(dispatch,/developer\.migrations\.manage/);
+ assert.match(status,/developer\.deploy/);
+ for(const code of [manual,dispatch,status])assert.doesNotMatch(code,/isGlobalAdministrator/);
+});
