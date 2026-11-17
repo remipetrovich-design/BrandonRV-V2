@@ -10,6 +10,7 @@ test("customer approval and invoice issue share one database transaction with va
  assert.match(route,/rpc\("respond_to_completed_workcard"/);
  assert.doesNotMatch(route,/from\("enquiries"\)\.update/);
  assert.doesNotMatch(route,/from\("enquiry_stage_history"\)\.insert/);
+ assert.match(migration,/FOREIGN KEY \(issued_by\) REFERENCES public\.users\(id\) ON DELETE RESTRICT/);
  assert.match(migration,/PERFORM public\.issue_invoice/);
  assert.match(migration,/issued_at/);
  assert.match(migration,/issued_by/);
