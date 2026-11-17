@@ -56,7 +56,7 @@ test("quote revisions stay with the same customer and Jobcard and cannot revise 
   const prior = { enquiry_id: "enquiry-1", customer_id: "customer-1", revision_number: 2, status: "sent" };
   assert.equal(nextQuoteRevision(prior, { enquiryId: "enquiry-1", customerId: "customer-1" }), 3);
   assert.throws(() => nextQuoteRevision(prior, { enquiryId: "enquiry-2", customerId: "customer-1" }), /same customer and Jobcard/i);
-  assert.throws(() => nextQuoteRevision({ ...prior, status: "accepted" }, { enquiryId: "enquiry-1", customerId: "customer-1" }), /accepted quote cannot be revised/i);
+  assert.throws(() => nextQuoteRevision({ ...prior, status: "accepted" }, { enquiryId: "enquiry-1", customerId: "customer-1" }), /no longer eligible for revision/i);
 });
 
 test("configured quote validity supplies a default expiry without overriding an explicit date", () => {
