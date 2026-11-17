@@ -74,8 +74,9 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(items.some((x:any)=>x.service_id&&!/^[0-9a-f-]{36}$/i.test(x.service_id)))return jsonError("Select a valid service preset or use a custom line.");
   if(!Number.isFinite(taxRate)||taxRate<0||taxRate>100)return jsonError("Enter a valid GST rate.");
   const db=database();
-  const {data:job}=await db.from("jobs").select("id,status,worker_signed_off_at,workcard_review_status").eq("id",id).eq("business_id",businessId).maybeSingle();
+  const {data:job}=await db.from("jobs").select("id,status,worker_signed_off_at,workcard_review_status,user_id,enquiry_id").eq("id",id).eq("business_id",businessId).maybeSingle();
   if(!job||job.worker_signed_off_at||!["pending","scheduled","in_progress","waiting_parts"].includes(job.status)||!["approved","legacy_approved"].includes(String(job.workcard_review_status??"legacy_approved")))return jsonError("This Workcard is no longer available for variation revisions.",409);
+  if(!job.user_id){const {data:guestAccess}=await db.from("enquiries").select("id,guest_access_token_hash,guest_access_expires_at,archived_at").eq("id",job.enquiry_id).eq("business_id",businessId).is("user_id",null).maybeSingle();if(!guestAccess||!guestAccess.guest_access_token_hash||!guestAccess.guest_access_expires_at||Date.parse(guestAccess.guest_access_expires_at)<=Date.now()||guestAccess.archived_at)return jsonError("Guest customer secure access has expired. Re-establish customer access before revising this variation.",409);}
   const {data:previous}=await db.from("quotes").select("id").eq("id",quoteId).eq("business_id",businessId).eq("job_id",id).eq("quote_kind","variation").eq("status","draft").eq("senior_approval_status","changes_requested").maybeSingle();
   if(!previous)return jsonError("Only a variation returned for changes can be revised.",409);
   const {data:settings}=await db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle();
