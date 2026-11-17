@@ -25,8 +25,8 @@ export async function GET(){
  ]):[{data:[]},{data:[]}];
  const grantsByUser=new Map<string,string[]>();for(const grant of grants??[]){const current=grantsByUser.get(grant.user_id)??[];current.push(grant.permission_key);grantsByUser.set(grant.user_id,current);}
  const directory=(employees??[]).filter(x=>customerByUser.has(x.id)).map(x=>({...x,customer_id:customerByUser.get(x.id),workforce_group:getWorkforceRankGroup(x.user_role),additional_permissions:grantsByUser.get(x.id)??[]}));
- const canAssignExecutiveRoles=await userHasPermission(access.user!.id,"roles.assign_executive");
- return Response.json({employees:directory,permissions:catalogue??[],canManageAccess:await userHasPermission(access.user!.id,"roles.manage"),canAssignExecutiveRoles,roles:(roles??[]).filter(x=>x.role_key!=="customer"&&(canAssignExecutiveRoles||!executiveRoleKeys.includes(x.role_key))).sort((a,b)=>{const ai=staffRoleKeys.indexOf(a.role_key),bi=staffRoleKeys.indexOf(b.role_key);return (ai<0?99:ai)-(bi<0?99:bi)||a.name.localeCompare(b.name);})});
+ const canAssignExecutiveRoles=await userHasPermission(access.user!.id,"roles.assign_executive");const assignablePermissions=await userHasPermissions(access.user!.id,(catalogue??[]).map(x=>x.permission_key));
+ return Response.json({employees:directory,permissions:catalogue??[],assignablePermissions:[...assignablePermissions],canManageAccess:await userHasPermission(access.user!.id,"roles.manage"),canAssignExecutiveRoles,roles:(roles??[]).filter(x=>x.role_key!=="customer"&&(canAssignExecutiveRoles||!executiveRoleKeys.includes(x.role_key))).sort((a,b)=>{const ai=staffRoleKeys.indexOf(a.role_key),bi=staffRoleKeys.indexOf(b.role_key);return (ai<0?99:ai)-(bi<0?99:bi)||a.name.localeCompare(b.name);})});
 
 }
 export async function POST(){return jsonError("Staff access must be granted through a customer invitation.",410);}
@@ -62,7 +62,7 @@ export async function PATCH(request:Request){
   if(body.additionalPermissions!==undefined){
    if(!Array.isArray(body.additionalPermissions)||body.additionalPermissions.some((x:unknown)=>typeof x!=="string"))return jsonError("Additional permissions must be a list.");
    const requested=[...new Set(body.additionalPermissions as string[])];const {data:catalogue}=await db.from("permissions").select("permission_key").in("permission_key",requested);
-   if((catalogue??[]).length!==requested.length)return jsonError("One or more additional permissions are invalid.");
+   if((catalogue??[]).length!==requested.length)return jsonError("One or more additional permissions are invalid.");const grantable=await userHasPermissions(access.user!.id,requested);if(requested.some(key=>!grantable.has(key)))return jsonError("You cannot grant permissions that you do not hold.",403);
    const reason=String(body.permissionReason??"").trim();if(!reason)return jsonError("A reason is required for additional permission grants.");
    const expiry=body.permissionExpiresAt?String(body.permissionExpiresAt):null;if(expiry&&Number.isNaN(Date.parse(expiry)))return jsonError("Enter a valid permission expiry date.");
    await db.from("user_permission_grants").update({revoked_at:new Date().toISOString(),revoked_by:access.user!.id}).eq("user_id",userId).is("revoked_at",null);
