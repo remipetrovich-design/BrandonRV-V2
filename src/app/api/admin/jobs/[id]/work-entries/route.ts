@@ -120,6 +120,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(!canManageCosts)value.cost_unit_price=Number(existingEntry.cost_unit_price??0);
   if(!canManageSales){value.unit_price=Number(existingEntry.unit_price??0);value.tax_rate=Number(existingEntry.tax_rate??0);value.line_total=Number((value.quantity_used*value.unit_price).toFixed(2));value.invoiceable=existingEntry.invoiceable===true;}
   if(!canManageSuppliers)value.supplier_name=existingEntry.supplier_name??null;
+  if(value.invoiceable&&value.quantity_used>value.quantity_required)return jsonError("Actual use exceeds the approved quantity. Record additional requirements through an approved Workcard variation.",409);
   if(job.status==="in_progress"&&(
     value.entry_type!==existingEntry.entry_type||
     value.quantity_required>Number(existingEntry.quantity_required??0)||
