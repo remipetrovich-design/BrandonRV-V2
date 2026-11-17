@@ -1,7 +1,7 @@
 "use client";
 import {useState} from "react";
 type Review={id:string;quote_number:string;status:string;prepared_by:string|null;senior_approval_status:string;senior_approved_at:string|null;senior_approval_note:string|null;issue_date:string|null};
-export default function AdminQuoteTools({quoteId,canIssue=true}:{quoteId:string;canIssue?:boolean}){
+export default function AdminQuoteTools({quoteId,canIssue=true,onUpdated}:{quoteId:string;canIssue?:boolean;onUpdated?:()=>void}){
  const [review,setReview]=useState<Review|null>(null);
  const [note,setNote]=useState("");const [notice,setNotice]=useState("");const [busy,setBusy]=useState(false);const [loaded,setLoaded]=useState(false);
  async function load(){
@@ -11,13 +11,13 @@ export default function AdminQuoteTools({quoteId,canIssue=true}:{quoteId:string;
  async function decide(decision:"approved"|"changes_requested"){
   if(decision==="changes_requested"&&note.trim().length<5){setNotice("Describe the changes required.");return;}
   setBusy(true);setNotice("");
-  try{const r=await fetch("/api/admin/quotes/"+quoteId+"/approval",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({decision,note})});const d=await r.json();if(!r.ok){setNotice(d.error??"Could not save quote review.");return;}setNotice(decision==="approved"?"Senior approval recorded. The quote can now be issued.":"Quote returned for revision.");setNote("");await load();}
+  try{const r=await fetch("/api/admin/quotes/"+quoteId+"/approval",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({decision,note})});const d=await r.json();if(!r.ok){setNotice(d.error??"Could not save quote review.");return;}setNotice(decision==="approved"?"Senior approval recorded. The quote can now be issued.":"Quote returned for revision.");setNote("");await load();onUpdated?.();}
   catch{setNotice("Could not save quote review.");}
   finally{setBusy(false);}
  }
  async function issue(){
   setBusy(true);setNotice("");
-  try{const r=await fetch("/api/admin/quotes/"+quoteId,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:"sent"})});const d=await r.json();if(!r.ok){setNotice(d.error??"Could not issue quote.");return;}setNotice("Quote issued to the customer.");await load();}
+  try{const r=await fetch("/api/admin/quotes/"+quoteId,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:"sent"})});const d=await r.json();if(!r.ok){setNotice(d.error??"Could not issue quote.");return;}setNotice("Quote issued to the customer.");await load();onUpdated?.();}
   catch{setNotice("Could not issue quote.");}
   finally{setBusy(false);}
  }

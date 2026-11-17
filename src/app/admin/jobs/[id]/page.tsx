@@ -13,10 +13,10 @@ export default async function AdminWorkcardPage({params}:{params:Promise<{id:str
  const membership=await currentMembership(user.id);
  if(!membership)redirect("/staff");
  const canView=await userHasPermission(user.id,"jobs.view");if(!canView)return <AdminAccessDenied resource="this Workcard"/>;
- const [canManage,canManageBookings]=await Promise.all([userHasPermission(user.id,"jobs.manage"),userHasPermission(user.id,"appointments.manage")]);
+ const [canManage,canManageBookings,canAssign]=await Promise.all([userHasPermission(user.id,"jobs.manage"),userHasPermission(user.id,"appointments.manage"),userHasPermission(user.id,"jobs.assign")]);
  return <main className="portal-page"><div className="shell portal-shell brv-admin-page-inner">
   <p><Link className="button button-secondary" href={canManage?"/admin/jobs":"/admin/my-workcards"}>← Back to {canManage?"Workcards":"My Workcards"}</Link></p>
   <div className="portal-page-heading"><p className="eyebrow"><span className="eyebrow-line"/> BUSINESS OPERATIONS</p><h1>Workcard <em>details.</em></h1><p>Customer and vehicle information, job details, parts, supplier orders, completed work and notes.</p></div>
-  <AdminWorkcardManagement jobId={id} canManage={canManage} canManageBookings={canManageBookings}/>
+  <AdminWorkcardManagement jobId={id} canManage={canManage} canManageBookings={canManageBookings} canAssign={canAssign}/>
  </div></main>;
 }

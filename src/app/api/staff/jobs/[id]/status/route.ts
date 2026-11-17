@@ -1,5 +1,5 @@
 import {currentUser,currentMembership,database,jsonError,sameOrigin} from "@/lib/auth";
-import {canStartWorkOrder,canFinishWorkOrder,calculateWorkOrderTotals} from "@/lib/work-order-lifecycle.mjs";
+import {canStartWorkOrder,canFinishWorkOrder} from "@/lib/work-order-lifecycle.mjs";
 export const runtime="nodejs";
 
 export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){
@@ -14,49 +14,27 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(!staff)return jsonError("Employee profile not found.",404);
     const {data:job}=await db.from("jobs").select("id,status,customer_id,user_id,quote_id,appointment_id,job_number,title,customer_approval_status,senior_approval_status").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
   if(!job)return jsonError("Work Order not found.",404);
-  const {data:assignment}=await db.from("job_assignments").select("id,status").eq("job_id",id).eq("staff_id",staff.id).maybeSingle();
+  const {data:assignment}=await db.from("job_assignments").select("id,status").eq("business_id",membership.business_id).eq("job_id",id).eq("staff_id",staff.id).maybeSingle();
   if(assignment?.status!=="accepted")return jsonError("Accept this Work Order assignment before starting or finishing it.",403);
-  const now=new Date().toISOString();
   if(action==="start"){
    if(job.status==="in_progress")return Response.json({success:true,status:"in_progress",alreadyStarted:true});
-   if(!job.appointment_id)return jsonError("A booking must be confirmed before work can start.",409);
-   const {data:booking}=await db.from("appointments").select("id,status,starts_at,ends_at,location").eq("id",job.appointment_id).eq("business_id",membership.business_id).maybeSingle();
-   if(!booking||booking.status!=="confirmed"||!booking.starts_at||!booking.location)return jsonError("A confirmed booking with a start time and customer-site location is required before work can start.",409);
    if(!canStartWorkOrder(job.status,assignment?.status,false))return jsonError("This Work Order cannot be started from its current status or assignment.",409);
-   const {error}=await db.from("jobs").update({status:"in_progress",actual_start:now,updated_at:now}).eq("id",id).eq("business_id",membership.business_id);
-   if(error)return jsonError("Could not start Work Order.",500);
-   await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:"work_order.started",entity_type:"job",entity_id:id,details:{staff_id:staff.id}});
-   return Response.json({success:true,status:"in_progress"});
+   const {data:started,error}=await db.rpc("start_workcard",{p_job_id:id,p_business_id:membership.business_id,p_actor_user_id:user.id,p_staff_id:staff.id});
+   if(error){if(error.code==="P0001")return jsonError(error.message??"This Workcard cannot be started.",409);return jsonError("Could not start this Workcard. No changes were saved.",500);}
+   return Response.json(started);
   }
   if(job.status==="completed"&&["pending","approved","legacy_approved"].includes(String(job.senior_approval_status))){
-   const {data:existingInvoice}=await db.from("invoices").select("id,invoice_number,total,status").eq("job_id",id).maybeSingle();
+   const {data:existingInvoice}=await db.from("invoices").select("id,invoice_number,total,status").eq("job_id",id).eq("business_id",membership.business_id).eq("workcard_signoff_invoice",true).maybeSingle();
+   if(!existingInvoice)return jsonError("This Workcard is signed off but its final invoice is missing. An administrator must review the record.",409);
    return Response.json({success:true,status:"completed",invoice:existingInvoice,alreadyFinished:true});
   }
   if(!canFinishWorkOrder(job.status,assignment?.status,false))return jsonError("Only an in-progress Work Order with an accepted assignment can be finished.",409);
   const summary=String(body.workSummary??"").trim().slice(0,8000);
   if(summary.length<10)return jsonError("Add a useful summary of the work completed before finishing the Work Order.");
-  const {data:entries,error:entryError}=await db.from("job_work_entries").select("id,entry_type,description,quantity,quantity_used,unit_price,tax_rate,line_total,invoiceable").eq("job_id",id).eq("business_id",membership.business_id).order("occurred_at");
-  if(entryError)return jsonError("Could not load Workcard entries.",500);
-  // Only actual work explicitly marked invoiceable can enter the draft invoice.
-  // Planned quote quantities are never substituted for worker-recorded usage.
-  const billable=(entries??[]).filter(x=>["labour","parts"].includes(x.entry_type)&&x.invoiceable&&Number(x.quantity_used)>0);
-  const items=billable.map((x:any,i:number)=>({description:x.description,quantity:Number(x.quantity_used),unit_price:Number(x.unit_price),tax_rate:Number(x.tax_rate),line_total:Number((Number(x.quantity_used)*Number(x.unit_price)).toFixed(2)),sort_order:i}));
-  const totals=calculateWorkOrderTotals(items);
-  const {subtotal,taxAmount,total}=totals;
-  if(!items.length)return jsonError("Record actual labour or parts used and mark at least one completed item as invoiceable before signing off this Workcard.",409);
-  const {data:invoice,error:invoiceError}=await db.from("invoices").insert({
-   business_id:membership.business_id,customer_id:job.customer_id,user_id:job.user_id,job_id:id,quote_id:job.quote_id,
-   invoice_number:"BRV-I-"+Date.now().toString(36).toUpperCase(),status:"draft",subtotal,tax_amount:taxAmount,total,amount_paid:0,
-   notes:"Final invoice for Work Order "+job.job_number
-  }).select("id,invoice_number,total,status").single();
-  if(invoiceError||!invoice)return jsonError("Work Order could not be finished because the draft invoice could not be generated.",500);
-  const invoiceItems=items.map((x:any)=>({...x,invoice_id:invoice.id}));
-  const {error:itemError}=await db.from("invoice_items").insert(invoiceItems);
-  if(itemError){await db.from("invoices").delete().eq("id",invoice.id);return jsonError("Could not create invoice items. Work Order remains in progress.",500);}
-  const {error:updateError}=await db.from("jobs").update({status:"completed",completed_at:now,actual_end:now,work_summary:summary,worker_signed_off_by:user.id,worker_signed_off_at:now,senior_approval_status:"pending",senior_approved_by:null,senior_approved_at:null,senior_approval_note:null,customer_approval_status:"not_ready",customer_approved_at:null,final_report_created_at:now,updated_at:now}).eq("id",id).eq("business_id",membership.business_id);
-  if(updateError){await db.from("invoices").delete().eq("id",invoice.id);return jsonError("Invoice was rolled back because the Work Order could not be completed.",500);}
-  await db.from("job_assignments").update({status:"completed"}).eq("job_id",id).eq("status","accepted");
-  await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:"work_order.finished_report_created",entity_type:"job",entity_id:id,details:{invoice_id:invoice.id,invoice_number:invoice.invoice_number,total,entry_count:entries?.length??0}});
-  return Response.json({success:true,status:"completed",invoice});
+  const {data:result,error:finishError}=await db.rpc("finish_workcard_and_create_invoice",{
+   p_job_id:id,p_business_id:membership.business_id,p_actor_user_id:user.id,p_staff_id:staff.id,p_work_summary:summary
+  });
+  if(finishError){if(finishError.code==="P0001")return jsonError(finishError.message??"Workcard could not be signed off.",409);if(finishError.code==="22023")return jsonError(finishError.message??"Enter a valid work summary.");return jsonError("Workcard sign-off and invoice creation failed. No changes were saved.",500);}
+  return Response.json({success:true,status:"completed",invoice:result?.invoice,alreadyFinished:result?.already_finished===true});
  }catch{return jsonError("Could not update Work Order.",500);}
 }

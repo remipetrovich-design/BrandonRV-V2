@@ -6,7 +6,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const {data:job,error}=await db.from("jobs").select("id,job_number,status,quote_id").eq("id",id).eq("business_id",businessId).maybeSingle();
  if(error||!job)return jsonError("Workcard not found.",404);
  const [{data:quotes,error:quoteError},{data:services,error:serviceError}]=await Promise.all([
-  db.from("quotes").select("id,quote_number,status,total,revision_number,variation_reason,senior_approval_status,issue_date,response_at,response_note,quote_items(id,item_type,description,quantity,unit_price,tax_rate,line_total,service_id)").eq("business_id",businessId).eq("job_id",id).eq("quote_kind","variation").order("created_at",{ascending:false}),
+  db.from("quotes").select("id,quote_number,status,total,revision_number,variation_reason,senior_approval_status,notes,terms,issue_date,expiry_date,response_at,response_note,quote_items(id,item_type,description,quantity,unit_price,tax_rate,line_total,service_id,sort_order)").eq("business_id",businessId).eq("job_id",id).eq("quote_kind","variation").order("created_at",{ascending:false}),
   db.from("services").select("id,name,category,price_from").eq("business_id",businessId).eq("is_active",true).order("sort_order").order("name")
  ]);
  if(quoteError||serviceError)return jsonError("Could not load Workcard variations or service presets.",500);
@@ -25,10 +25,11 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   if(items.length<1||items.length>30||items.some((x:any)=>!["labour","parts"].includes(x.item_type)||x.description.length<3||x.description.length>500||!Number.isFinite(x.quantity)||x.quantity<=0||x.quantity>10000||!Number.isFinite(x.unit_price)||x.unit_price<0||x.unit_price>10000000))return jsonError("Add between 1 and 30 valid labour or parts lines.");
   if(!Number.isFinite(taxRate)||taxRate<0||taxRate>100)return jsonError("Enter a valid tax rate.");
   const db=database(),businessId=access.membership!.business_id;
-  const {data:job}=await db.from("jobs").select("id,business_id,user_id,customer_id,quote_id,status").eq("id",id).eq("business_id",businessId).maybeSingle();
-  if(!job||!job.user_id||!job.quote_id||!["pending","scheduled","in_progress","waiting_parts"].includes(job.status))return jsonError("Workcard variations require a linked customer account. Guest quote requests cannot proceed through the Workcard process.",409);
-  const {data:baseQuote}=await db.from("quotes").select("id,enquiry_id,status,customer_id,user_id").eq("id",job.quote_id).eq("business_id",businessId).eq("quote_kind","standard").eq("status","accepted").not("user_id","is",null).maybeSingle();
-  if(!baseQuote||!baseQuote.enquiry_id)return jsonError("The original customer-accepted quote could not be found.",409);
+  const {data:job}=await db.from("jobs").select("id,business_id,user_id,customer_id,quote_id,status,workcard_review_status").eq("id",id).eq("business_id",businessId).maybeSingle();
+  if(!job||!job.quote_id||!["pending","scheduled","in_progress","waiting_parts"].includes(job.status)||!["approved","legacy_approved"].includes(String(job.workcard_review_status??"legacy_approved")))return jsonError("Workcard variations require an active, setup-approved Workcard.",409);
+  const {data:baseQuote}=await db.from("quotes").select("id,enquiry_id,status,customer_id,user_id").eq("id",job.quote_id).eq("business_id",businessId).eq("quote_kind","standard").eq("status","accepted").maybeSingle();
+  if(!baseQuote||!baseQuote.enquiry_id||baseQuote.user_id!==(job.user_id??null)||baseQuote.customer_id!==(job.customer_id??null))return jsonError("The original customer-accepted quote could not be found.",409);
+  if(!job.user_id){const {data:guestAccess}=await db.from("enquiries").select("id,guest_access_token_hash,guest_access_expires_at,archived_at").eq("id",baseQuote.enquiry_id).eq("business_id",businessId).eq("request_type","quote_request").is("user_id",null).maybeSingle();if(!guestAccess||!guestAccess.guest_access_token_hash||!guestAccess.guest_access_expires_at||Date.parse(guestAccess.guest_access_expires_at)<=Date.now()||guestAccess.archived_at)return jsonError("Guest customer secure access has expired. Re-establish customer access before issuing a variation.",409);}
   const {data:openVariation}=await db.from("quotes").select("id").eq("business_id",businessId).eq("job_id",id).eq("quote_kind","variation").in("status",["draft","sent"]).maybeSingle();
   if(openVariation)return jsonError("A variation is already awaiting senior review or customer approval. Resolve it before creating another.",409);
   const {data:settings}=await db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle();
@@ -56,4 +57,38 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.variation_created",entity_type:"quote",entity_id:quote.id,details:{job_id:id,quote_number:quoteNumber,reason,total,line_count:lines.length}});
   return Response.json({quote},{status:201});
  }catch{return jsonError("Could not create Workcard variation.",500);}
+}
+
+
+export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){
+ if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
+ const access=await authorizePermission("jobs.manage");if(access.response)return access.response;
+ try{
+  const {id}=await params,body=await request.json(),businessId=access.membership!.business_id;
+  const quoteId=String(body.quoteId??""),reason=String(body.reason??"").trim().slice(0,2000);
+  const raw=Array.isArray(body.items)?body.items:[];
+  const items=raw.map((x:any,i:number)=>({item_type:String(x.itemType??"parts"),description:String(x.description??"").trim(),quantity:Number(x.quantity??1),unit_price:Number(x.unitPrice??0),sort_order:i,service_id:x.serviceId?String(x.serviceId):null}));
+  const taxRate=Number(body.taxRate??0);
+  if(!/^[0-9a-f-]{36}$/i.test(id)||!/^[0-9a-f-]{36}$/i.test(quoteId))return jsonError("Invalid Workcard variation.");
+  if(reason.length<5||items.length<1||items.length>30||items.some((x:any)=>!["labour","parts"].includes(x.item_type)||x.description.length<3||x.description.length>500||!Number.isFinite(x.quantity)||x.quantity<=0||x.quantity>10000||!Number.isFinite(x.unit_price)||x.unit_price<0||x.unit_price>10000000))return jsonError("Enter a reason and between 1 and 30 valid variation lines.");
+  if(items.some((x:any)=>x.service_id&&!/^[0-9a-f-]{36}$/i.test(x.service_id)))return jsonError("Select a valid service preset or use a custom line.");
+  if(!Number.isFinite(taxRate)||taxRate<0||taxRate>100)return jsonError("Enter a valid GST rate.");
+  const db=database();
+  const {data:job}=await db.from("jobs").select("id,status,worker_signed_off_at,workcard_review_status,user_id,enquiry_id").eq("id",id).eq("business_id",businessId).maybeSingle();
+  if(!job||job.worker_signed_off_at||!["pending","scheduled","in_progress","waiting_parts"].includes(job.status)||!["approved","legacy_approved"].includes(String(job.workcard_review_status??"legacy_approved")))return jsonError("This Workcard is no longer available for variation revisions.",409);
+  if(!job.user_id){const {data:guestAccess}=await db.from("enquiries").select("id,guest_access_token_hash,guest_access_expires_at,archived_at").eq("id",job.enquiry_id).eq("business_id",businessId).is("user_id",null).maybeSingle();if(!guestAccess||!guestAccess.guest_access_token_hash||!guestAccess.guest_access_expires_at||Date.parse(guestAccess.guest_access_expires_at)<=Date.now()||guestAccess.archived_at)return jsonError("Guest customer secure access has expired. Re-establish customer access before revising this variation.",409);}
+  const {data:previous}=await db.from("quotes").select("id").eq("id",quoteId).eq("business_id",businessId).eq("job_id",id).eq("quote_kind","variation").eq("status","draft").eq("senior_approval_status","changes_requested").maybeSingle();
+  if(!previous)return jsonError("Only a variation returned for changes can be revised.",409);
+  const {data:settings}=await db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle();
+  const cfg=settings?.settings&&typeof settings.settings==="object"?settings.settings as Record<string,any>:{};
+  const pricing=cfg.pricing&&typeof cfg.pricing==="object"?cfg.pricing:{};
+  const gstStatus=String(pricing.gst_status??"not_configured"),gstRate=Number(pricing.gst_rate??10);
+  if(gstStatus!=="registered"&&taxRate>0)return jsonError("GST cannot be added until the business GST position is confirmed.");
+  if(gstStatus==="registered"&&Math.abs(taxRate-gstRate)>0.001)return jsonError("Use the configured GST rate from Business Settings.");
+  const serviceIds=items.map((x:any)=>x.service_id).filter(Boolean) as string[];
+  if(serviceIds.length){const {data:services,error:serviceError}=await db.from("services").select("id").eq("business_id",businessId).eq("is_active",true).in("id",serviceIds);if(serviceError||new Set((services??[]).map(x=>x.id)).size!==new Set(serviceIds).size)return jsonError("One or more selected service presets are unavailable for this business.");}
+  const {data:result,error}=await db.rpc("revise_job_variation_quote",{p_quote_id:quoteId,p_business_id:businessId,p_actor_user_id:access.user!.id,p_reason:reason,p_items:items,p_tax_rate:taxRate,p_notes:String(body.notes??"").trim().slice(0,3000)||null,p_terms:String(body.terms??"").trim().slice(0,3000)||null});
+  if(error){if(error.code==="P0001")return jsonError(error.message??"This variation can no longer be revised.",409);if(error.code==="22023")return jsonError(error.message??"Invalid variation revision.");return jsonError("Could not revise Workcard variation. No changes were made.",500);}
+  return Response.json(result);
+ }catch{return jsonError("Could not revise Workcard variation.",500);}
 }
