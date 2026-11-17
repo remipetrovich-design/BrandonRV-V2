@@ -69,7 +69,7 @@ Set the required values in `.env.local` before using application features that c
 Available scripts:
 
 - `npm run dev` — start the local development server
-- `npm test` — run the user-role access policy tests
+- `npm test` — run the Node unit tests for role policy, portal navigation, service approval and deployment configuration
 - `npm run typecheck` — run the TypeScript check
 - `npm run build` — create a production build
 - `npm run start` — start the production server
