@@ -21,7 +21,7 @@ DECLARE
   v_next_stage text;
   v_workcards_updated integer := 0;
 BEGIN
-  IF p_action NOT IN ('confirm','reschedule','cancel') THEN
+  IF p_action NOT IN ('request','confirm','reschedule','cancel') THEN
     RAISE EXCEPTION 'Choose confirm, reschedule or cancel.' USING ERRCODE = '22023';
   END IF;
   IF p_action <> 'cancel' AND (p_starts_at IS NULL OR length(trim(coalesce(p_location,''))) < 3) THEN
@@ -63,6 +63,14 @@ BEGIN
      AND (j.appointment_id = p_appointment_id OR j.quote_id = ANY(v_quote_ids))
    FOR UPDATE;
 
+  IF p_action = 'request' AND EXISTS (
+    SELECT 1 FROM public.jobs j
+     WHERE j.business_id = p_business_id
+       AND (j.appointment_id = p_appointment_id OR j.quote_id = ANY(v_quote_ids))
+       AND j.status <> 'pending'
+  ) THEN
+    RAISE EXCEPTION 'A booking request can only be attached to a pending Workcard.' USING ERRCODE = 'P0001';
+  END IF;
   IF p_action = 'cancel' AND EXISTS (
     SELECT 1 FROM public.jobs j
      WHERE j.business_id = p_business_id
@@ -85,6 +93,15 @@ BEGIN
        SET status = 'cancelled', updated_at = v_now
      WHERE id = p_appointment_id AND business_id = p_business_id
      RETURNING * INTO v_appointment;
+  ELSIF p_action = 'request' THEN
+    UPDATE public.appointments
+       SET status = 'requested',
+           preferred_start = p_starts_at,
+           preferred_end = p_ends_at,
+           location = left(trim(p_location),200),
+           updated_at = v_now
+     WHERE id = p_appointment_id AND business_id = p_business_id
+     RETURNING * INTO v_appointment;
   ELSE
     UPDATE public.appointments
        SET status = CASE WHEN p_action='confirm' THEN 'confirmed' ELSE 'rescheduled' END,
@@ -102,17 +119,17 @@ BEGIN
      SET appointment_id = CASE WHEN p_action='cancel' THEN NULL ELSE p_appointment_id END,
          status = CASE
            WHEN p_action='cancel' AND status='scheduled' THEN 'pending'
-           WHEN p_action<>'cancel' AND status='pending' THEN 'scheduled'
+           WHEN p_action IN ('confirm','reschedule') AND status='pending' THEN 'scheduled'
            ELSE status
          END,
          scheduled_start = CASE
            WHEN p_action='cancel' AND status='scheduled' THEN NULL
-           WHEN p_action<>'cancel' THEN p_starts_at
+           WHEN p_action IN ('confirm','reschedule') THEN p_starts_at
            ELSE scheduled_start
          END,
          scheduled_end = CASE
            WHEN p_action='cancel' AND status='scheduled' THEN NULL
-           WHEN p_action<>'cancel' THEN p_ends_at
+           WHEN p_action IN ('confirm','reschedule') THEN p_ends_at
            ELSE scheduled_end
          END,
          updated_at = v_now
@@ -120,7 +137,7 @@ BEGIN
      AND (appointment_id = p_appointment_id OR quote_id = ANY(v_quote_ids));
   GET DIAGNOSTICS v_workcards_updated = ROW_COUNT;
 
-  v_next_stage := CASE WHEN p_action='cancel' THEN 'ready_to_schedule' ELSE 'booked' END;
+  v_next_stage := CASE WHEN p_action='cancel' THEN 'ready_to_schedule' WHEN p_action='request' THEN 'booking_requested' ELSE 'booked' END;
   IF v_enquiry.stage IN ('approved','workcard_created','ready_to_schedule','booking_requested','booked')
      AND v_enquiry.stage IS DISTINCT FROM v_next_stage THEN
     UPDATE public.enquiries
@@ -131,6 +148,7 @@ BEGIN
     VALUES
       (p_business_id,p_enquiry_id,v_enquiry.stage,v_next_stage,p_actor_user_id,
        CASE WHEN p_action='cancel' THEN 'Booking cancelled; return to scheduling.'
+            WHEN p_action='request' THEN 'Booking requested by the assigned worker.'
             ELSE 'Booking ' || CASE WHEN p_action='confirm' THEN 'confirmed' ELSE 'rescheduled' END || ' from the Jobcard.' END);
   END IF;
 
