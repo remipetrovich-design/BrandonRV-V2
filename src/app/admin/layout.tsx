@@ -47,7 +47,7 @@ export default async function AdminLayout({children}:{children:ReactNode}) {
  const permitted=await userHasPermissions(user.id,permissionKeys);
  const workforcePermissions=["time.clock","time.view","time.manage","leave.view","leave.manage","payroll.view","payroll.manage","assets.view","assets.manage","onboarding.view","onboarding.manage","staff.manage","staff.view"];
  const canAccessWorkforce=workforcePermissions.some(permission=>permitted.has(permission));
- const canAccessStaff=permitted.has("staff.view")||permitted.has("staff.manage");
+ const canAccessStaff=permitted.has("staff.view")||permitted.has("staff.manage")||permitted.has("roles.manage");
  const canAccessDeployment=permitted.has("developer.deploy")||permitted.has("developer.migrations.manage");
  const groups=navigation.map(group=>({...group,items:group.items.filter(item=>item.href==="/admin/deployment"?canAccessDeployment:item.href==="/admin/quotes"?(permitted.has("quotes.view")||permitted.has("quotes.manage")||permitted.has("quotes.approve")):item.href==="/admin/workforce"?canAccessWorkforce:item.href==="/admin/staff"?canAccessStaff:item.href==="/admin/my-workcards"?(permitted.has("jobs.view")||permitted.has("jobs.complete")):permitted.has(item.permission))})).filter(group=>group.items.length>0);
  const canSeeOverview=["enquiries.view","appointments.view","jobs.view","quotes.view","quotes.manage","quotes.approve","invoices.view","customers.view","vehicles.view"].some(permission=>permitted.has(permission));
