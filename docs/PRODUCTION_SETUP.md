@@ -11,6 +11,7 @@ Last checked: 17 November 2026. This document records the V2 environment only. I
 - Live database snapshot: 58 public base tables, 3 compatibility views, RLS enabled on all 58 tables, 76 remote migration records.
 - One active CEO/founder account exists. The business remains `prelaunch`.
 - No genuine customer enquiries, quotes, bookings, Workcards, invoices or payments have been inserted. No fake customer records have been created.
+- The business setting `accepting_enquiries` is explicitly `true`; the public general-enquiry and assessment-request handlers are ready to record genuine requests once customer access is opened.
 - The internal service catalogue contains 9 draft scope records: 2 assessment-required launch candidates, 2 conditional services, 3 deferred services and 2 not-offered categories. All are inactive and unpublished.
 - One provisional Tamworth 20 km service area exists; it is unpublished and has no travel fee.
 - Eight website-builder pages exist; none are published.
