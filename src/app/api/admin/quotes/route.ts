@@ -1,5 +1,6 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
 import {prepareQuoteLines,validateQuoteTaxPolicy,nextQuoteRevision,defaultQuoteExpiryDate} from "@/lib/quote-engine.mjs";
+import {isServiceAvailableForQuoting} from "@/lib/service-availability.mjs";
 export const runtime="nodejs";
 export async function GET(){
  const access=await authorizePermission("quotes.manage");if(access.response)return access.response;
@@ -8,7 +9,7 @@ export async function GET(){
   db.from("enquiries").select("id,request_number,request_type,contact_name,email,requested_service,user_id,customer_id").eq("business_id",businessId).eq("request_type","quote_request").is("archived_at",null).in("status",["new","reviewing","quoted"]).order("created_at",{ascending:false}),
   db.from("quotes").select("id,quote_number,enquiry_id,customer_id,revision_number,status,quote_kind,job_id,total,created_at").eq("business_id",businessId).order("created_at",{ascending:false}),
   db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle(),
-  db.from("services").select("id,name,category,description,price_from,approval_status").eq("business_id",businessId).eq("is_active",true).order("sort_order").order("name"),
+  db.from("services").select("id,name,category,description,price_from,approval_status").eq("business_id",businessId).eq("is_active",true).eq("approval_status","approved_for_launch").order("sort_order").order("name"),
   db.from("customers").select("id,full_name,email,status").eq("business_id",businessId).eq("status","active").order("full_name")
  ]);
  if(enquiryError||quoteError||serviceError||customerError)return jsonError("Could not load quote records, customers or service presets.",500);
@@ -87,7 +88,7 @@ export async function POST(request:Request){
    try{revisionNumber=nextQuoteRevision(prior,{enquiryId:enquiry?.id??null,customerId});}catch(error){return jsonError(error instanceof Error?error.message:"This quote cannot be revised.",409);}
   }
   const serviceIds=quotePricing.lines.map(x=>x.service_id).filter(Boolean) as string[];
-  if(serviceIds.length){const {data:linkedServices,error:serviceLookupError}=await db.from("services").select("id").eq("business_id",businessId).eq("is_active",true).in("id",serviceIds);if(serviceLookupError||new Set((linkedServices??[]).map(x=>x.id)).size!==new Set(serviceIds).size)return jsonError("One or more selected service presets are unavailable for this business.");}
+  if(serviceIds.length){const {data:linkedServices,error:serviceLookupError}=await db.from("services").select("id,approval_status,is_active").eq("business_id",businessId).in("id",serviceIds);if(serviceLookupError||new Set((linkedServices??[]).map(x=>x.id)).size!==new Set(serviceIds).size||(linkedServices??[]).some(x=>!isServiceAvailableForQuoting(x)))return jsonError("One or more selected service presets are not approved for launch or are inactive.");}
   const lines=quotePricing.lines;
   const {subtotal,taxAmount,total}=quotePricing;
   let effectiveExpiryDate: string | null = expiryDate;
