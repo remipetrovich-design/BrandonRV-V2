@@ -14,12 +14,10 @@ export async function GET(){
  if(invoiceResult.error||paymentResult.error||refundResult.error||creditResult.error)return jsonError("Could not prepare the invoice reconciliation export.",500);
  const invoices=invoiceResult.data??[],payments=paymentResult.data??[],refunds=refundResult.data??[],credits=creditResult.data??[];
  const customerIds=[...new Set(invoices.map(x=>x.customer_id).filter(Boolean))],jobIds=[...new Set(invoices.map(x=>x.job_id).filter(Boolean))];
- const [customersResult,jobsResult]=await Promise.all([
-  customerIds.length?db.from("customers").select("id,name,email").eq("business_id",businessId).in("id",customerIds):Promise.resolve({data:[],error:null}),
-  jobIds.length?db.from("jobs").select("id,job_number").eq("business_id",businessId).in("id",jobIds):Promise.resolve({data:[],error:null})
- ]);
- if(customersResult.error||jobsResult.error)return jsonError("Could not load invoice reconciliation details.",500);
- const customers=new Map((customersResult.data??[]).map(x=>[x.id,x])),jobs=new Map((jobsResult.data??[]).map(x=>[x.id,x]));
+ let customerRows:any[]=[];let jobRows:any[]=[];
+ if(customerIds.length){const result=await db.from("customers").select("id,name,email").eq("business_id",businessId).in("id",customerIds);if(result.error)return jsonError("Could not load invoice customer details.",500);customerRows=result.data??[];}
+ if(jobIds.length){const result=await db.from("jobs").select("id,job_number").eq("business_id",businessId).in("id",jobIds);if(result.error)return jsonError("Could not load Workcard reconciliation details.",500);jobRows=result.data??[];}
+ const customers=new Map<string,any>(customerRows.map(x=>[x.id,x])),jobs=new Map<string,any>(jobRows.map(x=>[x.id,x]));
  const header=["Record Type","Invoice Number","Invoice Status","Issue Date","Due Date","Customer","Customer Email","Workcard","Invoice Total","Amount Paid (Net)","Credit Total","Outstanding Balance","Payment Reconciliation Variance","Transaction Date","Transaction Type","Transaction Amount","Method","Reference","Payment Type","Reason","Transaction Status","Transaction ID"];
  const rows=[header];
  for(const invoice of invoices){
