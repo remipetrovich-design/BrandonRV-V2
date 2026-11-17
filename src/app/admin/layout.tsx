@@ -30,7 +30,6 @@ const navigation:AdminNavGroup[]=[
  {title:"People & access",items:[
   {label:"Employees",href:"/admin/staff",permission:"staff.view",icon:"staff"},
   {label:"Workforce",href:"/admin/workforce",permission:"time.clock",icon:"calendar"},
-  {label:"User roles & permissions",href:"/admin/roles",permission:"roles.manage",icon:"access"}
  ]},
  {title:"Business setup",items:[
   {label:"Services & scope",href:"/admin/services",permission:"business.settings.manage",icon:"services"},
