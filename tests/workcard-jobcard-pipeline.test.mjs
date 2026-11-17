@@ -40,6 +40,7 @@ test("parts procurement holds work until required quantities are received or mar
  assert.match(migration,/parts\.part_order_status <> 'not_required'/);
  assert.match(migration,/WHEN part_order_status = 'not_required' THEN 'not_required'/);
  assert.match(migration,/ELSE 'ready_to_schedule'/);
+ assert.match(migration,/coalesce\(v_job\.workcard_review_status,'legacy_approved'\) NOT IN \('approved','legacy_approved'\) THEN 'workcard_created'/);
 });
 
 test("Workcard execution and review advance the original Jobcard pipeline",async()=>{
