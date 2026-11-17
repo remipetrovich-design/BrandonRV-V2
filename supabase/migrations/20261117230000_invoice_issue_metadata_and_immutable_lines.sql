@@ -169,6 +169,172 @@ $$;
 REVOKE ALL ON FUNCTION public.respond_to_completed_workcard(uuid,uuid,uuid,uuid,text,text,text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.respond_to_completed_workcard(uuid,uuid,uuid,uuid,text,text,text) TO service_role;
 
+-- Keep the original Jobcard stage aligned with the invoice settlement lifecycle.
+CREATE OR REPLACE FUNCTION public.record_invoice_payment_idempotent(
+  p_invoice_id uuid,
+  p_business_id uuid,
+  p_actor_user_id uuid,
+  p_amount numeric,
+  p_method text,
+  p_reference text,
+  p_payment_type text,
+  p_idempotency_key uuid
+) RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $
+DECLARE
+  v_invoice public.invoices%ROWTYPE;
+  v_payment public.payments%ROWTYPE;
+  v_job public.jobs%ROWTYPE;
+  v_enquiry public.enquiries%ROWTYPE;
+  v_enquiry_id uuid;
+  v_credit_total numeric(12,2) := 0;
+  v_amount_paid numeric(12,2);
+  v_balance numeric(12,2);
+  v_status text;
+  v_now timestamptz := clock_timestamp();
+  v_archived boolean := false;
+BEGIN
+  IF p_amount IS NULL OR p_amount<=0 OR p_amount>10000000 THEN
+    RAISE EXCEPTION 'Enter a valid payment amount.' USING ERRCODE='22023';
+  END IF;
+  IF p_method NOT IN ('cash','bank_transfer','card','other') THEN
+    RAISE EXCEPTION 'Select a valid payment method.' USING ERRCODE='22023';
+  END IF;
+  IF p_payment_type NOT IN ('deposit','part_payment','final_payment','other') OR p_idempotency_key IS NULL THEN
+    RAISE EXCEPTION 'A valid payment type and request key are required.' USING ERRCODE='22023';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtextextended(p_business_id::text||':'||p_idempotency_key::text,0));
+  SELECT * INTO v_payment FROM public.payments
+   WHERE business_id=p_business_id AND idempotency_key=p_idempotency_key;
+  IF FOUND THEN
+    IF v_payment.invoice_id<>p_invoice_id OR abs(v_payment.amount-p_amount)>0.005
+       OR v_payment.method IS DISTINCT FROM p_method
+       OR v_payment.payment_type IS DISTINCT FROM p_payment_type
+       OR v_payment.reference IS DISTINCT FROM nullif(left(trim(coalesce(p_reference,'')),120),'') THEN
+      RAISE EXCEPTION 'This payment request key was already used for different payment details.' USING ERRCODE='P0001';
+    END IF;
+    SELECT * INTO v_invoice FROM public.invoices
+     WHERE id=p_invoice_id AND business_id=p_business_id;
+    SELECT coalesce(sum(amount),0) INTO v_credit_total
+      FROM public.invoice_credits WHERE invoice_id=p_invoice_id AND status='issued';
+    IF v_invoice.job_id IS NOT NULL THEN
+      SELECT * INTO v_job FROM public.jobs
+       WHERE id=v_invoice.job_id AND business_id=p_business_id;
+      IF FOUND THEN
+        IF v_job.appointment_id IS NOT NULL THEN
+          SELECT enquiry_id INTO v_enquiry_id FROM public.appointments
+           WHERE id=v_job.appointment_id AND business_id=p_business_id;
+        END IF;
+        IF v_enquiry_id IS NULL AND v_job.quote_id IS NOT NULL THEN
+          SELECT enquiry_id INTO v_enquiry_id FROM public.quotes
+           WHERE id=v_job.quote_id AND business_id=p_business_id;
+        END IF;
+      END IF;
+    END IF;
+    IF v_enquiry_id IS NOT NULL THEN
+      SELECT * INTO v_enquiry FROM public.enquiries
+       WHERE id=v_enquiry_id AND business_id=p_business_id;
+      v_archived := FOUND AND v_enquiry.stage='paid' AND v_enquiry.archived_at IS NOT NULL;
+    END IF;
+    RETURN jsonb_build_object('success',true,'already_recorded',true,'payment',to_jsonb(v_payment),
+      'amountPaid',v_invoice.amount_paid,'creditTotal',v_credit_total,
+      'balance',round(v_invoice.total-v_invoice.amount_paid-v_credit_total,2),
+      'invoiceStatus',v_invoice.status,'jobcardArchived',v_archived);
+  END IF;
+
+  SELECT * INTO v_invoice FROM public.invoices
+   WHERE id=p_invoice_id AND business_id=p_business_id
+   FOR UPDATE;
+  IF NOT FOUND OR v_invoice.status NOT IN ('issued','part_paid','overdue') THEN
+    RAISE EXCEPTION 'This invoice cannot accept another payment.' USING ERRCODE='P0001';
+  END IF;
+  SELECT coalesce(sum(amount),0) INTO v_credit_total
+    FROM public.invoice_credits WHERE invoice_id=p_invoice_id AND status='issued';
+  v_balance := round(v_invoice.total-v_invoice.amount_paid-v_credit_total,2);
+  IF v_balance<=0 OR p_amount>v_balance+0.005 THEN
+    RAISE EXCEPTION 'Payment exceeds the outstanding balance.' USING ERRCODE='22023';
+  END IF;
+  IF p_payment_type='final_payment' AND abs(p_amount-v_balance)>0.005 THEN
+    RAISE EXCEPTION 'A final payment must equal the remaining balance.' USING ERRCODE='22023';
+  END IF;
+
+  IF v_invoice.job_id IS NOT NULL THEN
+    SELECT * INTO v_job FROM public.jobs
+     WHERE id=v_invoice.job_id AND business_id=p_business_id
+     FOR UPDATE;
+    IF NOT FOUND OR v_job.status<>'completed'
+       OR coalesce(v_job.customer_approval_status,'not_ready')<>'approved'
+       OR coalesce(v_job.senior_approval_status,'pending') NOT IN ('approved','legacy_approved') THEN
+      RAISE EXCEPTION 'The customer-approved final Workcard is required before payment.' USING ERRCODE='P0001';
+    END IF;
+    IF v_job.appointment_id IS NOT NULL THEN
+      SELECT enquiry_id INTO v_enquiry_id FROM public.appointments
+       WHERE id=v_job.appointment_id AND business_id=p_business_id;
+    END IF;
+    IF v_enquiry_id IS NULL AND v_job.quote_id IS NOT NULL THEN
+      SELECT enquiry_id INTO v_enquiry_id FROM public.quotes
+       WHERE id=v_job.quote_id AND business_id=p_business_id;
+    END IF;
+  END IF;
+
+  v_amount_paid := round(v_invoice.amount_paid+p_amount,2);
+  v_status := CASE
+    WHEN v_amount_paid+v_credit_total+0.005>=v_invoice.total THEN 'paid'
+    WHEN v_invoice.due_date IS NOT NULL AND v_invoice.due_date<(v_now AT TIME ZONE 'Australia/Sydney')::date THEN 'overdue'
+    ELSE 'part_paid' END;
+
+  INSERT INTO public.payments
+    (business_id,invoice_id,customer_id,user_id,amount,method,reference,status,paid_at,payment_type,idempotency_key)
+  VALUES
+    (p_business_id,v_invoice.id,v_invoice.customer_id,v_invoice.user_id,p_amount,p_method,
+     nullif(left(trim(coalesce(p_reference,'')),120),''),'recorded',v_now,p_payment_type,p_idempotency_key)
+  RETURNING * INTO v_payment;
+
+  UPDATE public.invoices SET amount_paid=v_amount_paid,status=v_status,updated_at=v_now
+   WHERE id=v_invoice.id AND business_id=p_business_id;
+
+  IF v_enquiry_id IS NOT NULL THEN
+    SELECT * INTO v_enquiry FROM public.enquiries
+     WHERE id=v_enquiry_id AND business_id=p_business_id
+     FOR UPDATE;
+    IF FOUND AND v_enquiry.request_type='quote_request' THEN
+      IF v_status='paid' AND v_enquiry.archived_at IS NULL THEN
+        UPDATE public.enquiries SET stage='paid',status='closed',archived_at=v_now,
+          guest_access_token_hash=NULL,guest_access_expires_at=NULL,updated_at=v_now
+         WHERE id=v_enquiry_id AND business_id=p_business_id;
+        INSERT INTO public.enquiry_stage_history(business_id,enquiry_id,from_stage,to_stage,changed_by,note)
+        VALUES(p_business_id,v_enquiry_id,v_enquiry.stage,'paid',p_actor_user_id,
+          'Jobcard archived after final customer approval and full invoice settlement.');
+        v_archived := true;
+      ELSIF v_status IN ('part_paid','overdue') AND v_enquiry.archived_at IS NULL
+         AND v_enquiry.stage IS DISTINCT FROM 'awaiting_payment' THEN
+        UPDATE public.enquiries SET stage='awaiting_payment',status='converted',updated_at=v_now
+         WHERE id=v_enquiry_id AND business_id=p_business_id;
+        INSERT INTO public.enquiry_stage_history(business_id,enquiry_id,from_stage,to_stage,changed_by,note)
+        VALUES(p_business_id,v_enquiry_id,v_enquiry.stage,'awaiting_payment',p_actor_user_id,
+          'A payment was recorded and an outstanding invoice balance remains.');
+      END IF;
+    END IF;
+  END IF;
+
+  INSERT INTO public.audit_events(business_id,actor_user_id,action,entity_type,entity_id,details)
+  VALUES(p_business_id,p_actor_user_id,'payment.recorded','payment',v_payment.id,
+    jsonb_build_object('invoice_id',v_invoice.id,'amount',p_amount,'method',p_method,
+      'payment_type',p_payment_type,'invoice_status',v_status,'jobcard_archived',v_archived));
+  RETURN jsonb_build_object('success',true,'already_recorded',false,'payment',to_jsonb(v_payment),
+    'amountPaid',v_amount_paid,'creditTotal',v_credit_total,
+    'balance',round(v_invoice.total-v_amount_paid-v_credit_total,2),
+    'invoiceStatus',v_status,'jobcardArchived',v_archived);
+END;
+$;
+
+REVOKE ALL ON FUNCTION public.record_invoice_payment_idempotent(uuid,uuid,uuid,numeric,text,text,text,uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.record_invoice_payment_idempotent(uuid,uuid,uuid,numeric,text,text,text,uuid) TO service_role;
+
 -- An invoice line cannot be moved out of an issued invoice into a draft invoice.
 -- Check both its old and new parent when an UPDATE changes invoice_id.
 CREATE OR REPLACE FUNCTION public.prevent_issued_invoice_item_edits()
