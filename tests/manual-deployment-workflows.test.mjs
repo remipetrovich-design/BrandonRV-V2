@@ -15,6 +15,9 @@ test("manual production deployment fetches and deploys the newest complete main 
   assert.match(deploy, /git rev-list --count HEAD/);
   assert.match(deploy, /vercel build --prod/);
   assert.match(deploy, /vercel deploy --prebuilt --prod/);
+  assert.match(deploy, /workflow_dispatch:/);
+  assert.match(deploy, /if: inputs.confirm == 'YES'/);
+  assert.doesNotMatch(deploy, /BRANDON_RV_MANUAL_DEPLOY_ENABLED/);
   assert.doesNotMatch(deploy, /supabase db push|run-supabase-migrations/);
 });
 
