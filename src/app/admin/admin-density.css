@@ -616,17 +616,6 @@
 .brv-admin-frame .portal-shell.brv-admin-page-inner--compact { max-width:900px !important; }
 
 
-/* Desktop-only workspace: keep the fixed navigation visible at every viewport width. */
-@media (max-width: 850px) {
-  .brv-admin-frame { display: grid !important; grid-template-columns: 236px minmax(0, 1fr) !important; }
-  .brv-admin-frame .brv-admin-sidebar { position: sticky !important; top: 0 !important; left: auto !important; width: 236px !important; max-width: none !important; height: 100vh !important; min-height: 580px !important; transform: none !important; transition: none !important; box-shadow: none !important; }
-  .brv-admin-frame .brv-admin-menu-toggle,
-  .brv-admin-frame .brv-admin-backdrop { display: none !important; }
-  .brv-admin-frame .brv-admin-topbar-actions { display: flex !important; }
-  .brv-admin-frame .brv-admin-content { padding: 20px 18px 32px !important; }
-}
-
-
 /* Staff workspace: integrated role library and permission editor. */
 .brv-admin-frame .brv-staff-access-page { width:100%; max-width:1440px; margin:0 auto; }
 .brv-admin-frame .brv-staff-access-tabs { display:flex; gap:8px; margin:18px 0 16px; padding:6px; border:1px solid #dbe4ec; border-radius:10px; background:#edf2f6; }
