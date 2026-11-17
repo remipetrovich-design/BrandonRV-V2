@@ -60,10 +60,12 @@ test("all booking entry points use the same transaction and explicit manager ove
  const jobcard=await read("../src/app/api/admin/enquiries/[id]/booking/route.ts");
  const staff=await read("../src/app/api/staff/jobs/[id]/booking-request/route.ts");
  const calendar=await read("../src/app/api/admin/[section]/[id]/route.ts");
- for(const route of [workcard,jobcard,staff,calendar])assert.match(route,/rpc\("update_jobcard_booking"/);
+ const createCalendar=await read("../src/app/api/admin/appointments/route.ts");
+ for(const route of [workcard,jobcard,staff,calendar,createCalendar])assert.match(route,/rpc\("update_jobcard_booking"/);
  assert.match(workcard,/p_bypass_conflicts:bypassRestrictions/);
  assert.match(jobcard,/p_bypass_conflicts:isManagerOrAbove/);
  assert.match(staff,/p_bypass_conflicts:false/);
+ assert.match(createCalendar,/p_bypass_conflicts:bypassRestrictions/);
  assert.match(calendar,/p_action:update\.status==="confirmed"\?"confirm":"reschedule"/);
  assert.match(calendar,/p_action:"cancel"/);
  assert.doesNotMatch(calendar,/workcard\.booking_synced_from_calendar/);
