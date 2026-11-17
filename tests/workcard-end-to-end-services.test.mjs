@@ -29,7 +29,7 @@ test("Workcard management endpoint returns complete job context and service-link
 
 test("accepted quote conversion creates one linked Workcard and planned entries in one database transaction",async()=>{
  const route=await read("../src/app/api/admin/jobs/route.ts");
- const migration=await read("../supabase/migrations/20261115110000_create_workcard_from_accepted_quote_rpc.sql");
+ const migration=await read("../supabase/migrations/20261114153221_20261115110000_create_workcard_from_accepted_quote_rpc.sql");
  const engine=await read("../src/lib/workcard-engine.mjs");
  assert.ok(route.includes('rpc("create_workcard_from_accepted_quote"'),"The route must use the atomic database conversion.");
  assert.ok(migration.includes("FROM public.quote_items qi"),"The original accepted quote lines must be copied.");
@@ -131,7 +131,7 @@ test("Workcard variations also retain service links through customer acceptance"
 
 test("final invoice uses actual Workcard entries, never the original quote total",async()=>{
  const invoice=await read("../src/app/api/admin/invoices/route.ts");
- const migration=await read("../supabase/migrations/20261115150000_create_invoice_from_approved_workcard_rpc.sql");
+ const migration=await read("../supabase/migrations/20261114201059_create_invoice_from_approved_workcard_rpc.sql");
  for(const field of ['from("job_work_entries")','eq("invoiceable",true)',"quantity_used",'rpc("create_invoice_from_approved_workcard"',"source_entry_id"])assert.ok(invoice.includes(field));
  assert.ok(migration.includes("'invoice.draft_created_from_actual_work'"));
  assert.ok(!invoice.includes("quote.subtotal"));
