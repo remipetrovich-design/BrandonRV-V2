@@ -28,7 +28,7 @@ export async function GET(){
  const appointmentIds=[...new Set((jobsResult.data??[]).map(job=>job.appointment_id).filter(Boolean))];
  const {data:bookings,error:bookingError}=appointmentIds.length?await db.from("appointments").select("id,status").eq("business_id",membership.business_id).in("id",appointmentIds):{data:[],error:null};
  if(bookingError)return jsonError("Could not load confirmed Workcard bookings.",500);
- const confirmedBookings=new Set((bookings??[]).filter(x=>x.status==="confirmed").map(x=>x.id));
+ const confirmedBookings=new Set((bookings??[]).filter(x=>["confirmed","rescheduled"].includes(x.status)).map(x=>x.id));
  const workOptions=(jobsResult.data??[]).filter(job=>!job.worker_signed_off_at&&confirmedBookings.has(job.appointment_id)&&["scheduled","in_progress"].includes(job.status)).map(job=>({...job,labourEntries:job.status==="in_progress"?(entriesResult.data??[]).filter(entry=>entry.job_id===job.id):[]}));
  return Response.json({active:active??null,recent:recent??[],workOptions});
 }
