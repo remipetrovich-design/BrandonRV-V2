@@ -20,7 +20,7 @@ test("executive staff assignment is controlled by a configurable permission",asy
  const route=await read("../src/app/api/staff/route.ts");
  const migration=await read("../supabase/migrations/20261118150000_executive_role_assignment_permission.sql");
  assert.match(route,/roles\.assign_executive/);
- assert.doesNotMatch(route,/isGlobalAdministrator/);
+ assert.doesNotMatch(route,/isGlobalAdministrator/);\n assert.match(route,/You cannot grant permissions that you do not hold/);\n assert.match(route,/permittedRemovals/);
  assert.match(migration,/roles\.assign_executive/);
  for(const role of ["ceo_founder","website_development_specialist","senior_manager"]){
   assert.match(migration,new RegExp(role));
