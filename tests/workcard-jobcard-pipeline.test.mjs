@@ -8,8 +8,9 @@ test("invoice issuer identity matches the application's public user model",async
  const migration=await read(migrationPath);
  const invoiceLifecycle=await read("../supabase/migrations/20261117102142_invoice_issue_payment_credit_lifecycle_20261117220000.sql");
  assert.match(migration,/FOREIGN KEY \(issued_by\) REFERENCES public\.users\(id\)/);
- assert.match(migration,/v_issuer_user_id := coalesce\(v_job\.senior_approved_by,v_job\.worker_signed_off_by,p_actor_user_id\)/);
+ assert.match(migration,/v_issuer_user_id := coalesce\(v_job\.senior_approved_by,v_job\.worker_signed_off_by\)/);
  assert.match(migration,/PERFORM public\.issue_invoice\(v_invoice\.id,p_business_id,v_issuer_user_id\)/);
+ assert.doesNotMatch(migration,/v_issuer_user_id := coalesce\([^)]*p_actor_user_id/);
  assert.match(invoiceLifecycle,/issued_at=v_now/);
  assert.match(invoiceLifecycle,/issued_by=p_actor_user_id/);
 });
