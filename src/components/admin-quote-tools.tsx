@@ -1,7 +1,7 @@
 "use client";
 import {useState} from "react";
 type Review={id:string;quote_number:string;status:string;prepared_by:string|null;senior_approval_status:string;senior_approved_at:string|null;senior_approval_note:string|null;issue_date:string|null};
-export default function AdminQuoteTools({quoteId}:{quoteId:string}){
+export default function AdminQuoteTools({quoteId,canIssue=true}:{quoteId:string;canIssue?:boolean}){
  const [review,setReview]=useState<Review|null>(null);
  const [note,setNote]=useState("");const [notice,setNotice]=useState("");const [busy,setBusy]=useState(false);const [loaded,setLoaded]=useState(false);
  async function load(){
@@ -27,7 +27,7 @@ export default function AdminQuoteTools({quoteId}:{quoteId:string}){
    {!loaded&&<p className="panel-footnote">Open to load quote review.</p>}
    {review&&<><div className="brv-admin-quote-status"><strong>{review.quote_number}</strong><span>{review.status.replaceAll("_"," ")} · {review.senior_approval_status.replaceAll("_"," ")}</span></div>
     {review.status==="draft"&&review.senior_approval_status==="pending"&&<><label>Senior review note<textarea rows={2} value={note} onChange={e=>setNote(e.target.value)} maxLength={2000} placeholder="Corrections required, or approval notes."/></label><div className="brv-admin-quote-actions"><button className="button button-primary" disabled={busy} onClick={()=>void decide("approved")}>Approve quote</button><button className="button button-secondary" disabled={busy||note.trim().length<5} onClick={()=>void decide("changes_requested")}>Return for revision</button></div></>}
-    {review.status==="draft"&&["approved","legacy_approved"].includes(review.senior_approval_status)&&<><p className="inline-notice">{review.senior_approval_status==="approved"?"Senior approval recorded.":"Legacy quote approval retained."} {review.senior_approved_at?new Date(review.senior_approved_at).toLocaleString("en-AU"):""}</p><button className="button button-primary" disabled={busy} onClick={()=>void issue()}>Issue quote to customer</button></>}
+    {review.status==="draft"&&["approved","legacy_approved"].includes(review.senior_approval_status)&&<><p className="inline-notice">{review.senior_approval_status==="approved"?"Senior approval recorded.":"Legacy quote approval retained."} {review.senior_approved_at?new Date(review.senior_approved_at).toLocaleString("en-AU"):""}</p>{canIssue?<button className="button button-primary" disabled={busy} onClick={()=>void issue()}>Issue quote to customer</button>:<p className="panel-footnote">A quote manager must issue this approved quote.</p>}</>}
     {review.senior_approval_status==="changes_requested"&&<p className="panel-footnote">Returned for revision: {review.senior_approval_note??"Create a revised draft quote for this Jobcard."}</p>}
     {review.status==="sent"&&<p className="inline-notice">Quote issued {review.issue_date?new Date(review.issue_date).toLocaleDateString("en-AU"):""}.</p>}
    </>}
