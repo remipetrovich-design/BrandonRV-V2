@@ -6,12 +6,11 @@ const root=new URL('../',import.meta.url);
 const exists=path=>existsSync(new URL(path,root));
 const read=path=>readFileSync(new URL(path,root),'utf8');
 
-test('the application has no bundled licence enforcement or activation surfaces',()=>{
+test('the application has no legacy bundled licence surfaces and retains the external A.L.I.S. integration',()=>{
  for(const path of [
   'src/lib/brandon-license.ts',
   'src/lib/license-manager-client.js',
   'src/lib/license-manager-client.d.ts',
-  'src/app/license/page.tsx',
   'src/app/admin/license/page.tsx',
   'src/app/api/license/route.ts',
   'src/app/api/admin/license/route.ts',
@@ -24,7 +23,10 @@ test('the application has no bundled licence enforcement or activation surfaces'
  const proxy=read('src/proxy.ts');
  assert.match(proxy,/requiresFirstOwnerSetup/);
  assert.match(proxy,/\/setup/);
- assert.doesNotMatch(proxy,/license|licence/i);
+ assert.match(proxy,/checkAlisLicense/);
+ assert.match(proxy,/firstInstallDecision/);
+ assert.equal(exists('src/app/license/page.tsx'),true);
+ assert.equal(exists('src/app/api/alis/license/route.ts'),true);
  const adminLayout=read('src/app/admin/layout.tsx');
  assert.doesNotMatch(adminLayout,/\/admin\/license|Application licence/i);
  const env=read('.env.example');
