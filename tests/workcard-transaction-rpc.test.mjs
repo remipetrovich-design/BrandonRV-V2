@@ -6,7 +6,7 @@ const read = path => readFile(new URL(path, import.meta.url), "utf8");
 
 test("admin Workcard updates use one transactional RPC for Workcard, Jobcard stage history and audit", async () => {
   const route = await read("../src/app/api/admin/jobs/[id]/route.ts");
-  const migration = await read("../supabase/migrations/20261115123000_update_workcard_with_jobcard_stage_rpc.sql");
+  const migration = await read("../supabase/migrations/20261114174738_update_workcard_with_jobcard_stage_rpc.sql");
 
   const patch = route.slice(route.indexOf("export async function PATCH"), route.indexOf("export async function DELETE"));
   assert.ok(patch.includes('rpc("update_workcard_with_jobcard_stage"'), "The route must use the transactional update RPC.");
@@ -32,7 +32,7 @@ test("admin Workcard updates use one transactional RPC for Workcard, Jobcard sta
 });
 
 test("transactional Workcard RPC rejects unsupported fields and enforces completion approvals", async () => {
-  const migration = await read("../supabase/migrations/20261115123000_update_workcard_with_jobcard_stage_rpc.sql");
+  const migration = await read("../supabase/migrations/20261114174738_update_workcard_with_jobcard_stage_rpc.sql");
   assert.ok(migration.includes("Unsupported Workcard update field"));
   assert.ok(migration.includes("Senior approval is required before completing a Workcard."));
   assert.ok(migration.includes("Customer approval is required before completing a Workcard."));
@@ -41,7 +41,7 @@ test("transactional Workcard RPC rejects unsupported fields and enforces complet
 
 test("admin Workcard deletion locks and removes only untouched records with its audit event in one transaction", async () => {
   const route = await read("../src/app/api/admin/jobs/[id]/route.ts");
-  const migration = await read("../supabase/migrations/20261115140000_delete_untouched_workcard_rpc.sql");
+  const migration = await read("../supabase/migrations/20261114174934_delete_untouched_workcard_rpc.sql");
   const deletion = route.slice(route.indexOf("export async function DELETE"));
 
   assert.ok(deletion.includes('rpc("delete_untouched_workcard"'), "The route must call the atomic deletion RPC.");
