@@ -23,6 +23,7 @@ export async function POST(request:Request){
    const {data:linkedAppointment}=await db.from("appointments").select("id,status").eq("id",job.appointment_id).eq("business_id",businessId).maybeSingle();
    if(linkedAppointment&&!["cancelled","completed"].includes(linkedAppointment.status))return jsonError("This Workcard already has an active appointment. Update it from the master calendar.",409);
   }
+  if(!job.quote_id)return jsonError("Create the Workcard from an accepted quote before booking.",409);
   if(job.quote_id){
    const {data:existingRequest}=await db.from("appointments").select("id,status").eq("business_id",businessId).eq("quote_id",job.quote_id).in("status",["requested","confirmed","rescheduled"]).limit(1).maybeSingle();
    if(existingRequest)return jsonError("An appointment request already exists. Accept or update it in the master calendar.",409);
@@ -44,11 +45,14 @@ export async function POST(request:Request){
    if(conflict)return jsonError("That time conflicts with another booking or its travel buffer.",409);
   }
   const nowIso=now.toISOString();
-  const {data:appointment,error}=await db.from("appointments").insert({business_id:businessId,customer_id:job.customer_id??null,user_id:job.user_id??null,quote_id:job.quote_id??null,enquiry_id:enquiryId,vehicle_id:vehicleId,guest_name:job.guest_name??null,guest_email:job.guest_email??null,starts_at:startsAt.toISOString(),ends_at:endsAt?.toISOString()??null,preferred_start:startsAt.toISOString(),preferred_end:null,location,status:"confirmed",confirmed_by:access.user!.id,confirmed_at:nowIso}).select("id,status,starts_at,ends_at,location,quote_id").single();
+  const {data:appointment,error}=await db.from("appointments").insert({business_id:businessId,customer_id:job.customer_id??null,user_id:job.user_id??null,quote_id:job.quote_id??null,enquiry_id:enquiryId,vehicle_id:vehicleId,guest_name:job.guest_name??null,guest_email:job.guest_email??null,starts_at:startsAt.toISOString(),ends_at:endsAt?.toISOString()??null,preferred_start:startsAt.toISOString(),preferred_end:null,location,status:"requested",confirmed_by:null,confirmed_at:null}).select("id,status,starts_at,ends_at,location,quote_id").single();
   if(error||!appointment)return jsonError("Could not create the appointment.",500);
-  const {error:linkError}=await db.from("jobs").update({appointment_id:appointment.id,scheduled_start:appointment.starts_at,scheduled_end:appointment.ends_at??null,status:"scheduled",updated_at:nowIso}).eq("id",job.id).eq("business_id",businessId);
-  if(linkError){await db.from("appointments").delete().eq("id",appointment.id).eq("business_id",businessId);return jsonError("Appointment could not be linked to the Workcard.",500);}
-  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"calendar.appointment_created",entity_type:"appointment",entity_id:appointment.id,details:{job_id:job.id,job_number:job.job_number,starts_at:appointment.starts_at,ends_at:appointment.ends_at,location}});
-  return Response.json({appointment,jobId:job.id},{status:201});
+  const {data:bookingResult,error:bookingError}=await db.rpc("update_jobcard_booking",{
+   p_business_id:businessId,p_actor_user_id:access.user!.id,p_enquiry_id:enquiryId!,p_appointment_id:appointment.id,
+   p_action:"confirm",p_starts_at:startsAt.toISOString(),p_ends_at:endsAt?.toISOString()??null,
+   p_location:location,p_bypass_conflicts:bypassRestrictions
+  });
+  if(bookingError){await db.from("appointments").delete().eq("id",appointment.id).eq("business_id",businessId);const status=bookingError.code==="P0002"?404:bookingError.code==="P0001"?409:500;return jsonError(bookingError.message??"Could not create and link the appointment.",status);}
+  return Response.json({appointment:bookingResult.appointment,jobId:job.id,workcardsUpdated:bookingResult.workcardsUpdated},{status:201});
  }catch(error){console.error("Calendar appointment creation failed",error);return jsonError("Could not create appointment.",500);}
 }
