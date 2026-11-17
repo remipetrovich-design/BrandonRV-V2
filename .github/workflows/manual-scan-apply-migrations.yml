@@ -1,0 +1,85 @@
+name: Manual V2 migration scan and apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type YES to scan and apply pending migrations to the dedicated V2 database."
+        required: true
+        default: "NO"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: brandon-rv-v2-manual-migrations
+  cancel-in-progress: false
+
+jobs:
+  migrations:
+    if: vars.BRANDON_RV_MANUAL_DEPLOY_ENABLED == 'true' && inputs.confirm == 'YES'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      SUPABASE_PROJECT_ID: lciylmfpcefdpsouoqvm
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+    steps:
+      - name: Check out the latest main migration history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Refresh main and select its latest commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --force
+          git checkout --detach origin/main
+          echo "Migration source commit: $(git rev-parse HEAD)"
+          echo "Migration files in this commit: $(find supabase/migrations -maxdepth 1 -type f -name '*.sql' | wc -l)"
+
+      - name: Validate dedicated V2 target
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$SUPABASE_PROJECT_ID" = "lciylmfpcefdpsouoqvm"
+          test "$VERCEL_ORG_ID" = "team_096KfEXGur0lYlViGQdIVEoU"
+          test "$VERCEL_PROJECT_ID" = "prj_ZI2MbFrpCJFovX9unahbN5WgLqTw"
+          for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Required Vercel secret $name is not configured."
+              exit 1
+            fi
+          done
+
+      - name: Check migration filenames and references
+        run: node scripts/check-migrations.mjs
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Production project configuration
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Pull Vercel-integrated V2 Supabase Production environment
+        run: vercel env pull .env.production.local --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Scan remote migration history and preview pending changes
+        run: node scripts/run-supabase-migrations.mjs preview
+
+      - name: Apply pending migrations to dedicated V2 Supabase
+        run: node scripts/run-supabase-migrations.mjs apply
