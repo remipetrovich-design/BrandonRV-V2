@@ -47,7 +47,7 @@ BEGIN
   IF v_job.status <> 'in_progress' OR v_job.worker_signed_off_at IS NOT NULL THEN
     RAISE EXCEPTION 'Only an in-progress Workcard can be signed off.' USING ERRCODE = 'P0001';
   END IF;
-  IF v_job.workcard_review_status NOT IN ('approved','legacy_approved') THEN
+  IF coalesce(v_job.workcard_review_status,'legacy_approved') NOT IN ('approved','legacy_approved') THEN
     RAISE EXCEPTION 'The Workcard must pass senior setup review before sign-off.' USING ERRCODE = 'P0001';
   END IF;
   IF length(v_summary) < 10 THEN
