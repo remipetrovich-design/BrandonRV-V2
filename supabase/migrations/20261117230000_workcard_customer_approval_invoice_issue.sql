@@ -929,10 +929,10 @@ BEGIN
 
   IF p_action IN ('confirm','reschedule') AND NOT coalesce(p_bypass_conflicts,false) THEN
     SELECT settings INTO v_settings FROM public.business_settings WHERE business_id=p_business_id;
-    IF coalesce(v_settings #>> '{booking,appointment_duration_minutes}','') ~ '^\\d+$' THEN
+    IF coalesce(v_settings #>> '{booking,appointment_duration_minutes}','') ~ '^[0-9]+$' THEN
       v_duration := greatest(15,least(480,(v_settings #>> '{booking,appointment_duration_minutes}')::integer));
     END IF;
-    IF coalesce(v_settings #>> '{booking,travel_buffer_minutes}','') ~ '^\\d+$' THEN
+    IF coalesce(v_settings #>> '{booking,travel_buffer_minutes}','') ~ '^[0-9]+$' THEN
       v_buffer := greatest(0,least(240,(v_settings #>> '{booking,travel_buffer_minutes}')::integer));
     END IF;
     v_candidate_end := coalesce(p_ends_at,p_starts_at + make_interval(mins => v_duration));
