@@ -41,17 +41,17 @@ The existing OrbitFS Mail integration is send-only. Brandon RV resolves the send
 
 ## Manual production deployment and migrations
 
-The manual workflow is `.github/workflows/manual-deploy-migrate.yml`.
+The three independent manual workflows are `.github/workflows/manual-full-scan.yml`, `.github/workflows/manual-scan-apply-migrations.yml` and `.github/workflows/manual-deploy-latest.yml`.
 
 - It has only a `workflow_dispatch` trigger. It has no `push` trigger and ordinary Vercel Git deployments do not apply Supabase migrations.
 - Deployment is manually dispatched from the admin control or the dedicated GitHub Actions workflow; the caller must type `YES`. The legacy `BRANDON_RV_MANUAL_DEPLOY_ENABLED` flag is not a deployment prerequisite.
-- The Vercel Production variable `BRANDON_RV_MANUAL_DEPLOY_ENABLED` is currently `false`; it does not disable the separate latest-main deployment workflow. Deployment remains gated by a successful Full Scan for the exact commit and the required Production GitHub environment.
+- The legacy `BRANDON_RV_MANUAL_DEPLOY_ENABLED` variable is not read by the current deployment or migration workflows and has no effect. It can remain false or unset. Deployment is gated by a successful Full Scan for the exact commit and the required Production GitHub environment.
 - The admin-panel dispatch route is restricted to Owner or Website Developer. `GITHUB_ACTIONS_DISPATCH_TOKEN` enables direct in-app dispatch; when it is absent, the control opens the matching GitHub Actions workflow so the operator can start it there.
 - GitHub Actions requires only `VERCEL_TOKEN`, `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` secrets for deployment. The Vercel Supabase integration supplies `POSTGRES_URL_NON_POOLING`; separate `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD` secrets are not required.
 - The workflow validates the Vercel project and Supabase project reference, previews the remote migration plan, builds the application before changing the database, applies migrations through the Vercel-integrated direct connection, and then deploys the verified build.
 - The GitHub `production` environment remains required.
 
-The V2 repository migration filenames have been aligned in this change branch with the 76 migration versions already recorded in the remote V2 database. No migration has been run by this work. The manual workflow remains inactive.
+The V2 repository migration filenames have been aligned with the 76 migration versions already recorded in the remote V2 database. No migration has been run by this work. All three workflows remain manual-only and are not triggered automatically by this documentation change.
 
 ## Before accepting customer enquiries publicly
 
