@@ -7,7 +7,7 @@ async function accessJob(jobId:string,userId:string,businessId:string){
  if(!staff)return {db,staff:null,job:null,allowed:false};
  const [{data:job},{data:assignment}]=await Promise.all([
   db.from("jobs").select("id,status,customer_approval_status").eq("id",jobId).eq("business_id",businessId).maybeSingle(),
-  db.from("job_assignments").select("id,status").eq("job_id",jobId).eq("staff_id",staff.id).maybeSingle()
+  db.from("job_assignments").select("id,status").eq("business_id",businessId).eq("job_id",jobId).eq("staff_id",staff.id).maybeSingle()
  ]);
  return {db,staff,job,allowed:assignment?.status==="accepted",assignment};
 }
