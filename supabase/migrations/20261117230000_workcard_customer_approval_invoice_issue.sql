@@ -549,6 +549,7 @@ DECLARE
   v_issuer_user_id uuid;
   v_now timestamptz := clock_timestamp();
   v_message text;
+  v_invoice_status text;
 BEGIN
   IF p_decision NOT IN ('approved','changes_requested') THEN
     RAISE EXCEPTION 'Choose approve or request changes.' USING ERRCODE = '22023';
@@ -607,15 +608,27 @@ BEGIN
     RAISE EXCEPTION 'The final invoice is not ready for customer approval.' USING ERRCODE = 'P0001';
   END IF;
 
-  UPDATE public.jobs
-     SET customer_approval_status = p_decision,
-         customer_approved_at = CASE WHEN p_decision = 'approved' THEN v_now ELSE NULL END,
-         customer_approval_note = NULLIF(left(trim(coalesce(p_note,'')),2000),''),
-         updated_at = v_now
-   WHERE id = v_job.id AND business_id = p_business_id
-     AND customer_approval_status = 'pending';
+  v_enquiry_id := p_guest_enquiry_id;
+  IF v_enquiry_id IS NULL AND v_job.quote_id IS NOT NULL THEN
+    SELECT enquiry_id INTO v_enquiry_id
+      FROM public.quotes
+     WHERE id = v_job.quote_id AND business_id = p_business_id;
+  END IF;
+  IF v_enquiry_id IS NULL AND v_job.appointment_id IS NOT NULL THEN
+    SELECT enquiry_id INTO v_enquiry_id
+      FROM public.appointments
+     WHERE id = v_job.appointment_id AND business_id = p_business_id;
+  END IF;
 
   IF p_decision = 'approved' THEN
+    UPDATE public.jobs
+       SET customer_approval_status = 'approved',
+           customer_approved_at = v_now,
+           customer_approval_note = NULLIF(left(trim(coalesce(p_note,'')),2000),''),
+           updated_at = v_now
+     WHERE id = v_job.id AND business_id = p_business_id
+       AND customer_approval_status = 'pending';
+
     v_issuer_user_id := coalesce(v_job.senior_approved_by,v_job.worker_signed_off_by,p_actor_user_id);
     IF v_issuer_user_id IS NULL THEN
       RAISE EXCEPTION 'An authorised staff issuer is required before the final invoice can be issued.' USING ERRCODE = 'P0001';
@@ -629,39 +642,63 @@ BEGIN
     IF NOT FOUND OR v_invoice.status <> 'issued' THEN
       RAISE EXCEPTION 'The final invoice could not be issued.' USING ERRCODE = 'P0001';
     END IF;
+    v_invoice_status := 'issued';
+  ELSE
+    -- Customer-requested corrections reopen the same Workcard. The draft invoice is
+    -- discarded and the worker must record the corrected work and sign off again.
+    UPDATE public.jobs
+       SET status = 'in_progress',
+           completed_at = NULL,
+           actual_end = NULL,
+           worker_signed_off_by = NULL,
+           worker_signed_off_at = NULL,
+           senior_approval_status = 'changes_requested',
+           senior_approved_by = NULL,
+           senior_approved_at = NULL,
+           senior_approval_note = NULL,
+           customer_approval_status = 'changes_requested',
+           customer_approved_at = NULL,
+           customer_approval_note = NULLIF(left(trim(coalesce(p_note,'')),2000),''),
+           final_report_created_at = NULL,
+           updated_at = v_now
+     WHERE id = v_job.id AND business_id = p_business_id
+       AND customer_approval_status = 'pending';
 
-    v_enquiry_id := p_guest_enquiry_id;
-    IF v_enquiry_id IS NULL AND v_job.quote_id IS NOT NULL THEN
-      SELECT enquiry_id INTO v_enquiry_id
-        FROM public.quotes
-       WHERE id = v_job.quote_id AND business_id = p_business_id;
-    END IF;
-    IF v_enquiry_id IS NULL AND v_job.appointment_id IS NOT NULL THEN
-      SELECT enquiry_id INTO v_enquiry_id
-        FROM public.appointments
-       WHERE id = v_job.appointment_id AND business_id = p_business_id;
-    END IF;
+    UPDATE public.job_assignments
+       SET status = 'accepted'
+     WHERE business_id = p_business_id
+       AND job_id = v_job.id
+       AND status = 'completed';
 
-    IF v_enquiry_id IS NOT NULL THEN
-      SELECT id,stage,request_type,archived_at
-        INTO v_jobcard
-        FROM public.enquiries
-       WHERE id = v_enquiry_id AND business_id = p_business_id
-       FOR UPDATE;
+    DELETE FROM public.invoices
+     WHERE id = v_invoice.id AND business_id = p_business_id AND status = 'draft';
+    v_invoice_status := 'rework_required';
+  END IF;
 
-      IF FOUND AND v_jobcard.request_type = 'quote_request' AND v_jobcard.archived_at IS NULL
-         AND v_jobcard.stage IS DISTINCT FROM 'invoiced' THEN
-        UPDATE public.enquiries
-           SET stage = 'invoiced',
-               status = 'converted',
-               updated_at = v_now
-         WHERE id = v_enquiry_id AND business_id = p_business_id;
+  IF v_enquiry_id IS NOT NULL THEN
+    SELECT id,stage,request_type,archived_at
+      INTO v_jobcard
+      FROM public.enquiries
+     WHERE id = v_enquiry_id AND business_id = p_business_id
+     FOR UPDATE;
 
+    IF FOUND AND v_jobcard.request_type = 'quote_request' AND v_jobcard.archived_at IS NULL THEN
+      IF p_decision = 'approved' AND v_jobcard.stage IS DISTINCT FROM 'invoiced' THEN
+        UPDATE public.enquiries SET stage='invoiced',status='converted',updated_at=v_now
+         WHERE id=v_enquiry_id AND business_id=p_business_id;
         INSERT INTO public.enquiry_stage_history
           (business_id,enquiry_id,from_stage,to_stage,changed_by,note)
         VALUES
           (p_business_id,v_enquiry_id,v_jobcard.stage,'invoiced',p_actor_user_id,
            'Customer approved the completed Workcard and the final invoice was issued.');
+      ELSIF p_decision = 'changes_requested' AND v_jobcard.stage IS DISTINCT FROM 'work_in_progress' THEN
+        UPDATE public.enquiries SET stage='work_in_progress',status='converted',updated_at=v_now
+         WHERE id=v_enquiry_id AND business_id=p_business_id;
+        INSERT INTO public.enquiry_stage_history
+          (business_id,enquiry_id,from_stage,to_stage,changed_by,note)
+        VALUES
+          (p_business_id,v_enquiry_id,v_jobcard.stage,'work_in_progress',p_actor_user_id,
+           'Customer requested corrections; the Workcard was reopened for rework.');
       END IF;
     END IF;
   END IF;
@@ -674,13 +711,9 @@ BEGIN
   INSERT INTO public.customer_messages
     (business_id,customer_id,user_id,enquiry_id,quote_id,sender_type,sender_user_id,guest_name,guest_email,message,is_internal)
   VALUES
-    (p_business_id,v_job.customer_id,p_actor_user_id,
-     CASE WHEN p_guest_enquiry_id IS NOT NULL THEN p_guest_enquiry_id
-          ELSE (SELECT enquiry_id FROM public.appointments WHERE id = v_job.appointment_id) END,
-     v_job.quote_id,'customer',p_actor_user_id,
+    (p_business_id,v_job.customer_id,p_actor_user_id,v_enquiry_id,v_job.quote_id,'customer',p_actor_user_id,
      CASE WHEN p_actor_user_id IS NULL THEN v_enquiry.contact_name ELSE NULL END,
-     CASE WHEN p_actor_user_id IS NULL THEN v_enquiry.email ELSE NULL END,
-     v_message,false);
+     CASE WHEN p_actor_user_id IS NULL THEN v_enquiry.email ELSE NULL END,v_message,false);
 
   INSERT INTO public.audit_events
     (business_id,actor_user_id,action,entity_type,entity_id,details)
@@ -688,18 +721,16 @@ BEGIN
     (p_business_id,p_actor_user_id,
      CASE WHEN p_actor_user_id IS NULL THEN 'guest_work_order.customer_' ELSE 'work_order.customer_' END || p_decision,
      'job',v_job.id,
-     jsonb_build_object('invoice_id',v_invoice.id,'invoice_status',CASE WHEN p_decision='approved' THEN 'issued' ELSE 'draft' END,
+     jsonb_build_object('invoice_id',v_invoice.id,'invoice_status',v_invoice_status,
        'invoice_issued_by',CASE WHEN p_decision='approved' THEN v_issuer_user_id ELSE NULL END,
+       'reopened_for_rework',p_decision='changes_requested',
        'note',NULLIF(left(trim(coalesce(p_note,'')),2000),''),'request_id',p_guest_enquiry_id));
 
   RETURN jsonb_build_object('success',true,'decision',p_decision,
-    'invoiceStatus',CASE WHEN p_decision='approved' THEN 'issued' ELSE 'draft' END,
-    'invoiceNumber',v_invoice.invoice_number);
+    'invoiceStatus',v_invoice_status,'invoiceNumber',v_invoice.invoice_number,
+    'workcardReopened',p_decision='changes_requested');
 END;
 $$;
-
-REVOKE ALL ON FUNCTION public.respond_to_completed_workcard(uuid,uuid,uuid,uuid,text,text,text) FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION public.respond_to_completed_workcard(uuid,uuid,uuid,uuid,text,text,text) TO service_role;
 
 
 -- Partial payments advance the Jobcard to awaiting_payment; full settlement records
