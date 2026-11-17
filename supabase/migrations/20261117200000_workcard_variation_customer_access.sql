@@ -43,7 +43,7 @@ BEGIN
          AND j.business_id = p_business_id
          AND j.status IN ('pending','scheduled','in_progress','waiting_parts')
          AND j.worker_signed_off_at IS NULL
-         AND j.workcard_review_status IN ('approved','legacy_approved')
+         AND coalesce(j.workcard_review_status,'legacy_approved') IN ('approved','legacy_approved')
     ) THEN
       RAISE EXCEPTION 'This Workcard is not available for variation review.' USING ERRCODE = 'P0001';
     END IF;
@@ -211,7 +211,7 @@ BEGIN
   END IF;
   SELECT id,status,user_id,enquiry_id,worker_signed_off_at,workcard_review_status INTO v_job FROM public.jobs
    WHERE id=v_quote.job_id AND business_id=p_business_id FOR UPDATE;
-  IF NOT FOUND OR v_job.status NOT IN ('pending','scheduled','in_progress','waiting_parts') OR v_job.worker_signed_off_at IS NOT NULL OR v_job.workcard_review_status NOT IN ('approved','legacy_approved') THEN
+  IF NOT FOUND OR v_job.status NOT IN ('pending','scheduled','in_progress','waiting_parts') OR v_job.worker_signed_off_at IS NOT NULL OR coalesce(v_job.workcard_review_status,'legacy_approved') NOT IN ('approved','legacy_approved') THEN
     RAISE EXCEPTION 'This Workcard is no longer open for variations.' USING ERRCODE='P0001';
   END IF;
   IF v_job.user_id IS NULL AND NOT EXISTS (
