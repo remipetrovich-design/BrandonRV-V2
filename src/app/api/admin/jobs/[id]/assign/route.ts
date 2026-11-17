@@ -10,7 +10,8 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const user=await currentUser();if(!user)return jsonError("Not signed in.",401);const membership=await currentMembership(user.id);if(!membership||!(await userHasPermission(user.id,"jobs.assign")))return jsonError("You do not have permission to assign jobs.",403);
  try{
   const {id}=await params;const body=await request.json();const ids:string[]=Array.isArray(body.staffIds)?body.staffIds.map((x:unknown)=>String(x)):[];if(ids.length>20||ids.some(x=>!/^[0-9a-f-]{36}$/i.test(x)))return jsonError("Invalid staff selection.");
-  const ids:string[]=[...new Set((Array.isArray(body.staffIds)?body.staffIds:[]).map((x:unknown)=>String(x)))];
+  if(!Array.isArray(body.staffIds))return jsonError("Choose the staff members to assign.");
+  const ids:string[]=[...new Set(body.staffIds.map((x:unknown)=>String(x)))];
   if(ids.length>20||ids.some(x=>!/^[0-9a-f-]{36}$/i.test(x)))return jsonError("Invalid staff selection.");
   const {data,error}=await database().rpc("replace_workcard_assignments",{p_job_id:id,p_business_id:membership.business_id,p_actor_user_id:user.id,p_staff_ids:ids});
   if(error){if(error.code==="P0001")return jsonError(error.message??"This Workcard cannot be assigned.",409);if(error.code==="22023")return jsonError(error.message??"Invalid staff selection.");return jsonError("Could not save staff assignments. No changes were made.",500);}
