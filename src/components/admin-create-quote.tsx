@@ -1,8 +1,7 @@
 "use client";
 import {FormEvent,useEffect,useMemo,useState} from "react";
 type Enquiry={id:string;request_number:string;request_type:string;contact_name:string;email:string;requested_service:string};
-type Customer={id:string;full_name:string;email:string|null};
-type PriorQuote={id:string;quote_number:string;enquiry_id:string|null;revision_number:number;status:string;quote_kind?:string};
+type PriorQuote={id:string;quote_number:string;enquiry_id:string|null;revision_number:number;status:string;senior_approval_status?:string;quote_kind?:string};
 type Service={id:string;name:string;category:string|null;description:string|null;price_from:number|null};
 type QuoteLine={id:number;description:string;quantity:string;unitPrice:string;serviceId:string;itemType:"labour"|"parts"};
 const money=(value:number)=>new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD"}).format(value);
@@ -10,8 +9,6 @@ export default function AdminCreateQuote({initialEnquiryId="",onCreated}:{initia
  const [enquiries,setEnquiries]=useState<Enquiry[]>([]);
  const [priorQuotes,setPriorQuotes]=useState<PriorQuote[]>([]);
  const [services,setServices]=useState<Service[]>([]);
- const [customers,setCustomers]=useState<Customer[]>([]);
- const [customerId,setCustomerId]=useState("");
  const [enquiryId,setEnquiryId]=useState(initialEnquiryId);
  const [supersedesQuoteId,setSupersedesQuoteId]=useState("");
  const [items,setItems]=useState<QuoteLine[]>([{id:1,description:"",quantity:"1",unitPrice:"",serviceId:"",itemType:"labour"}]);
@@ -25,8 +22,8 @@ export default function AdminCreateQuote({initialEnquiryId="",onCreated}:{initia
  const [terms,setTerms]=useState("");
  const [notice,setNotice]=useState("");
  const [busy,setBusy]=useState(false);
- useEffect(()=>{void(async()=>{try{const r=await fetch("/api/admin/quotes");const d=await r.json();if(r.ok){setEnquiries(d.enquiries??[]);setPriorQuotes(d.quotes??[]);setServices(d.services??[]);setCustomers(d.customers??[]);const status=d.pricing?.gst_status??"not_configured";const rate=Number(d.pricing?.gst_rate??10);setGstStatus(status);setConfiguredGstRate(rate);setTaxRate(status==="registered"?String(rate):"0");setQuoteValidityDays(d.payment?.quote_validity_days==null?null:Number(d.payment.quote_validity_days));}else setNotice(d.error??"Could not load quote records.");}catch{setNotice("Could not load quote records.");}})();},[]);
- const ticketQuotes=priorQuotes.filter(q=>q.enquiry_id===enquiryId&&(q.quote_kind??"standard")==="standard"&&!["accepted","converted"].includes(q.status));
+ useEffect(()=>{void(async()=>{try{const r=await fetch("/api/admin/quotes");const d=await r.json();if(r.ok){setEnquiries(d.enquiries??[]);setPriorQuotes(d.quotes??[]);setServices(d.services??[]);const status=d.pricing?.gst_status??"not_configured";const rate=Number(d.pricing?.gst_rate??10);setGstStatus(status);setConfiguredGstRate(rate);setTaxRate(status==="registered"?String(rate):"0");setQuoteValidityDays(d.payment?.quote_validity_days==null?null:Number(d.payment.quote_validity_days));}else setNotice(d.error??"Could not load quote records.");}catch{setNotice("Could not load quote records.");}})();},[]);
+ const ticketQuotes=priorQuotes.filter(q=>q.enquiry_id===enquiryId&&(q.quote_kind??"standard")==="standard"&&(q.status==="sent"||q.status==="expired"||(q.status==="draft"&&q.senior_approval_status==="changes_requested"))).sort((a,b)=>b.revision_number-a.revision_number).slice(0,1);
  const subtotal=useMemo(()=>items.reduce((sum,item)=>sum+Math.max(0,Number(item.quantity)||0)*Math.max(0,Number(item.unitPrice)||0),0),[items]);
  const tax=useMemo(()=>subtotal*(Number(taxRate)||0)/100,[subtotal,taxRate]);
  function updateLine(id:number,key:"description"|"quantity"|"unitPrice"|"itemType",value:string){setItems(current=>current.map(item=>item.id===id?{...item,[key]:value}:item));}
@@ -35,16 +32,15 @@ export default function AdminCreateQuote({initialEnquiryId="",onCreated}:{initia
  async function submit(e:FormEvent<HTMLFormElement>){
   e.preventDefault();setBusy(true);setNotice("");
   try{
-   const r=await fetch("/api/admin/quotes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({enquiryId:enquiryId||null,customerId:customerId||null,supersedesQuoteId:supersedesQuoteId||null,items:items.map(item=>({description:item.description,quantity:Number(item.quantity),unitPrice:Number(item.unitPrice),serviceId:item.serviceId||null,itemType:item.itemType})),taxRate:Number(taxRate),expiryDate:expiryDate||null,notes,terms})});
+   const r=await fetch("/api/admin/quotes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({enquiryId,supersedesQuoteId:supersedesQuoteId||null,items:items.map(item=>({description:item.description,quantity:Number(item.quantity),unitPrice:Number(item.unitPrice),serviceId:item.serviceId||null,itemType:item.itemType})),taxRate:Number(taxRate),expiryDate:expiryDate||null,notes,terms})});
    const d=await r.json();if(!r.ok){setNotice(d.error??"Could not create quote.");return;}
    setNotice("Draft quote "+d.quote.quote_number+" created with "+items.length+" line(s). Senior review is required before issue.");
-   setItems([{id:1,description:"",quantity:"1",unitPrice:"",serviceId:"",itemType:"labour"}]);setNextLineId(2);setCustomerId("");setNotes("");setTerms("");setExpiryDate("");setSupersedesQuoteId("");onCreated?.();
+   setItems([{id:1,description:"",quantity:"1",unitPrice:"",serviceId:"",itemType:"labour"}]);setNextLineId(2);setNotes("");setTerms("");setExpiryDate("");setSupersedesQuoteId("");onCreated?.();
   }catch{setNotice("Could not create quote.");}
   finally{setBusy(false);}
  }
  return <section className="portal-panel"><span className="panel-kicker">NEW QUOTE</span><h2>Prepare a quote</h2><form className="auth-form" onSubmit={submit}>
-  <label>Link Quote Request / Jobcard (optional)<select value={enquiryId} onChange={e=>{setEnquiryId(e.target.value);setSupersedesQuoteId("");}}><option value="">No Jobcard — standalone quote</option>{enquiries.map(x=><option key={x.id} value={x.id}>{x.request_number} · {x.contact_name} · {x.requested_service}</option>)}</select></label>
-  {!enquiryId&&<label>Customer<select value={customerId} onChange={e=>setCustomerId(e.target.value)} required><option value="">Select a customer</option>{customers.map(x=><option key={x.id} value={x.id}>{x.full_name}{x.email?" · "+x.email:""}</option>)}</select><small>Select the customer for this standalone quote. You can link a Jobcard later.</small></label>}
+  <label>Link Quote Request / Jobcard<select required value={enquiryId} onChange={e=>{setEnquiryId(e.target.value);setSupersedesQuoteId("");}}><option value="">Select an active Quote Request Jobcard</option>{enquiries.map(x=><option key={x.id} value={x.id}>{x.request_number} · {x.contact_name} · {x.requested_service}</option>)}</select></label>
   {enquiryId&&ticketQuotes.length>0&&<label>Revision of (optional)<select value={supersedesQuoteId} onChange={e=>setSupersedesQuoteId(e.target.value)}><option value="">Create new quote</option>{ticketQuotes.map(q=><option key={q.id} value={q.id}>{q.quote_number} · Revision {q.revision_number}</option>)}</select></label>}
   <div className="brv-quote-lines-heading"><strong>Quote line items</strong><span>{items.length} / 30</span></div>
   <div className="brv-quote-lines">{items.map((item,index)=><div className="brv-quote-line" key={item.id}><label>Service preset<select value={item.serviceId} onChange={e=>{const selected=services.find(s=>s.id===e.target.value);setItems(current=>current.map(line=>line.id===item.id?{...line,serviceId:e.target.value,itemType:e.target.value?"labour":line.itemType,description:selected?.name??line.description,unitPrice:selected?.price_from===null||selected?.price_from===undefined?line.unitPrice:String(selected.price_from)}:line));}}><option value="">Custom service</option>{services.map(s=><option key={s.id} value={s.id}>{s.name}{s.price_from!==null?" · from $"+Number(s.price_from).toFixed(2):""}</option>)}</select></label><label>Line type<select value={item.itemType} onChange={e=>setItems(current=>current.map(line=>line.id===item.id?{...line,itemType:e.target.value as any,serviceId:e.target.value==="parts"?"":line.serviceId}:line))}><option value="labour">Labour / service</option><option value="parts">Parts / materials</option></select></label><div className="brv-quote-line-title"><strong>Line {index+1}</strong>{items.length>1&&<button type="button" className="text-link" onClick={()=>removeLine(item.id)}>Remove</button>}</div><label>Description<input value={item.description} onChange={e=>updateLine(item.id,"description",e.target.value)} required minLength={3} maxLength={500} placeholder="Labour, parts, travel, consumables…"/></label><div className="form-grid"><label>Quantity<input type="number" min="0.01" step="0.01" value={item.quantity} onChange={e=>updateLine(item.id,"quantity",e.target.value)} required/></label><label>Unit price (ex GST)<input type="number" min="0" step="0.01" value={item.unitPrice} onChange={e=>updateLine(item.id,"unitPrice",e.target.value)} required/></label></div></div>)}</div>
@@ -52,6 +48,6 @@ export default function AdminCreateQuote({initialEnquiryId="",onCreated}:{initia
   <div className="brv-quote-preview"><div><span>Subtotal</span><strong>{money(subtotal)}</strong></div><div><span>GST ({Number(taxRate)||0}%)</span><strong>{money(tax)}</strong></div><div className="brv-quote-preview-total"><span>Estimated total</span><strong>{money(subtotal+tax)}</strong></div></div>
   <div className="form-grid"><label>Tax rate (%)<input type="number" min="0" max="100" step="0.01" value={taxRate} readOnly={gstStatus!=="registered"} onChange={e=>setTaxRate(e.target.value)} required/><small>{gstStatus==="registered"?"Using GST rate confirmed in Business Settings ("+configuredGstRate+"%).":gstStatus==="not_registered"?"GST is disabled because the business is configured as not registered.":"GST is disabled until the accountant confirms the business registration status."}</small></label><label>Expiry date<input type="date" value={expiryDate} onChange={e=>setExpiryDate(e.target.value)}/><small>{expiryDate?"This quote will use the date selected.":quoteValidityDays?"Defaults to "+quoteValidityDays+" days from today, based on Business Settings.":"No default expiry is configured. You can set a date here."}</small></label></div>
   <label>Notes<textarea rows={2} value={notes} onChange={e=>setNotes(e.target.value)} maxLength={3000}/></label><label>Terms<textarea rows={2} value={terms} onChange={e=>setTerms(e.target.value)} maxLength={3000}/></label>
-  <button className="button button-primary" disabled={busy||(!enquiryId&&!customerId)||items.some(item=>!item.description.trim()||!item.unitPrice)}>{busy?"Creating quote…":"Create draft quote →"}</button>
+  <button className="button button-primary" disabled={busy||!enquiryId||items.some(item=>!item.description.trim()||!item.unitPrice)}>{busy?"Creating quote…":"Create draft quote →"}</button>
  </form>{notice&&<p className="inline-notice" role="status">{notice}</p>}</section>;
 }
