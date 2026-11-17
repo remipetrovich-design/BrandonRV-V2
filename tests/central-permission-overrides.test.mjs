@@ -28,3 +28,11 @@ test("booking override permission is part of the permission catalogue",async()=>
  const migration=await source("../supabase/migrations/20261118130000_central_permission_overrides.sql");
  assert.match(migration,/appointments\.override_scheduling_restrictions/);
 });
+
+test("role management is governed by roles.manage rather than a second role-name gate",async()=>{
+ const route=await source("../src/app/api/admin/roles/route.ts");
+ assert.match(route,/authorizePermission\("roles\.manage"\)/);
+ assert.doesNotMatch(route,/isGlobalAdministrator/);
+ const auth=await source("../src/lib/auth.ts");
+ assert.doesNotMatch(auth,/if\(isGlobalAdministrator\(String\(user\.user_role\)/);
+});
