@@ -1,0 +1,10 @@
+"use client";
+import {useEffect,useState} from "react";
+export default function WorkcardApprovalOverride({jobId}:{jobId:string}){
+ const [allowed,setAllowed]=useState(false),[pending,setPending]=useState(false),[reason,setReason]=useState(""),[notice,setNotice]=useState(""),[busy,setBusy]=useState(false);
+ async function load(){try{const r=await fetch("/api/admin/jobs/"+jobId+"/approval-override",{cache:"no-store"}),d=await r.json();if(r.ok){setAllowed(Boolean(d.canBypass));setPending(d.job?.status==="completed"&&d.job?.customer_approval_status==="pending"&&!d.job?.customer_approval_bypassed_at);}}catch{}}
+ useEffect(()=>{void load();},[jobId]);
+ async function submit(){setBusy(true);setNotice("");try{const r=await fetch("/api/admin/jobs/"+jobId+"/approval-override",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({reason})}),d=await r.json();if(!r.ok)throw new Error(d.error??"Could not bypass customer approval.");setNotice("Customer approval bypass recorded. Final invoice "+d.invoice_number+" issued. Payment is still required.");setReason("");setPending(false);}catch(e){setNotice(e instanceof Error?e.message:"Could not bypass customer approval.");}finally{setBusy(false);}}
+ if(!allowed||!pending)return null;
+ return <section className="brv-workcard-readonly brv-approval-override"><header><span className="panel-kicker">MANAGEMENT OVERRIDE</span><h2>Customer approval bypass</h2><p>This records a management decision, not customer consent. The final invoice will be issued, and payment remains outstanding until recorded separately.</p></header><label>Reason for bypass<textarea rows={3} maxLength={2000} value={reason} onChange={e=>setReason(e.target.value)} placeholder="Explain why this Workcard is progressing without customer approval."/></label><button type="button" className="button button-secondary" disabled={busy||reason.trim().length<5} onClick={()=>void submit()}>{busy?"Recording…":"Bypass customer approval & issue invoice"}</button>{notice&&<p className="inline-notice" role="status">{notice}</p>}</section>;
+}
