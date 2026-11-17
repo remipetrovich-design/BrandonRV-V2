@@ -1,0 +1,73 @@
+name: Manual V2 production deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type YES to deploy the latest main commit to Vercel Production."
+        required: true
+        default: "NO"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: brandon-rv-v2-manual-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: vars.BRANDON_RV_MANUAL_DEPLOY_ENABLED == 'true' && inputs.confirm == 'YES'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+    steps:
+      - name: Check out the complete latest main history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Refresh main and select its latest commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --force
+          git checkout --detach origin/main
+          echo "DEPLOY_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "DEPLOY_COMMIT_COUNT=$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
+          echo "Deploying complete main history through $(git rev-parse --short HEAD)"
+          git log -5 --oneline
+
+      - name: Validate V2 Vercel target
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$VERCEL_ORG_ID" = "team_096KfEXGur0lYlViGQdIVEoU"
+          test "$VERCEL_PROJECT_ID" = "prj_ZI2MbFrpCJFovX9unahbN5WgLqTw"
+          for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Required Vercel secret $name is not configured."
+              exit 1
+            fi
+          done
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Production configuration
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build the exact latest main commit for Production
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy the complete latest main commit to Vercel Production
+        run: |
+          set -euo pipefail
+          echo "Deploying commit $DEPLOY_COMMIT ($DEPLOY_COMMIT_COUNT commits in main history)"
+          vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
