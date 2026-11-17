@@ -113,7 +113,7 @@ BEGIN
    WHERE id = v_job.appointment_id
      AND business_id = p_business_id
    FOR UPDATE;
-  IF NOT FOUND OR v_booking.status <> 'confirmed' THEN
+  IF NOT FOUND OR v_booking.status NOT IN ('confirmed','rescheduled') THEN
     RAISE EXCEPTION 'A confirmed booking is required before Workcard sign-off.' USING ERRCODE = 'P0001';
   END IF;
   IF NOT EXISTS (
