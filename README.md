@@ -44,9 +44,11 @@ Add these as repository Actions secrets:
 | --- | --- |
 | `SUPABASE_ACCESS_TOKEN` | Supabase personal access token used by the Supabase CLI |
 | `SUPABASE_DB_PASSWORD` | Database password for the target Supabase project |
-| `SUPABASE_PROJECT_ID` | Supabase project reference |
+| `VERCEL_TOKEN` | Vercel deployment token |
+| `VERCEL_ORG_ID` | Vercel team/account ID for the V2 project |
+| `VERCEL_PROJECT_ID` | Vercel project ID for Brandon RV V2 |
 
-The configured V2 project reference is `lciylmfpcefdpsouoqvm`.
+The workflow pins the Supabase project reference to `lciylmfpcefdpsouoqvm` in its YAML; no `SUPABASE_PROJECT_ID` Actions secret is required. The Vercel identifiers must refer only to the V2 project.
 
 **Migration status:** The dedicated V2 project has its own migration history; the latest inspected snapshot records 66 applied migration records. No V1 operational data was copied. See `docs/V2-DATABASE-ARCHITECTURE.md` for the inspected database snapshot.
 
