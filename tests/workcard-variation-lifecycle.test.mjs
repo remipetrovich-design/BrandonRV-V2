@@ -28,8 +28,9 @@ test("guest booking and Workcard endpoints are denied server-side",async()=>{
 
 test("guest quote decisions preserve secure enquiry access while variations use their own lifecycle",async()=>{
  const migration=await source("../supabase/migrations/20261117200000_workcard_variation_customer_access.sql");
+ const guestQuote=await source("../supabase/migrations/20261111110000_atomic_guest_quote_response.sql");
  const route=await source("../src/app/api/tickets/[id]/quote-response/route.ts");
- assert.ok(migration.includes("CREATE OR REPLACE FUNCTION public.respond_to_guest_quote"));
+ assert.ok(guestQuote.includes("CREATE OR REPLACE FUNCTION public.respond_to_guest_quote"));
  assert.ok(migration.includes("CREATE OR REPLACE FUNCTION public.respond_to_guest_job_variation"));
  assert.ok(migration.includes("guest_access_token_hash"));
  assert.ok(route.includes("respond_to_guest_job_variation"));
