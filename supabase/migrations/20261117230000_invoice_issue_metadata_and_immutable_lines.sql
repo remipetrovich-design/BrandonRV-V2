@@ -1,3 +1,12 @@
+-- Keep invoice issuer references on the application's canonical identity table.
+-- Issued invoices retain their issuer as part of the immutable audit history.
+ALTER TABLE public.invoices
+  DROP CONSTRAINT IF EXISTS invoices_issued_by_fkey;
+
+ALTER TABLE public.invoices
+  ADD CONSTRAINT invoices_issued_by_fkey
+  FOREIGN KEY (issued_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
 -- Preserve the customer-approval transaction while issuing the invoice through the
 -- canonical invoice lifecycle (including issue timestamp, issuer, totals and GST checks).
 CREATE OR REPLACE FUNCTION public.respond_to_completed_workcard(
