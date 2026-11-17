@@ -75,24 +75,12 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    }
    patch={...patch,starts_at:startsAt.toISOString(),ends_at:endsAt?.toISOString()??null,location,status:action==="confirm"?"confirmed":"rescheduled",confirmed_by:access.user!.id,confirmed_at:now};
   }
-  const {data:updated,error:updateError}=await db.from("appointments").update(patch).eq("id",appointment.id).eq("business_id",businessId).select("id,status,quote_id,enquiry_id,preferred_start,preferred_end,starts_at,ends_at,location,customer_notes,internal_notes,created_at,updated_at").single();
-  if(updateError||!updated)return jsonError("Could not update this booking.",500);
-  const {data:jobs,error:jobsError}=await db.from("jobs").select("id,status").eq("business_id",businessId).or("appointment_id.eq."+appointment.id+(appointment.quote_id?",quote_id.eq."+appointment.quote_id:""));
-  if(jobsError)return jsonError("Booking updated, but linked Workcards could not be loaded. Refresh and check the Workcard link.",500);
-  for(const job of jobs??[]){
-   const jobPatch:any={appointment_id:action==="cancel"?null:appointment.id,updated_at:now};
-   if(action==="cancel"){
-    if(job.status==="scheduled"){jobPatch.status="pending";jobPatch.scheduled_start=null;jobPatch.scheduled_end=null;}
-   }else{jobPatch.scheduled_start=updated.starts_at;jobPatch.scheduled_end=updated.ends_at;if(job.status==="pending")jobPatch.status="scheduled";}
-   const {error}=await db.from("jobs").update(jobPatch).eq("id",job.id).eq("business_id",businessId);
-   if(error)return jsonError("Booking updated, but the Workcard link could not be synchronised. Refresh and retry.",500);
-  }
-  const nextStage=action==="cancel"?"ready_to_schedule":"booked";
-  if(["approved","workcard_created","ready_to_schedule","booking_requested","booked"].includes(enquiry.stage)&&enquiry.stage!==nextStage){
-   await db.from("enquiries").update({stage:nextStage,status:"converted",updated_at:now}).eq("id",id).eq("business_id",businessId);
-   await db.from("enquiry_stage_history").insert({business_id:businessId,enquiry_id:id,from_stage:enquiry.stage,to_stage:nextStage,changed_by:access.user!.id,note:action==="cancel"?"Booking cancelled; return to scheduling.":"Booking "+(action==="confirm"?"confirmed":"rescheduled")+" from the Jobcard."});
-  }
-  await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"jobcard.booking_"+action,entity_type:"appointment",entity_id:appointment.id,details:{enquiry_id:id,quote_id:appointment.quote_id,workcard_ids:(jobs??[]).map(x=>x.id),starts_at:updated.starts_at,ends_at:updated.ends_at,location:updated.location}});
-  return Response.json({appointment:updated,workcardsUpdated:(jobs??[]).length});
+  const {data:result,error:bookingUpdateError}=await db.rpc("update_jobcard_booking",{
+   p_business_id:businessId,p_actor_user_id:access.user!.id,p_enquiry_id:id,p_appointment_id:appointment.id,
+   p_action:action,p_starts_at:action==="cancel"?null:new Date(String(patch.starts_at)).toISOString(),
+   p_ends_at:action==="cancel"?null:patch.ends_at??null,p_location:action==="cancel"?null:patch.location
+  });
+  if(bookingUpdateError){const status=bookingUpdateError.code==="P0002"?404:bookingUpdateError.code==="P0001"?409:bookingUpdateError.code==="22023"?400:500;return jsonError(bookingUpdateError.message??"Could not update the booking and linked Workcards.",status);}
+  return Response.json(result);
  }catch(error){console.error("Jobcard booking update failed",error);return jsonError("Could not update this booking.",500);}
 }
