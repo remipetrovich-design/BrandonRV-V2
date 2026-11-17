@@ -32,7 +32,6 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-          persist-credentials: false
 
       - name: Refresh main and select its latest commit
         shell: bash
