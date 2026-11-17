@@ -14,7 +14,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(!staff)return jsonError("Employee profile not found.",404);
     const {data:job}=await db.from("jobs").select("id,status,customer_id,user_id,quote_id,appointment_id,job_number,title,customer_approval_status,senior_approval_status").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
   if(!job)return jsonError("Work Order not found.",404);
-  const {data:assignment}=await db.from("job_assignments").select("id,status").eq("job_id",id).eq("staff_id",staff.id).maybeSingle();
+  const {data:assignment}=await db.from("job_assignments").select("id,status").eq("business_id",membership.business_id).eq("job_id",id).eq("staff_id",staff.id).maybeSingle();
   if(assignment?.status!=="accepted")return jsonError("Accept this Work Order assignment before starting or finishing it.",403);
   const now=new Date().toISOString();
   if(action==="start"){
