@@ -6,7 +6,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  const {data:job,error}=await db.from("jobs").select("id,job_number,status,quote_id").eq("id",id).eq("business_id",businessId).maybeSingle();
  if(error||!job)return jsonError("Workcard not found.",404);
  const [{data:quotes,error:quoteError},{data:services,error:serviceError}]=await Promise.all([
-  db.from("quotes").select("id,quote_number,status,total,revision_number,variation_reason,senior_approval_status,issue_date,response_at,response_note,quote_items(id,item_type,description,quantity,unit_price,tax_rate,line_total,service_id)").eq("business_id",businessId).eq("job_id",id).eq("quote_kind","variation").order("created_at",{ascending:false}),
+  db.from("quotes").select("id,quote_number,status,total,revision_number,variation_reason,senior_approval_status,notes,terms,issue_date,expiry_date,response_at,response_note,quote_items(id,item_type,description,quantity,unit_price,tax_rate,line_total,service_id,sort_order)").eq("business_id",businessId).eq("job_id",id).eq("quote_kind","variation").order("created_at",{ascending:false}),
   db.from("services").select("id,name,category,price_from").eq("business_id",businessId).eq("is_active",true).order("sort_order").order("name")
  ]);
  if(quoteError||serviceError)return jsonError("Could not load Workcard variations or service presets.",500);
