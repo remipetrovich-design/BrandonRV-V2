@@ -179,8 +179,8 @@ BEGIN
    WHERE id=v_invoice.job_id AND business_id=p_business_id
    FOR UPDATE;
   IF NOT FOUND OR v_job.status<>'completed' OR v_job.worker_signed_off_at IS NULL
-     OR v_job.senior_approval_status NOT IN ('approved','legacy_approved')
-     OR v_job.customer_approval_status<>'approved' THEN
+     OR coalesce(v_job.senior_approval_status,'pending') NOT IN ('approved','legacy_approved')
+     OR coalesce(v_job.customer_approval_status,'not_ready')<>'approved' THEN
     RAISE EXCEPTION 'The Workcard must be signed off, senior-approved and customer-approved before its invoice can be issued.' USING ERRCODE='P0001';
   END IF;
 
@@ -296,8 +296,8 @@ BEGIN
      WHERE id=v_invoice.job_id AND business_id=p_business_id
      FOR UPDATE;
     IF NOT FOUND OR v_job.status<>'completed'
-       OR v_job.customer_approval_status<>'approved'
-       OR v_job.senior_approval_status NOT IN ('approved','legacy_approved') THEN
+       OR coalesce(v_job.customer_approval_status,'not_ready')<>'approved'
+       OR coalesce(v_job.senior_approval_status,'pending') NOT IN ('approved','legacy_approved') THEN
       RAISE EXCEPTION 'The customer-approved final Workcard is required before payment.' USING ERRCODE='P0001';
     END IF;
     IF v_job.appointment_id IS NOT NULL THEN
