@@ -38,6 +38,7 @@ test("parts procurement holds work until required quantities are received or mar
  assert.match(migration,/e\.part_order_status <> 'not_required'/);
  assert.match(migration,/CREATE OR REPLACE FUNCTION public\.sync_job_work_entry_procurement/);
  assert.match(migration,/parts\.part_order_status <> 'not_required'/);
+ assert.match(migration,/WHEN part_order_status = 'not_required' THEN 'not_required'/);
  assert.match(migration,/ELSE 'ready_to_schedule'/);
 });
 
