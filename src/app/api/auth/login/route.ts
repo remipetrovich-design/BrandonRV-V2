@@ -1,5 +1,6 @@
 import {createHash} from "node:crypto";
 import {createSession,database,normalizeEmail,passwordMatches,jsonError,sameOrigin} from "@/lib/auth";
+import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
@@ -16,6 +17,6 @@ export async function POST(request:Request){
   if(user.status==="unverified")return jsonError("Please verify your email before signing in. Check your inbox for the verification link.",403);
   if(user.status!=="active")return jsonError("This account is "+String(user.status??"unavailable")+". Contact Brandon RV for assistance.",403);
   await db.from("users").update({last_login_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",user.id);
-  await createSession(user.id,request);const {password_hash:_passwordHash,...safeUser}=user;const privileged=["owner","website_developer"].includes(String(user.user_role??"").toLowerCase());const hasBusinessAccess=!!user.user_role&&(privileged||user.employment_status==="active");return Response.json({user:{...safeUser,account_type:"customer",primary_group:"customer"},hasBusinessAccess});
+  await createSession(user.id,request);const {password_hash:_passwordHash,...safeUser}=user;const privileged=isGlobalAdministrator(String(user.user_role??"").toLowerCase());const hasBusinessAccess=!!user.user_role&&(privileged||user.employment_status==="active");return Response.json({user:{...safeUser,account_type:"customer",primary_group:"customer"},hasBusinessAccess});
  }catch{return jsonError("Sign-in is temporarily unavailable.",500);}
 }
