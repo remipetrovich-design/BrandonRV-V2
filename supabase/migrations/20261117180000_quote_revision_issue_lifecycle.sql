@@ -15,7 +15,7 @@ RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $
+AS $function$
 DECLARE
   v_quote record;
   v_now timestamptz := clock_timestamp();
@@ -71,7 +71,7 @@ BEGIN
 
   RETURN jsonb_build_object('success',true,'decision',p_decision,'reviewed_at',v_now);
 END;
-$;
+$function$;
 
 REVOKE ALL ON FUNCTION public.review_quote(uuid, uuid, uuid, text, text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.review_quote(uuid, uuid, uuid, text, text) TO service_role;
