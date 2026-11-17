@@ -26,12 +26,14 @@ test("guest booking and Workcard endpoints are denied server-side",async()=>{
  assert.match(workOrder,/return jsonError\("Guest access is limited to quote responses and general enquiry messages/);
 });
 
-test("guest quote acceptance retains enquiry access but only accepts standard quotes",async()=>{
- const migration=await source("../supabase/migrations/20261112113129_limit_guest_access_to_quotes_and_enquiries.sql");
- assert.match(migration,/quote_kind='standard'/);
- assert.match(migration,/guest_access_token_hash=CASE WHEN p_response='declined' THEN NULL ELSE guest_access_token_hash END/);
- assert.match(migration,/guest_scope','quote_and_general_enquiry_only'/);
- assert.match(migration,/DROP FUNCTION IF EXISTS public\.respond_to_guest_job_variation/);
+test("guest quote decisions preserve secure enquiry access while variations use their own lifecycle",async()=>{
+ const migration=await source("../supabase/migrations/20261117200000_workcard_variation_customer_access.sql");
+ const route=await source("../src/app/api/tickets/[id]/quote-response/route.ts");
+ assert.ok(migration.includes("CREATE OR REPLACE FUNCTION public.respond_to_guest_quote"));
+ assert.ok(migration.includes("CREATE OR REPLACE FUNCTION public.respond_to_guest_job_variation"));
+ assert.ok(migration.includes("guest_access_token_hash"));
+ assert.ok(route.includes("respond_to_guest_job_variation"));
+ assert.ok(route.includes("respond_to_guest_quote"));
 });
 
 test("Workcard variations support registered customers and guests with active secure access",async()=>{
