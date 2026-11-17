@@ -1,3 +1,55 @@
+-- Start is a single locked transition after setup review, accepted assignment and confirmed booking.
+CREATE OR REPLACE FUNCTION public.start_workcard(
+  p_job_id uuid,
+  p_business_id uuid,
+  p_actor_user_id uuid,
+  p_staff_id uuid
+) RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_job public.jobs%ROWTYPE;
+  v_booking public.appointments%ROWTYPE;
+  v_now timestamptz := clock_timestamp();
+BEGIN
+  SELECT * INTO v_job FROM public.jobs
+   WHERE id=p_job_id AND business_id=p_business_id
+   FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Workcard not found.' USING ERRCODE='P0001'; END IF;
+  IF v_job.status='in_progress' THEN
+    RETURN jsonb_build_object('success',true,'status','in_progress','already_started',true);
+  END IF;
+  IF v_job.status NOT IN ('pending','scheduled') THEN
+    RAISE EXCEPTION 'This Workcard cannot be started from its current status.' USING ERRCODE='P0001';
+  END IF;
+  IF coalesce(v_job.workcard_review_status,'legacy_approved') NOT IN ('approved','legacy_approved') THEN
+    RAISE EXCEPTION 'The Workcard must pass senior setup review before work can start.' USING ERRCODE='P0001';
+  END IF;
+  IF v_job.appointment_id IS NULL THEN
+    RAISE EXCEPTION 'A confirmed booking is required before work can start.' USING ERRCODE='P0001';
+  END IF;
+  SELECT * INTO v_booking FROM public.appointments
+   WHERE id=v_job.appointment_id AND business_id=p_business_id
+   FOR UPDATE;
+  IF NOT FOUND OR v_booking.status<>'confirmed' OR v_booking.starts_at IS NULL OR length(trim(coalesce(v_booking.location,'')))<3 THEN
+    RAISE EXCEPTION 'A confirmed booking with a start time and customer-site location is required before work can start.' USING ERRCODE='P0001';
+  END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.job_assignments a WHERE a.business_id=p_business_id AND a.job_id=p_job_id AND a.staff_id=p_staff_id AND a.status='accepted') THEN
+    RAISE EXCEPTION 'Accept this Workcard assignment before starting work.' USING ERRCODE='P0001';
+  END IF;
+  UPDATE public.jobs SET status='in_progress',actual_start=v_now,updated_at=v_now
+   WHERE id=p_job_id AND business_id=p_business_id;
+  INSERT INTO public.audit_events(business_id,actor_user_id,action,entity_type,entity_id,details)
+  VALUES(p_business_id,p_actor_user_id,'work_order.started','job',p_job_id,jsonb_build_object('staff_id',p_staff_id,'started_at',v_now));
+  RETURN jsonb_build_object('success',true,'status','in_progress','already_started',false);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.start_workcard(uuid,uuid,uuid,uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.start_workcard(uuid,uuid,uuid,uuid) TO service_role;
+
 -- A Workcard sign-off invoice is a single, idempotent final invoice.
 ALTER TABLE public.invoices
   ADD COLUMN IF NOT EXISTS workcard_signoff_invoice boolean NOT NULL DEFAULT false;
