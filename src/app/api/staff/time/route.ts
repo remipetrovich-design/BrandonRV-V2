@@ -50,7 +50,7 @@ export async function POST(request:Request){
     if(!job||job.worker_signed_off_at||["completed","cancelled"].includes(job.status))return jsonError("This Workcard is closed and cannot accept new time.",409);
     if(!job.appointment_id)return jsonError("A confirmed booking is required before recording Workcard time.",409);
     const {data:booking}=await db.from("appointments").select("id,status").eq("id",job.appointment_id).eq("business_id",membership.business_id).maybeSingle();
-    if(!booking||booking.status!=="confirmed")return jsonError("A confirmed booking is required before recording Workcard time.",409);
+    if(!booking||!["confirmed","rescheduled"].includes(booking.status))return jsonError("A confirmed booking is required before recording Workcard time.",409);
     if(entryType==="work"&&job.status!=="in_progress")return jsonError("Work time can only be recorded after the Workcard has been started.",409);
     if(entryType==="travel"&&!["scheduled","in_progress"].includes(job.status))return jsonError("Travel time can only be recorded for a scheduled or active Workcard.",409);
    }
