@@ -1082,9 +1082,6 @@ BEGIN
 END;
 $function$
 
-CREATE UNIQUE INDEX IF NOT EXISTS appointments_one_active_quote_booking_uidx
-  ON public.appointments (business_id, quote_id)
-  WHERE quote_id IS NOT NULL AND status IN ('requested','confirmed','rescheduled');
 
 
 REVOKE ALL ON FUNCTION public.update_jobcard_booking(uuid,uuid,uuid,uuid,text,timestamptz,timestamptz,text,boolean) FROM PUBLIC,anon,authenticated;
