@@ -37,7 +37,6 @@ const readCurrentMembership=cache(async(userId:string)=>{
 export async function currentMembership(userId:string){return readCurrentMembership(userId);}
 const readEffectivePermissions=cache(async(userId:string)=>{
  const user=await currentUser();if(!user||user.id!==userId||!user.user_role||!hasEmployeeAccess(user))return new Set<string>();
- if(isGlobalAdministrator(String(user.user_role).toLowerCase()))return null;
  const db=database(),now=new Date().toISOString();
  const [{data:rolePermissions},{data:userGrants}]=await Promise.all([
   db.from("user_role_permissions").select("permission_key").eq("role_key",user.user_role),
@@ -48,7 +47,6 @@ const readEffectivePermissions=cache(async(userId:string)=>{
 export async function userHasPermissions(userId:string,permissions:string[]){
  const requested=[...new Set(permissions)];if(!requested.length)return new Set<string>();
  const effective=await readEffectivePermissions(userId);
- if(effective===null)return new Set(requested);
  return new Set(requested.filter(permission=>effective.has(permission)));
 }
 export async function userHasPermission(userId:string,permission:string){return (await userHasPermissions(userId,[permission])).has(permission);}
