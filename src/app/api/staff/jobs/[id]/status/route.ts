@@ -16,17 +16,12 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(!job)return jsonError("Work Order not found.",404);
   const {data:assignment}=await db.from("job_assignments").select("id,status").eq("business_id",membership.business_id).eq("job_id",id).eq("staff_id",staff.id).maybeSingle();
   if(assignment?.status!=="accepted")return jsonError("Accept this Work Order assignment before starting or finishing it.",403);
-  const now=new Date().toISOString();
   if(action==="start"){
    if(job.status==="in_progress")return Response.json({success:true,status:"in_progress",alreadyStarted:true});
-   if(!job.appointment_id)return jsonError("A booking must be confirmed before work can start.",409);
-   const {data:booking}=await db.from("appointments").select("id,status,starts_at,ends_at,location").eq("id",job.appointment_id).eq("business_id",membership.business_id).maybeSingle();
-   if(!booking||booking.status!=="confirmed"||!booking.starts_at||!booking.location)return jsonError("A confirmed booking with a start time and customer-site location is required before work can start.",409);
    if(!canStartWorkOrder(job.status,assignment?.status,false))return jsonError("This Work Order cannot be started from its current status or assignment.",409);
-   const {error}=await db.from("jobs").update({status:"in_progress",actual_start:now,updated_at:now}).eq("id",id).eq("business_id",membership.business_id);
-   if(error)return jsonError("Could not start Work Order.",500);
-   await db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:"work_order.started",entity_type:"job",entity_id:id,details:{staff_id:staff.id}});
-   return Response.json({success:true,status:"in_progress"});
+   const {data:started,error}=await db.rpc("start_workcard",{p_job_id:id,p_business_id:membership.business_id,p_actor_user_id:user.id,p_staff_id:staff.id});
+   if(error){if(error.code==="P0001")return jsonError(error.message??"This Workcard cannot be started.",409);return jsonError("Could not start this Workcard. No changes were saved.",500);}
+   return Response.json(started);
   }
   if(job.status==="completed"&&["pending","approved","legacy_approved"].includes(String(job.senior_approval_status))){
    const {data:existingInvoice}=await db.from("invoices").select("id,invoice_number,total,status").eq("job_id",id).eq("business_id",membership.business_id).eq("workcard_signoff_invoice",true).maybeSingle();
