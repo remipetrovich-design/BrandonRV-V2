@@ -1,0 +1,70 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {readFile} from "node:fs/promises";
+const read=path=>readFile(new URL(path,import.meta.url),"utf8");
+const migrationPath="../supabase/migrations/20261117230000_workcard_customer_approval_invoice_issue.sql";
+
+test("invoice issuer identity matches the application's public user model",async()=>{
+ const migration=await read(migrationPath);
+ const invoiceLifecycle=await read("../supabase/migrations/20261117102142_invoice_issue_payment_credit_lifecycle_20261117220000.sql");
+ assert.match(migration,/FOREIGN KEY \(issued_by\) REFERENCES public\.users\(id\)/);
+ assert.match(migration,/v_issuer_user_id := coalesce\(v_job\.senior_approved_by,v_job\.worker_signed_off_by,p_actor_user_id\)/);
+ assert.match(migration,/PERFORM public\.issue_invoice\(v_invoice\.id,p_business_id,v_issuer_user_id\)/);
+ assert.match(invoiceLifecycle,/issued_at=v_now/);
+ assert.match(invoiceLifecycle,/issued_by=p_actor_user_id/);
+});
+
+test("accepted Workcard assignments survive team edits",async()=>{
+ const migration=await read(migrationPath);
+ assert.match(migration,/AND status IN \('assigned','declined'\)/);
+ assert.match(migration,/status = 'accepted'/);
+ assert.doesNotMatch(migration,/DELETE FROM public\.job_assignments/);
+});
+
+test("Workcard execution and review advance the original Jobcard pipeline",async()=>{
+ const migration=await read(migrationPath);
+ assert.match(migration,/stage='work_in_progress'/);
+ assert.match(migration,/stage='quality_check'/);
+ assert.match(migration,/stage='ready_to_invoice'/);
+ assert.match(migration,/stage='invoiced'/);
+ assert.match(migration,/INSERT INTO public\.enquiry_stage_history/);
+});
+
+test("invoice payments record awaiting-payment, paid and closed stages atomically",async()=>{
+ const migration=await read(migrationPath);
+ const route=await read("../src/app/api/admin/invoices/[id]/payments/route.ts");
+ assert.match(route,/rpc\("record_invoice_payment_idempotent"/);
+ assert.match(migration,/stage='awaiting_payment'/);
+ assert.match(migration,/stage='paid'/);
+ assert.match(migration,/stage='closed'/);
+ assert.match(migration,/archived_at=v_now/);
+ assert.match(migration,/guest_access_token_hash=NULL/);
+ assert.match(migration,/guest_access_expires_at=NULL/);
+ assert.match(migration,/already_recorded/);
+ assert.match(migration,/coalesce\(v_archived,false\)/);
+});
+
+test("booking updates are serialized and reject overlapping confirmed appointments",async()=>{
+ const migration=await read(migrationPath);
+ assert.match(migration,/DROP FUNCTION IF EXISTS public\.update_jobcard_booking/);
+ assert.match(migration,/p_bypass_conflicts boolean/);
+ assert.match(migration,/pg_advisory_xact_lock/);
+ assert.match(migration,/That time conflicts with another booking or its travel buffer/);
+ assert.match(migration,/appointments_one_active_quote_booking_uidx/);
+ assert.match(migration,/workcard\.booking_'\|\|p_action/);
+ assert.doesNotMatch(migration,/v_quote_ids/);
+});
+
+test("all booking entry points use the same transaction and explicit manager override",async()=>{
+ const workcard=await read("../src/app/api/admin/jobs/[id]/booking/route.ts");
+ const jobcard=await read("../src/app/api/admin/enquiries/[id]/booking/route.ts");
+ const staff=await read("../src/app/api/staff/jobs/[id]/booking-request/route.ts");
+ const calendar=await read("../src/app/api/admin/[section]/[id]/route.ts");
+ for(const route of [workcard,jobcard,staff,calendar])assert.match(route,/rpc\("update_jobcard_booking"/);
+ assert.match(workcard,/p_bypass_conflicts:bypassRestrictions/);
+ assert.match(jobcard,/p_bypass_conflicts:isManagerOrAbove/);
+ assert.match(staff,/p_bypass_conflicts:false/);
+ assert.match(calendar,/p_action:update\.status==="confirmed"\?"confirm":"reschedule"/);
+ assert.match(calendar,/p_action:"cancel"/);
+ assert.doesNotMatch(calendar,/workcard\.booking_synced_from_calendar/);
+});
