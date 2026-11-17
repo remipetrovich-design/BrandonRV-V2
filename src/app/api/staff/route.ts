@@ -1,18 +1,17 @@
-import {authorizePermission,database,jsonError,sameOrigin,userHasPermission} from "@/lib/auth";
-import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
+import {authorizePermission,database,jsonError,sameOrigin,userHasPermission,userHasPermissions} from "@/lib/auth";
 import {getWorkforceRankGroup} from "@/lib/workforce-rank-groups.mjs";
 import {isUuid,isCalendarDate} from "@/lib/api-validation.mjs";
 export const runtime="nodejs";
-const roleKeys=["ceo_founder","website_development_specialist","owner","website_developer"];
+const executiveRoleKeys=["ceo_founder","website_development_specialist","senior_manager","owner","website_developer"];
 const staffRoleKeys=["trial_apprentice","apprentice","senior_apprentice","team_leader","supervisor","office_admin","office_supervisor","office_manager","manager","senior_manager","website_development_specialist","ceo_founder"];
 const employmentTypes=["casual","part_time","full_time"];
 const employmentStatuses=["active","leave","suspended","terminated"];
 const payFrequencies=["hourly","weekly","fortnightly","monthly","annually"];
 export async function GET(){
- const access=await authorizePermission("staff.view");if(access.response)return access.response;
+ let access=await authorizePermission("staff.view");const canViewStaff=!access.response;if(!canViewStaff){access=await authorizePermission("roles.manage");if(access.response)return access.response;}
  const db=database(),businessId=access.membership!.business_id;
  const [{data:employees,error},{data:roles,error:roleError}]=await Promise.all([
-  db.from("users").select("id,first_name,last_name,full_name,email,phone,status,user_role,employee_number,job_title,employment_type,employment_status,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes,custom_title,department,team_name,created_at").eq("business_id",businessId).not("user_role","is",null).neq("user_role","customer").order("full_name"),
+  canViewStaff?db.from("users").select("id,first_name,last_name,full_name,email,phone,status,user_role,employee_number,job_title,employment_type,employment_status,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes,custom_title,department,team_name,created_at").eq("business_id",businessId).not("user_role","is",null).neq("user_role","customer").order("full_name"):Promise.resolve({data:[],error:null}),
   db.from("user_roles").select("role_key,name,description,is_system").order("name")
  ]);
  if(error||roleError)return jsonError("Could not load the employee directory.",500);
@@ -26,7 +25,8 @@ export async function GET(){
  ]):[{data:[]},{data:[]}];
  const grantsByUser=new Map<string,string[]>();for(const grant of grants??[]){const current=grantsByUser.get(grant.user_id)??[];current.push(grant.permission_key);grantsByUser.set(grant.user_id,current);}
  const directory=(employees??[]).filter(x=>customerByUser.has(x.id)).map(x=>({...x,customer_id:customerByUser.get(x.id),workforce_group:getWorkforceRankGroup(x.user_role),additional_permissions:grantsByUser.get(x.id)??[]}));
- return Response.json({employees:directory,permissions:catalogue??[],canManageAccess:await userHasPermission(access.user!.id,"roles.manage"),roles:(roles??[]).filter(x=>x.role_key!=="customer"&&(isGlobalAdministrator(access.user?.user_role)||!roleKeys.includes(x.role_key))).sort((a,b)=>{const ai=staffRoleKeys.indexOf(a.role_key),bi=staffRoleKeys.indexOf(b.role_key);return (ai<0?99:ai)-(bi<0?99:bi)||a.name.localeCompare(b.name);})});
+ const canAssignExecutiveRoles=await userHasPermission(access.user!.id,"roles.assign_executive");const assignablePermissions=await userHasPermissions(access.user!.id,(catalogue??[]).map(x=>x.permission_key));
+ return Response.json({employees:directory,canViewStaff,permissions:catalogue??[],assignablePermissions:[...assignablePermissions],canManageAccess:await userHasPermission(access.user!.id,"roles.manage"),canAssignExecutiveRoles,roles:(roles??[]).filter(x=>x.role_key!=="customer"&&(canAssignExecutiveRoles||!executiveRoleKeys.includes(x.role_key))).sort((a,b)=>{const ai=staffRoleKeys.indexOf(a.role_key),bi=staffRoleKeys.indexOf(b.role_key);return (ai<0?99:ai)-(bi<0?99:bi)||a.name.localeCompare(b.name);})});
 
 }
 export async function POST(){return jsonError("Staff access must be granted through a customer invitation.",410);}
@@ -38,7 +38,8 @@ export async function PATCH(request:Request){
   const db=database(),businessId=access.membership!.business_id;
   const {data:employee}=await db.from("users").select("id,user_role,employment_status,start_date,end_date,updated_at").eq("id",userId).eq("business_id",businessId).not("user_role","is",null).neq("user_role","customer").maybeSingle();
   if(!employee)return jsonError("Employee record not found.",404);
-  if(roleKeys.includes(String(employee.user_role))&&!isGlobalAdministrator(access.user?.user_role))return jsonError("Only CEO / Founder or Website Development Specialist can edit this account.",403);
+  const canAssignExecutiveRoles=await userHasPermission(access.user!.id,"roles.assign_executive");
+  if(executiveRoleKeys.includes(String(employee.user_role))&&!canAssignExecutiveRoles)return jsonError("You do not have permission to manage this executive account.",403);
   const updates:any={updated_at:new Date().toISOString()};
   const managesAccess=body.roleKey!==undefined||body.additionalPermissions!==undefined||body.department!==undefined||body.teamName!==undefined;
   if(managesAccess){const permissionAccess=await authorizePermission("roles.manage");if(permissionAccess.response)return permissionAccess.response;}
@@ -48,7 +49,7 @@ export async function PATCH(request:Request){
   if(body.customTitle!==undefined){const value=String(body.customTitle).trim();if(value.length>100)return jsonError("Custom title must be 100 characters or fewer.");updates.custom_title=value||null;}
   if(body.department!==undefined){const value=String(body.department).trim();if(value.length>100)return jsonError("Department must be 100 characters or fewer.");updates.department=value||null;}
   if(body.teamName!==undefined){const value=String(body.teamName).trim();if(value.length>100)return jsonError("Team name must be 100 characters or fewer.");updates.team_name=value||null;}
-  if(body.roleKey!==undefined){const value=String(body.roleKey);const {data:role}=await db.from("user_roles").select("role_key").eq("role_key",value).maybeSingle();if(!role||value==="customer")return jsonError("Select a valid staff role.");if(roleKeys.includes(value)&&!isGlobalAdministrator(access.user?.user_role))return jsonError("Only CEO / Founder or Website Development Specialist can assign executive access.",403);updates.user_role=value;}
+  if(body.roleKey!==undefined){const value=String(body.roleKey);const {data:role}=await db.from("user_roles").select("role_key").eq("role_key",value).maybeSingle();if(!role||value==="customer")return jsonError("Select a valid staff role.");if(executiveRoleKeys.includes(value)&&!canAssignExecutiveRoles)return jsonError("You do not have permission to assign this executive role.",403);updates.user_role=value;}
   if(body.employeeNumber!==undefined){const value=String(body.employeeNumber).trim();if(value.length>50)return jsonError("Employee number must be 50 characters or fewer.");updates.employee_number=value||null;}
   if(body.startDate!==undefined){const value=String(body.startDate);if(value&&!isCalendarDate(value))return jsonError("Enter a valid start date.");updates.start_date=value||null;}
   if(body.endDate!==undefined){const value=String(body.endDate);if(value&&!isCalendarDate(value))return jsonError("Enter a valid end date.");updates.end_date=value||null;}
@@ -62,10 +63,17 @@ export async function PATCH(request:Request){
    if(!Array.isArray(body.additionalPermissions)||body.additionalPermissions.some((x:unknown)=>typeof x!=="string"))return jsonError("Additional permissions must be a list.");
    const requested=[...new Set(body.additionalPermissions as string[])];const {data:catalogue}=await db.from("permissions").select("permission_key").in("permission_key",requested);
    if((catalogue??[]).length!==requested.length)return jsonError("One or more additional permissions are invalid.");
-   const reason=String(body.permissionReason??"").trim();if(!reason)return jsonError("A reason is required for additional permission grants.");
+   const {data:existingGrants}=await db.from("user_permission_grants").select("permission_key").eq("user_id",userId).is("revoked_at",null);
+   const existing=(existingGrants??[]).map(grant=>grant.permission_key as string);
+   const additions=requested.filter(key=>!existing.includes(key));
+   const removals=existing.filter(key=>!requested.includes(key));
+   const grantable=await userHasPermissions(access.user!.id,[...additions,...removals]);
+   if(additions.some(key=>!grantable.has(key)))return jsonError("You cannot grant permissions that you do not hold.",403);
+   const permittedRemovals=removals.filter(key=>grantable.has(key));
+   const reason=String(body.permissionReason??"").trim();if(!reason)return jsonError("A reason is required for additional permission changes.");
    const expiry=body.permissionExpiresAt?String(body.permissionExpiresAt):null;if(expiry&&Number.isNaN(Date.parse(expiry)))return jsonError("Enter a valid permission expiry date.");
-   await db.from("user_permission_grants").update({revoked_at:new Date().toISOString(),revoked_by:access.user!.id}).eq("user_id",userId).is("revoked_at",null);
-   if(requested.length){const {error:grantError}=await db.from("user_permission_grants").insert(requested.map(permission_key=>({user_id:userId,permission_key,granted_by:access.user!.id,reason,expires_at:expiry})));if(grantError)return jsonError("Could not save additional permissions.",500);}
+   if(permittedRemovals.length){const {error:revokeError}=await db.from("user_permission_grants").update({revoked_at:new Date().toISOString(),revoked_by:access.user!.id}).eq("user_id",userId).is("revoked_at",null).in("permission_key",permittedRemovals);if(revokeError)return jsonError("Could not revoke additional permissions.",500);}
+   if(additions.length){const {error:grantError}=await db.from("user_permission_grants").insert(additions.map(permission_key=>({user_id:userId,permission_key,granted_by:access.user!.id,reason,expires_at:expiry})));if(grantError)return jsonError("Could not save additional permissions.",500);}
   }
   const {data:updated,error}=await db.from("users").update(updates).eq("id",userId).eq("business_id",businessId).eq("updated_at",employee.updated_at).not("user_role","is",null).neq("user_role","customer").select("id").maybeSingle();if(error)return jsonError("Could not update employee details.",500);if(!updated)return jsonError("This employee record changed during the update. Refresh and try again.",409);
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"employee.updated",entity_type:"user",entity_id:userId,details:{...updates,additionalPermissions:body.additionalPermissions??undefined}});
