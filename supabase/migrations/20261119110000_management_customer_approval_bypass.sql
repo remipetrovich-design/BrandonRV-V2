@@ -11,7 +11,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
 AS $$
 DECLARE
  v_job record;v_invoice record;v_enquiry_id uuid;v_enquiry record;
- v_issuer_user_id uuid;v_now timestamptz:=clock_timestamp();v_reason text;
+ v_issuer_user_id uuid;v_now timestamptz:=clock_timestamp();v_reason text;v_bypassed boolean:=false;
 BEGIN
  v_reason:=left(trim(coalesce(p_reason,'')),2000);
  IF length(v_reason)<5 THEN RAISE EXCEPTION 'Provide a reason of at least five characters.' USING ERRCODE='22023'; END IF;
@@ -110,6 +110,7 @@ BEGIN
    OR v_job.senior_approval_status NOT IN ('approved','legacy_approved') THEN
    RAISE EXCEPTION 'A customer-approved or management-bypassed final Workcard is required before payment.' USING ERRCODE='P0001';
   END IF;
+  v_bypassed:=v_job.customer_approval_bypassed_at IS NOT NULL;
   IF v_job.appointment_id IS NOT NULL THEN
    SELECT enquiry_id INTO v_enquiry_id FROM public.appointments WHERE id=v_job.appointment_id AND business_id=p_business_id;
   END IF;
@@ -135,7 +136,7 @@ BEGIN
     WHERE id=v_enquiry_id AND business_id=p_business_id;
     INSERT INTO public.enquiry_stage_history(business_id,enquiry_id,from_stage,to_stage,changed_by,note)
     VALUES(p_business_id,v_enquiry_id,v_enquiry.stage,'paid',p_actor_user_id,
-     CASE WHEN v_job.customer_approval_bypassed_at IS NOT NULL
+     CASE WHEN v_bypassed
       THEN 'Jobcard archived after full payment following a recorded management customer-approval bypass.'
       ELSE 'Jobcard archived after final customer approval and full invoice payment.' END);
     v_archived:=true;
