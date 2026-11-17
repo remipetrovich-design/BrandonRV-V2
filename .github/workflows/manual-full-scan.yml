@@ -55,7 +55,7 @@ jobs:
       - name: Pull Vercel Production build configuration
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
       - name: Install locked project dependencies
-        run: npm ci
+        run: npm install --no-package-lock
       - name: Run checked-in test suite
         run: npm test
       - name: Run TypeScript validation
