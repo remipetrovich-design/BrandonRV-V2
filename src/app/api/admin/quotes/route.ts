@@ -11,7 +11,7 @@ export async function GET(){
   db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle(),
   db.from("services").select("id,name,category,description,price_from,approval_status").eq("business_id",businessId).eq("is_active",true).eq("approval_status","approved_for_launch").order("sort_order").order("name"),
  ]);
- if(enquiryError||quoteError||serviceError)return jsonError("Could not load quote records, customers or service presets.",500);
+ if(enquiryError||quoteError||serviceError)return jsonError("Could not load quote records or service presets.",500);
  const settings=businessSettings?.settings&&typeof businessSettings.settings==="object"?businessSettings.settings as Record<string,any>:{};
  const pricing=settings.pricing&&typeof settings.pricing==="object"?settings.pricing:{};
  const payment=settings.payment&&typeof settings.payment==="object"?settings.payment:{};
@@ -89,6 +89,7 @@ export async function POST(request:Request){
   try{effectiveExpiryDate=defaultQuoteExpiryDate(configured.payment&&typeof configured.payment==="object"?configured.payment.quote_validity_days:null,new Date().toISOString().slice(0,10),expiryDate);}catch(error){return jsonError(error instanceof Error?error.message:"Invalid quote validity setting.");}
   const quoteNumber="BRV-Q-"+Date.now().toString(36).toUpperCase()+"-"+crypto.randomUUID().slice(0,4).toUpperCase();
   const {data:quote,error}=await db.from("quotes").insert({business_id:businessId,customer_id:customerId,user_id:quoteUserId,enquiry_id:enquiry.id,quote_number:quoteNumber,revision_number:revisionNumber,supersedes_quote_id:supersedesQuoteId,prepared_by:access.user!.id,senior_approval_status:"pending",status:"draft",expiry_date:effectiveExpiryDate,subtotal,tax_amount:taxAmount,total,notes:notes||null,terms:terms||null}).select("id,quote_number,total,revision_number,enquiry_id,customer_id").single();
+  if(error?.code==="23505")return jsonError("A quote revision was created at the same time. Reload the Jobcard and try again.",409);
   if(error||!quote){console.error("Quote insert failed",{error,enquiryId,customerId});return jsonError("Could not create quote.",500);}
   const {error:itemError}=await db.from("quote_items").insert(lines.map(item=>({...item,quote_id:quote.id})));
   if(itemError){console.error("Quote line insert failed",itemError);await db.from("quotes").delete().eq("id",quote.id).eq("business_id",businessId);return jsonError("Could not save quote lines. The draft was rolled back.",500);}
