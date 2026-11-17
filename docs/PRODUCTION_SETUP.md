@@ -31,7 +31,11 @@ The Vercel project is connected to the dedicated V2 Supabase integration. The in
 - `NEXT_PUBLIC_APP_URL` should remain the V2 application origin, not the V1 domain.
 - `BRANDONRV_PUBLIC_EMAIL` must remain blank until the supplied address, domain and mailbox are verified.
 
-## Email delivery
+## External systems
+
+### Email delivery
+
+The existing OrbitFS Mail integration is send-only. Brandon RV resolves the sender address from the Mail System sender directory; do not duplicate sender addresses in Vercel variables or substitute a separate mail provider.
 
 `ORBITFS_MAIL_URL` and `BRANDONSRV_MAIL_API_KEY` are present as application configuration points but are currently empty. Outbound customer and staff email is therefore not ready. Do not enable email-dependent customer workflows until the existing Mail integration is configured and tested. Do not invent or substitute a new mail provider key.
 
