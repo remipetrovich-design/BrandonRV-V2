@@ -880,6 +880,7 @@ DECLARE
   v_duration integer := 60;
   v_buffer integer := 30;
   v_candidate_end timestamptz;
+  v_accepted_quote_id uuid;
 BEGIN
   IF p_action NOT IN ('request','confirm','reschedule','cancel') THEN
     RAISE EXCEPTION 'Choose confirm, reschedule or cancel.' USING ERRCODE = '22023';
@@ -919,6 +920,13 @@ BEGIN
     RAISE EXCEPTION 'This booking is no longer active.' USING ERRCODE = 'P0001';
   END IF;
 
+  IF v_appointment.quote_id IS NULL THEN
+    SELECT q.id INTO v_accepted_quote_id FROM public.quotes q
+     WHERE q.business_id=p_business_id AND q.enquiry_id=p_enquiry_id
+       AND q.quote_kind='standard' AND q.status='accepted'
+     ORDER BY q.revision_number DESC LIMIT 1;
+  END IF;
+
   IF p_action IN ('confirm','reschedule') AND NOT coalesce(p_bypass_conflicts,false) THEN
     SELECT settings INTO v_settings FROM public.business_settings WHERE business_id=p_business_id;
     IF coalesce(v_settings #>> '{booking,appointment_duration_minutes}','') ~ '^\\d+$' THEN
@@ -941,7 +949,7 @@ BEGIN
 
   PERFORM 1 FROM public.jobs j
    WHERE j.business_id = p_business_id
-     AND (j.appointment_id = p_appointment_id OR (v_appointment.quote_id IS NOT NULL AND j.quote_id = v_appointment.quote_id))
+     AND (j.appointment_id = p_appointment_id OR (coalesce(v_appointment.quote_id,v_accepted_quote_id) IS NOT NULL AND j.quote_id = coalesce(v_appointment.quote_id,v_accepted_quote_id)))
    FOR UPDATE;
 
   IF p_action = 'request' AND EXISTS (
@@ -1015,7 +1023,7 @@ BEGIN
          END,
          updated_at = v_now
    WHERE business_id = p_business_id
-     AND (appointment_id = p_appointment_id OR (v_appointment.quote_id IS NOT NULL AND quote_id = v_appointment.quote_id));
+     AND (appointment_id = p_appointment_id OR (coalesce(v_appointment.quote_id,v_accepted_quote_id) IS NOT NULL AND quote_id = coalesce(v_appointment.quote_id,v_accepted_quote_id)));
   GET DIAGNOSTICS v_workcards_updated = ROW_COUNT;
 
   v_next_stage := CASE WHEN p_action='cancel' THEN 'ready_to_schedule' WHEN p_action='request' THEN 'booking_requested' ELSE 'booked' END;
