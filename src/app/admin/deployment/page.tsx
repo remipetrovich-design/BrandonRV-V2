@@ -25,7 +25,7 @@ export default async function AdminDeploymentPage() {
           <h1>Deployment <em>control.</em></h1>
           <p>Manually build Brandon RV V2, apply pending database migrations and deploy the application.</p>
         </div>
-        <AdminManualDeploy available={state.available} activated={state.activated} />
+        <AdminManualDeploy configured={state.configured} activated={state.activated} />
       </div>
     </main>
   );
