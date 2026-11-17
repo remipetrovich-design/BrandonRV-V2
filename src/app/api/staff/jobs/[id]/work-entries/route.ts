@@ -99,7 +99,13 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    .eq("id",entryId).eq("job_id",id).eq("business_id",membership.business_id)
    .select("id,source_quote_item_id,entry_type,description,quantity,quantity_required,quantity_used,quantity_ordered,quantity_received,quantity_returned,part_order_status,supplier_order_reference,ordered_at,expected_at,received_at,part_number,supplier_name,customer_visible,occurred_at").single();
   if(error||!entry){console.error("Worker Workcard item update failed",error);return jsonError("Could not update the prepared Workcard item.",500);}
+  let partsReadiness:any=null;
+  if(current.entry_type==="parts"){
+   const {data:readiness,error:readinessError}=await access.db.rpc("refresh_workcard_parts_readiness",{p_business_id:membership.business_id,p_job_id:id,p_actor_user_id:user.id});
+   if(readinessError){console.error("Worker parts readiness reconciliation failed",readinessError);return jsonError("Parts were updated, but the Jobcard readiness could not be reconciled. Refresh and retry.",500);}
+   partsReadiness=readiness;
+  }
   await access.db.from("audit_events").insert({business_id:membership.business_id,actor_user_id:user.id,action:"work_order.entry_updated",entity_type:"job_work_entry",entity_id:entry.id,details:{job_id:id,entry_type:entry.entry_type,quantity_required:quantityRequired,quantity_used:quantityUsed,quantity_ordered:entry.quantity_ordered??null,quantity_received:entry.quantity_received??null}});
-  return Response.json({entry});
+  return Response.json({entry,partsReadiness});
  }catch(error){console.error("Worker Workcard item update failed",error);return jsonError("Could not update prepared Workcard item.",500);}
 }
