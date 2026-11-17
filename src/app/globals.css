@@ -1227,3 +1227,28 @@ button:disabled,.button:disabled,[aria-disabled="true"] { cursor:not-allowed; }
     padding: 11px;
   }
 }
+
+/* Preserve the existing narrow-screen fallback; desktop navigation is defined above. */
+@media (max-width: 640px) {
+  .portal-sidebar { min-height: 0 !important; padding: 0 !important; }
+  .portal-sidebar nav {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+    margin: 0 !important;
+  }
+  .portal-sidebar .portal-nav-group { display: contents !important; }
+  .portal-sidebar .portal-nav-link,
+  .portal-sidebar .portal-nav-link.active {
+    justify-content: center !important;
+    gap: 6px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+    padding: 0 5px !important;
+  }
+  .portal-sidebar .portal-nav-link > span { display: none !important; }
+  .portal-sidebar-heading,
+  .portal-sidebar-help,
+  .portal-signout { display: none !important; }
+}
