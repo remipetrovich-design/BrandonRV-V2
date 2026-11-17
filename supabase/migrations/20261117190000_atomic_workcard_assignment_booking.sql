@@ -24,7 +24,7 @@ DECLARE
   v_assigned integer := 0;
 BEGIN
   IF cardinality(v_staff_ids) > 20
-     OR cardinality(v_staff_ids) <> (SELECT count(DISTINCT x) FROM unnest(v_staff_ids) x) THEN
+     OR cardinality(v_staff_ids) <> (SELECT count(DISTINCT selected.staff_id) FROM unnest(v_staff_ids) AS selected(staff_id)) THEN
     RAISE EXCEPTION 'Invalid staff selection.' USING ERRCODE = '22023';
   END IF;
 
@@ -39,7 +39,7 @@ BEGIN
      OR v_job.worker_signed_off_at IS NOT NULL THEN
     RAISE EXCEPTION 'Team assignments cannot change after workshop work has started or the Workcard has closed.' USING ERRCODE = 'P0001';
   END IF;
-  IF v_job.workcard_review_status NOT IN ('approved','legacy_approved') THEN
+  IF coalesce(v_job.workcard_review_status,'legacy_approved') NOT IN ('approved','legacy_approved') THEN
     RAISE EXCEPTION 'The Workcard must pass senior setup review before it can be assigned.' USING ERRCODE = 'P0001';
   END IF;
 
