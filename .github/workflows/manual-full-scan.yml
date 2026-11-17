@@ -1,0 +1,68 @@
+name: Manual V2 full source scan
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type YES to run the read-only validation suite for the latest main commit."
+        required: true
+        default: "NO"
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: brandon-rv-v2-full-scan
+  cancel-in-progress: false
+jobs:
+  full-scan:
+    if: inputs.confirm == 'YES'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Check out the complete latest main history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Refresh main and record exact source commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --force
+          git checkout --detach origin/main
+          echo "SCAN_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "Scanning $(git rev-parse --short HEAD)"
+          git log -5 --oneline
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Validate V2 Vercel target credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$VERCEL_ORG_ID" = "team_096KfEXGur0lYlViGQdIVEoU"
+          test "$VERCEL_PROJECT_ID" = "prj_ZI2MbFrpCJFovX9unahbN5WgLqTw"
+          for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!name:-}" ]; then echo "::error::Required Vercel secret $name is not configured."; exit 1; fi
+          done
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+      - name: Pull Vercel Production build configuration
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+      - name: Install locked project dependencies
+        run: npm ci
+      - name: Run checked-in test suite
+        run: npm test
+      - name: Run TypeScript validation
+        run: npm run typecheck
+      - name: Validate migration filenames and references
+        run: node scripts/check-migrations.mjs
+      - name: Build Production artifact without deploying
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+      - name: Confirm build output exists
+        run: test -d .vercel/output
