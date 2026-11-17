@@ -27,9 +27,11 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
  ]);
  if(!canManage&&!canManageBookings){
   const {data:staff,error:staffError}=await db.from("staff").select("id").eq("user_id",userId).eq("business_id",businessId).eq("employment_status","active").maybeSingle();
-  if(staffError||!staff)return jsonError("You can only view Workcards assigned to your employee account.",403);
-  const {data:assignment,error:assignmentError}=await db.from("job_assignments").select("id").eq("business_id",businessId).eq("job_id",id).eq("staff_id",staff.id).in("status",["assigned","accepted","completed"]).maybeSingle();
-  if(assignmentError||!assignment)return jsonError("This Workcard is not assigned to you.",403);
+  if(staffError)return jsonError("Could not verify employee access.",500);
+  if(staff){
+   const {data:assignment,error:assignmentError}=await db.from("job_assignments").select("id").eq("business_id",businessId).eq("job_id",id).eq("staff_id",staff.id).in("status",["assigned","accepted","completed"]).maybeSingle();
+   if(assignmentError||!assignment)return jsonError("This Workcard is not assigned to your employee account.",403);
+  }
  }
  const {data:baseJob,error:jobError}=await db.from("jobs")
   .select("id,job_number,title,status,priority,scope_of_work,customer_visible_notes,internal_notes,guest_name,guest_email,estimated_hours,actual_hours,work_summary,scheduled_start,scheduled_end,worker_signed_off_at,senior_approval_status,customer_approval_status,appointment_id,quote_id,customers:users!jobs_customer_id_users_fkey(full_name,email,phone)")
