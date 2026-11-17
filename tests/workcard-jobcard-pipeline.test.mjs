@@ -13,6 +13,12 @@ test("Supabase migration versions are unique and the applied invoice source has 
  assert.ok(!files.includes("20261117102142_invoice_issue_payment_credit_lifecycle.sql"));
 });
 
+test("generated SQL function definitions are properly terminated before privilege statements",async()=>{
+ const migration=await read(migrationPath);
+ const terminators=migration.match(/\$function\$;\s*REVOKE ALL ON FUNCTION/g)||[];
+ assert.equal(terminators.length,8);
+});
+
 test("invoice issuer identity matches the application's public user model",async()=>{
  const migration=await read(migrationPath);
  const invoiceLifecycle=await read("../supabase/migrations/20261117102142_invoice_issue_payment_credit_lifecycle_20261117220000.sql");
