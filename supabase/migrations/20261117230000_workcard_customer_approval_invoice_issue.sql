@@ -95,6 +95,162 @@ $function$
 REVOKE ALL ON FUNCTION public.replace_workcard_assignments(uuid,uuid,uuid,uuid[]) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.replace_workcard_assignments(uuid,uuid,uuid,uuid[]) TO service_role;
 
+-- Supplier receipts release the parts hold only when every required quantity is received
+-- or explicitly marked as not required; the Jobcard returns to the scheduling stage.
+CREATE OR REPLACE FUNCTION public.sync_job_work_entry_procurement(p_business_id uuid, p_work_entry_id uuid, p_actor_user_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE
+  v_job_id uuid;
+  v_job record;
+  v_entry record;
+  v_enquiry record;
+  v_enquiry_id uuid;
+  v_appointment_status text;
+  v_next_job_status text;
+  v_next_stage text;
+  v_ordered numeric(12,2);
+  v_received numeric(12,2);
+  v_supplier_name text;
+  v_order_number text;
+  v_ordered_at timestamptz;
+  v_expected_at date;
+  v_received_at timestamptz;
+  v_now timestamptz := pg_catalog.clock_timestamp();
+BEGIN
+  SELECT job_id INTO v_job_id
+    FROM public.job_work_entries
+   WHERE id = p_work_entry_id AND business_id = p_business_id;
+  IF NOT FOUND THEN
+    RETURN;
+  END IF;
+
+  SELECT id,status,appointment_id,quote_id
+    INTO v_job
+    FROM public.jobs
+   WHERE id = v_job_id AND business_id = p_business_id
+   FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN;
+  END IF;
+
+  SELECT id,quantity_required
+    INTO v_entry
+    FROM public.job_work_entries
+   WHERE id = p_work_entry_id AND job_id = v_job_id AND business_id = p_business_id
+   FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN;
+  END IF;
+
+  SELECT coalesce(sum(oi.quantity),0), coalesce(sum(oi.quantity_received),0)
+    INTO v_ordered, v_received
+    FROM public.supplier_order_items oi
+    JOIN public.supplier_orders so ON so.id = oi.order_id
+   WHERE oi.work_entry_id = p_work_entry_id
+     AND so.business_id = p_business_id
+     AND so.status IN ('ordered','part_received','received');
+
+  SELECT s.name, so.order_number, so.ordered_at, so.expected_at, so.received_at
+    INTO v_supplier_name, v_order_number, v_ordered_at, v_expected_at, v_received_at
+    FROM public.supplier_order_items oi
+    JOIN public.supplier_orders so ON so.id = oi.order_id
+    JOIN public.suppliers s ON s.id = so.supplier_id
+   WHERE oi.work_entry_id = p_work_entry_id
+     AND so.business_id = p_business_id
+     AND so.status IN ('ordered','part_received','received')
+   ORDER BY coalesce(so.ordered_at,so.created_at) DESC
+   LIMIT 1;
+
+  UPDATE public.job_work_entries
+     SET quantity_ordered = v_ordered,
+         quantity_received = v_received,
+         part_order_status = CASE
+           WHEN v_ordered = 0 THEN 'not_ordered'
+           WHEN v_received >= v_ordered THEN 'received'
+           WHEN v_received > 0 THEN 'part_received'
+           ELSE 'ordered'
+         END,
+         supplier_name = v_supplier_name,
+         supplier_order_reference = v_order_number,
+         ordered_at = v_ordered_at,
+         expected_at = v_expected_at,
+         received_at = CASE WHEN v_ordered > 0 AND v_received >= v_ordered THEN coalesce(v_received_at,v_now) ELSE NULL END
+   WHERE id = p_work_entry_id
+     AND business_id = p_business_id;
+
+  IF v_job.status = 'waiting_parts'
+     AND NOT EXISTS (
+       SELECT 1
+         FROM public.job_work_entries parts
+        WHERE parts.job_id = v_job.id
+          AND parts.business_id = p_business_id
+          AND parts.entry_type = 'parts'
+          AND parts.quantity_required > greatest(0,parts.quantity_received - parts.quantity_returned)
+          AND parts.part_order_status <> 'not_required'
+     ) THEN
+    SELECT status INTO v_appointment_status
+      FROM public.appointments
+     WHERE id = v_job.appointment_id AND business_id = p_business_id;
+
+    v_next_job_status := CASE
+      WHEN v_appointment_status IN ('confirmed','rescheduled') THEN 'scheduled'
+      ELSE 'pending'
+    END;
+    v_next_stage := CASE WHEN v_next_job_status = 'scheduled' THEN 'booked' ELSE 'ready_to_schedule' END;
+
+    UPDATE public.jobs
+       SET status = v_next_job_status,
+           updated_at = v_now
+     WHERE id = v_job.id AND business_id = p_business_id AND status = 'waiting_parts';
+
+    v_enquiry_id := NULL;
+    IF v_job.quote_id IS NOT NULL THEN
+      SELECT enquiry_id INTO v_enquiry_id
+        FROM public.quotes
+       WHERE id = v_job.quote_id AND business_id = p_business_id;
+    END IF;
+    IF v_enquiry_id IS NULL AND v_job.appointment_id IS NOT NULL THEN
+      SELECT enquiry_id INTO v_enquiry_id
+        FROM public.appointments
+       WHERE id = v_job.appointment_id AND business_id = p_business_id;
+    END IF;
+
+    IF v_enquiry_id IS NOT NULL THEN
+      SELECT id,stage,request_type,archived_at
+        INTO v_enquiry
+        FROM public.enquiries
+       WHERE id = v_enquiry_id AND business_id = p_business_id
+       FOR UPDATE;
+      IF FOUND AND v_enquiry.request_type = 'quote_request' AND v_enquiry.archived_at IS NULL
+         AND v_enquiry.stage IS DISTINCT FROM v_next_stage THEN
+        UPDATE public.enquiries
+           SET stage = v_next_stage,
+               updated_at = v_now
+         WHERE id = v_enquiry_id AND business_id = p_business_id;
+        INSERT INTO public.enquiry_stage_history
+          (business_id,enquiry_id,from_stage,to_stage,changed_by,note)
+        VALUES
+          (p_business_id,v_enquiry_id,v_enquiry.stage,v_next_stage,p_actor_user_id,
+           'All required parts have been received; the Workcard has been released from the parts hold.');
+      END IF;
+    END IF;
+
+    INSERT INTO public.audit_events
+      (business_id,actor_user_id,action,entity_type,entity_id,details)
+    VALUES
+      (p_business_id,p_actor_user_id,'workcard.parts_received_and_released','job',v_job.id,
+       pg_catalog.jsonb_build_object('status',v_next_job_status,'stage',v_next_stage));
+  END IF;
+END;
+$function$
+
+REVOKE ALL ON FUNCTION public.sync_job_work_entry_procurement(uuid,uuid,uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.sync_job_work_entry_procurement(uuid,uuid,uuid) TO service_role;
+
 -- Workcard start, finish, setup review and senior review advance the original Jobcard
 -- and record each real pipeline transition in the same transaction.
 CREATE OR REPLACE FUNCTION public.start_workcard(p_job_id uuid, p_business_id uuid, p_actor_user_id uuid, p_staff_id uuid)
@@ -122,6 +278,15 @@ BEGIN
   END IF;
   IF coalesce(v_job.workcard_review_status,'legacy_approved') NOT IN ('approved','legacy_approved') THEN
     RAISE EXCEPTION 'The Workcard must pass senior setup review before work can start.' USING ERRCODE='P0001';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM public.job_work_entries e
+     WHERE e.business_id=p_business_id AND e.job_id=p_job_id
+       AND e.entry_type='parts'
+       AND e.quantity_required > greatest(0,e.quantity_received-e.quantity_returned)
+       AND e.part_order_status <> 'not_required'
+  ) THEN
+    RAISE EXCEPTION 'All required parts must be received or marked not required before work can start.' USING ERRCODE='P0001';
   END IF;
   IF v_job.appointment_id IS NULL THEN
     RAISE EXCEPTION 'A confirmed booking is required before work can start.' USING ERRCODE='P0001';
@@ -374,7 +539,9 @@ BEGIN
     SELECT EXISTS(
       SELECT 1 FROM public.job_work_entries e
        WHERE e.business_id=p_business_id AND e.job_id=p_job_id
-         AND e.entry_type='parts' AND e.quantity_required>0
+         AND e.entry_type='parts'
+         AND e.quantity_required > greatest(0,e.quantity_received-e.quantity_returned)
+         AND e.part_order_status <> 'not_required'
     ) INTO v_has_parts;
     SELECT status INTO v_booking_status FROM public.appointments
      WHERE id=v_job.appointment_id AND business_id=p_business_id;
