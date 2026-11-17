@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     if (error) return NextResponse.json({ valid: null, state: 'configuration', code: 'LICENSE_DATABASE_SAVE_FAILED', message: 'License Manager accepted the key, but the server could not save it to installation storage. Check Supabase service-role access and the A.L.I.S. database schema.' }, { status: 503 });
     await event(access.db, access.user.id, saved?.license_key ? 'license_replaced' : 'license_activated', validation.license_id, validation.code || 'LICENSE_VALID').catch(() => {});
     return NextResponse.json(details(validation, licenseKey), { headers: { "cache-control": "no-store" } });
-  } catch (error) { if (transient(error)) return NextResponse.json({ valid: null, state: 'unavailable', code: error.code || 'LICENSE_AUTHORITY_UNAVAILABLE', message: 'License Manager is unavailable. The saved installation key has not been changed.' }, { status: 503 }); return NextResponse.json({ valid: false, state: 'invalid', code: failure.code || 'LICENSE_INVALID', message: failure.message || 'License Manager rejected this key.' }, { status: 403 }); }
+  } catch (error) { const failure = errorInfo(error); if (transient(error)) return NextResponse.json({ valid: null, state: 'unavailable', code: failure.code || 'LICENSE_AUTHORITY_UNAVAILABLE', message: 'License Manager is unavailable. The saved installation key has not been changed.' }, { status: 503 }); return NextResponse.json({ valid: false, state: 'invalid', code: failure.code || 'LICENSE_INVALID', message: failure.message || 'License Manager rejected this key.' }, { status: 403 }); }
 }
 export async function DELETE(request: NextRequest) {
   const access = await owner(request); if (!access.ok) return access.response;
