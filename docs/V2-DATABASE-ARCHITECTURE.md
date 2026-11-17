@@ -142,3 +142,17 @@ No new table is justified merely to duplicate existing users, staff, audit or me
 - Do not drop legacy compatibility objects while the Supabase project is shared with V1.
 - Review foreign keys, RLS, grants and Data API exposure for every new table or function.
 - Stage 8 full testing/hardening remains unauthorised until Lucas explicitly approves it.
+
+## 2026-11-17 workflow integrity additions
+
+Migration 20261117230000_workcard_customer_approval_invoice_issue is applied to Brandon-RV-V2.
+
+- invoices.issued_by now references public.users(id), matching the application's custom user identity model.
+- update_jobcard_booking has one transaction entry point for Workcard/Jobcard/master-calendar booking changes. It serializes confirmations with a business-scoped advisory lock and checks overlapping confirmed bookings and travel buffers.
+- refresh_workcard_parts_readiness reconciles Jobcard status/stage when planned parts change. Work cannot start while required part quantities remain outstanding unless the line is explicitly marked not_required.
+- sync_job_work_entry_procurement preserves not_required parts and releases a parts hold only when all remaining required quantities are received or not required.
+- Workcard start, finish, setup review, senior review, customer approval, and invoice payment now update the linked Jobcard stage and history in the same database transaction.
+- Customer-requested corrections reopen the Workcard, delete its unissued draft invoice, and restore completed assignments to accepted.
+- Final invoice issue delegates to issue_invoice; issued invoice and invoice-item immutability triggers remain installed.
+
+Post-migration inventory: 60 public base tables, all 60 RLS-enabled; 3 compatibility views; 84 applied migration records. All 10 affected workflow functions are SECURITY DEFINER and executable by service_role only, not anon or authenticated. The issued_by foreign key targets public.users. No V1 database was touched.
