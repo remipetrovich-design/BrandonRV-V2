@@ -183,7 +183,7 @@ CREATE OR REPLACE FUNCTION public.record_invoice_payment_idempotent(
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $
+AS $$
 DECLARE
   v_invoice public.invoices%ROWTYPE;
   v_payment public.payments%ROWTYPE;
@@ -330,7 +330,7 @@ BEGIN
     'balance',round(v_invoice.total-v_amount_paid-v_credit_total,2),
     'invoiceStatus',v_status,'jobcardArchived',v_archived);
 END;
-$;
+$$;
 
 REVOKE ALL ON FUNCTION public.record_invoice_payment_idempotent(uuid,uuid,uuid,numeric,text,text,text,uuid) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.record_invoice_payment_idempotent(uuid,uuid,uuid,numeric,text,text,text,uuid) TO service_role;
