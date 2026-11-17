@@ -78,7 +78,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const {data:result,error:bookingUpdateError}=await db.rpc("update_jobcard_booking",{
    p_business_id:businessId,p_actor_user_id:access.user!.id,p_enquiry_id:id,p_appointment_id:appointment.id,
    p_action:action,p_starts_at:action==="cancel"?null:new Date(String(patch.starts_at)).toISOString(),
-   p_ends_at:action==="cancel"?null:patch.ends_at??null,p_location:action==="cancel"?null:patch.location
+   p_ends_at:action==="cancel"?null:patch.ends_at??null,p_location:action==="cancel"?null:patch.location,p_bypass_conflicts:isManagerOrAbove(access.user?.user_role)
   });
   if(bookingUpdateError){const status=bookingUpdateError.code==="P0002"?404:bookingUpdateError.code==="P0001"?409:bookingUpdateError.code==="22023"?400:500;return jsonError(bookingUpdateError.message??"Could not update the booking and linked Workcards.",status);}
   return Response.json(result);
