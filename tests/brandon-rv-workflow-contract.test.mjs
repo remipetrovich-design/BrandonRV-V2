@@ -227,20 +227,17 @@ test("Workcard test/check entries are non-billable",async()=>{
 });
 
 
-test("account and guest final Workcard decisions issue the invoice in the same database transaction",async()=>{
- const migration=await source("../supabase/migrations/20261111170000_atomic_workcard_customer_decision.sql");
- const account=await source("../src/app/api/portal/jobs/[id]/approval/route.ts");
- const guest=await source("../src/app/api/tickets/[id]/work-order/route.ts");
+test("account and guest final Workcard decisions issue the invoice through the canonical lifecycle",async()=>{
+ const route=await source("../src/app/api/portal/jobs/[id]/approval/route.ts");
+ const migration=await source("../supabase/migrations/20261117230000_invoice_issue_metadata_and_immutable_lines.sql");
  assert.ok(migration.includes("CREATE OR REPLACE FUNCTION public.respond_to_completed_workcard"));
- assert.ok(migration.includes("FOR UPDATE"));
- assert.ok(migration.includes("SET status = 'issued'"));
- assert.ok(migration.includes("customer_approval_status = 'pending'"));
- assert.ok(migration.includes("guest_access_token_hash = p_guest_token_hash"));
- assert.ok(migration.includes("REVOKE ALL ON FUNCTION public.respond_to_completed_workcard"));
- assert.ok(account.includes('rpc("respond_to_completed_workcard"'));
- assert.match(guest,/Guest access is limited to quote responses and general enquiry messages/);
- assert.match(guest,/return jsonError\(.*403\)/);
- assert.ok(!account.includes('.from("invoices").update'));
+ assert.ok(migration.includes("PERFORM public.issue_invoice"));
+ assert.ok(migration.includes("issued_at"));
+ assert.ok(migration.includes("issued_by"));
+ assert.ok(migration.includes("v_issue_actor_id := coalesce(v_job.senior_approved_by,v_job.worker_signed_off_by)"));
+ assert.ok(migration.includes("customer_approval_status = p_decision"));
+ assert.ok(route.includes('rpc("respond_to_completed_workcard"'));
+ assert.ok(!route.includes('.from("invoices").update'));
 });
 
 test("full payment archives a quote-request Jobcard and revokes its guest access",async()=>{
