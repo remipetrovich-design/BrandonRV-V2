@@ -30,7 +30,7 @@ test("manual migration workflow scans and applies V2 migrations without deployin
 });
 
 test("deployment API dispatches each action to its own workflow", () => {
-  assert.match(dispatch, /scan_apply:"manual-scan-apply-migrations\.yml"/);
+  assert.match(dispatch, /full_scan:"manual-full-scan\.yml"/);\n  assert.match(dispatch, /scan_apply:"manual-scan-apply-migrations\.yml"/);
   assert.match(dispatch, /deploy:"manual-deploy-latest\.yml"/);
   assert.doesNotMatch(dispatch, /manual-deploy-migrate\.yml/);
 });
