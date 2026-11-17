@@ -4,7 +4,7 @@ import {isManualOperationDisabled} from "@/lib/deployment-control.mjs";
 type Run={id:number;name:string;status:string;conclusion:string|null;url:string;createdAt:string};
 type Snapshot={latestCommit:string|null;deploymentRun:Run|null;migrationRun:Run|null};
 type Props={available:boolean;configured:boolean;activated:boolean};
-export default function AdminManualDeploy({available,configured,activated}:Props){
+export default function AdminManualDeploy({available,activated}:Props){
  const [busy,setBusy]=useState("");const [refreshing,setRefreshing]=useState(false);const [snapshot,setSnapshot]=useState<Snapshot|null>(null);const [message,setMessage]=useState("");const [error,setError]=useState("");
  async function refresh(){if(refreshing)return;if(!available){window.open("https://github.com/remipetrovich-design/BrandonRV-V2/actions","_blank","noopener,noreferrer");return;}setRefreshing(true);setError("");try{const r=await fetch("/api/admin/deployment/status",{cache:"no-store"});const b=await r.json();if(!r.ok)throw Error(b.error||"Status refresh failed.");setSnapshot(b);}catch(e){setError(e instanceof Error?e.message:"Status refresh failed.");}finally{setRefreshing(false);}}
  async function dispatch(action:"scan_apply"|"deploy"){if(busy)return;const label=action==="scan_apply"?"Scan and apply pending migrations to the dedicated Brandon RV V2 database":"Deploy the newest main commit and all merged history to Vercel Production";if(!window.confirm(label+"?"))return;if(!available){const workflow=action==="scan_apply"?"manual-scan-apply-migrations.yml":"manual-deploy-latest.yml";window.open("https://github.com/remipetrovich-design/BrandonRV-V2/actions/workflows/"+workflow,"_blank","noopener,noreferrer");setMessage("GitHub Actions opened. Select Run workflow and enter YES to queue this operation.");return;}setBusy(action);setMessage("");setError("");try{const r=await fetch("/api/admin/deployment/dispatch",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action}),cache:"no-store"});const b=await r.json();if(!r.ok)throw Error(b.error||"Operation failed.");setMessage(b.message||"Queued. Refresh status to check progress.");}catch(e){setError(e instanceof Error?e.message:"Operation failed.");}finally{setBusy("");}}
@@ -23,7 +23,7 @@ export default function AdminManualDeploy({available,configured,activated}:Props
     <div className="operation-heading"><span>DATABASE OPERATIONS</span><h3>Scan and Apply Migrations</h3></div>
     <p>Checks migration filenames and references, compares the complete migration history with the V2 database, previews pending SQL, then applies pending migrations only.</p>
     <p className="target">Target: Brandon RV V2 · Supabase project lciylmfpcefdpsouoqvm</p>
-    <button disabled={!activated||!!busy} onClick={()=>dispatch("scan_apply")}>{busy==="scan_apply"?"Queueing migration scan…":available?"Scan and Apply Migrations":"Open Scan and Apply Migrations"}</button>
+    <button disabled={isManualOperationDisabled({busy})} onClick={()=>dispatch("scan_apply")}>{busy==="scan_apply"?"Queueing migration scan…":available?"Scan and Apply Migrations":"Open Scan and Apply Migrations"}</button>
     <div className="run-status"><b>Last migration run</b><p>{snapshot?runStatus(snapshot.migrationRun):available?"Press Refresh status to load.":<a href="https://github.com/remipetrovich-design/BrandonRV-V2/actions/workflows/manual-scan-apply-migrations.yml" target="_blank" rel="noreferrer">Open migration run history</a>}</p></div>
    </article>
   </div>
