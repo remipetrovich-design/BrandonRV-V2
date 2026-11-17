@@ -31,6 +31,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
  const membership=await currentMembership(user.id);if(!membership)return jsonError("Staff access required.",403);
  const {id}=await params;if(!isUuid(id))return jsonError("Invalid Workcard ID.");
  const ctx=await context(id,user.id,membership.business_id);if(!ctx.allowed)return jsonError("Workcard not found or preparation access is not assigned.",404);
+ if(["completed","cancelled"].includes(String(ctx.job?.status)))return jsonError("Preparation is closed for this Workcard.",409);
  try{
   const body=await request.json(),itemType=String(body.item_type??""),title=String(body.title??"").trim(),details=String(body.details??"").trim();
   if(!types.includes(itemType)||title.length<2||title.length>160||details.length>3000)return jsonError("Enter a valid preparation item.");
