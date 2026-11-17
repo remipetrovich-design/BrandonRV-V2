@@ -1,5 +1,4 @@
-import { currentUser, currentMembership, database, jsonError, sameOrigin } from "@/lib/auth";
-import { isGlobalAdministrator } from "@/lib/user-role-policy.mjs";
+import { authorizePermission, database, jsonError, sameOrigin } from "@/lib/auth";
 import { isManualDeployAvailable } from "@/lib/deployment-control.mjs";
 import { writeAuditEvent } from "@/lib/audit-events.mjs";
 
@@ -7,17 +6,15 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const REPOSITORY = "remipetrovich-design/BrandonRV-V2";
-const WORKFLOW = "manual-deploy-migrate.yml";
+const WORKFLOW = "manual-deploy-latest.yml";
 const BRANCH = "main";
 
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return jsonError("Invalid request origin.", 403);
 
-  const user = await currentUser();
-  if (!user) return jsonError("Not signed in.", 401);
-  if (!isGlobalAdministrator(String(user.user_role ?? "").toLowerCase())) {
-    return jsonError("Only the Owner or Website Developer can start a manual deployment.", 403);
-  }
+  const access = await authorizePermission("developer.deploy");
+  if (access.response) return access.response;
+  const user = access.user!;
 
   const token = process.env.GITHUB_ACTIONS_DISPATCH_TOKEN;
   const state = isManualDeployAvailable({
@@ -28,8 +25,7 @@ export async function POST(request: Request) {
     return jsonError("Manual deployment is not activated or its GitHub connection is not configured.", 423);
   }
 
-  const membership = await currentMembership(user.id);
-  if (!membership) return jsonError("Your business workspace access could not be verified.", 403);
+  const membership = access.membership!;
 
   const db = database();
   try {
