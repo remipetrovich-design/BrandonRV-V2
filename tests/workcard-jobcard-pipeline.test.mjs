@@ -1,8 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {readFile} from "node:fs/promises";
+import {readFile,readdir} from "node:fs/promises";
 const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 const migrationPath="../supabase/migrations/20261117230000_workcard_customer_approval_invoice_issue.sql";
+
+test("Supabase migration versions are unique and the applied invoice source has one canonical filename",async()=>{
+ const files=await readdir(new URL("../supabase/migrations/",import.meta.url));
+ const versions=files.filter(name=>name.endsWith(".sql")).map(name=>name.match(/^(\d{14})_/)?.[1]).filter(Boolean);
+ const duplicates=versions.filter((version,index)=>versions.indexOf(version)!==index);
+ assert.deepEqual([...new Set(duplicates)],[]);
+ assert.ok(files.includes("20261117102142_invoice_issue_payment_credit_lifecycle_20261117220000.sql"));
+ assert.ok(!files.includes("20261117102142_invoice_issue_payment_credit_lifecycle.sql"));
+});
 
 test("invoice issuer identity matches the application's public user model",async()=>{
  const migration=await read(migrationPath);
