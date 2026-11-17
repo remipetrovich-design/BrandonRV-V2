@@ -58,3 +58,7 @@ export function isHireableCustomer(user) {
     (user.employment_status == null || user.employment_status === "terminated")
   );
 }
+
+export function canOverrideQuoteSelfReview(role) {
+  return isManagerOrAbove(role);
+}

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {hasEmployeeAccess,isGlobalAdministrator,isHireableCustomer,isManagerOrAbove,BUILT_IN_STAFF_ROLES} from "../src/lib/user-role-policy.mjs";
+import {hasEmployeeAccess,isGlobalAdministrator,isHireableCustomer,isManagerOrAbove,canOverrideQuoteSelfReview,BUILT_IN_STAFF_ROLES} from "../src/lib/user-role-policy.mjs";
 
 test("customer-only accounts have no employee access",()=>{
  assert.equal(hasEmployeeAccess({user_role:null,employment_status:null}),false);
@@ -63,4 +63,10 @@ test("supervisors and workers retain configured booking restrictions",()=>{
 
 test("management aliases are recognised as built-in workforce roles",()=>{
  for(const role of ["administrator","general_manager"])assert.ok(BUILT_IN_STAFF_ROLES.includes(role));
+});
+
+
+test("quote self-review override is limited to managers and above",()=>{
+ for(const role of ["office_manager","manager","senior_manager","administrator","general_manager","website_development_specialist","ceo_founder","owner","website_developer"]){assert.equal(canOverrideQuoteSelfReview(role),true,role+" should be able to override quote self-review");}
+ for(const role of ["trial_apprentice","apprentice","senior_apprentice","team_leader","supervisor","office_admin","office_supervisor","technician"]){assert.equal(canOverrideQuoteSelfReview(role),false,role+" must use a different senior reviewer");}
 });
