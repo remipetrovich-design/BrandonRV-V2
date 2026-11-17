@@ -47,8 +47,10 @@ test("master calendar creates confirmed appointments against an existing Workcar
  assert.match(route,/appointments\.manage/);
  assert.match(route,/validateBookingWindow/);
  assert.match(route,/bookingWindowsConflict/);
- assert.match(route,/calendar\.appointment_created/);
- assert.match(route,/appointment_id:appointment\.id/);
+ assert.match(route,/rpc\("update_jobcard_booking"/);
+ assert.match(route,/p_action:"confirm"/);
+ assert.match(route,/p_bypass_conflicts:bypassRestrictions/);
+ assert.doesNotMatch(route,/from\("jobs"\)\.update/);
 });
 
 test("master calendar changes synchronise the linked Workcard schedule transactionally",async()=>{
