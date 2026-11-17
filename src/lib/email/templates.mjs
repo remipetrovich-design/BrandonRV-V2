@@ -7,7 +7,7 @@
  * Merge vars using literal placeholders such as {firstname}, {lastname},
  * {site_name}, {site_url}, {action_url}, {booking_date}, {quote_number}.
  */
-const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://brandon-rv-v2.vercel.app").replace(/\\/+$/, "");
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://brandon-rv-v2.vercel.app").replace(/\/+$/, "");
 
 const DEFAULTS = Object.freeze({
   site_name: "Brandon RV",
