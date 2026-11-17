@@ -37,7 +37,9 @@ export default function AdminCreateQuote({initialEnquiryId="",onCreated}:{initia
    const r=await fetch("/api/admin/quotes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({enquiryId,supersedesQuoteId:supersedesQuoteId||null,items:items.map(item=>({description:item.description,quantity:Number(item.quantity),unitPrice:Number(item.unitPrice),serviceId:item.serviceId||null,itemType:item.itemType})),taxRate:Number(taxRate),expiryDate:expiryDate||null,notes,terms})});
    const d=await r.json();if(!r.ok){setNotice(d.error??"Could not create quote.");return;}
    setNotice("Draft quote "+d.quote.quote_number+" created with "+items.length+" line(s). Senior review is required before issue.");
-   setItems([{id:1,description:"",quantity:"1",unitPrice:"",serviceId:"",itemType:"labour"}]);setNextLineId(2);setNotes("");setTerms("");setExpiryDate("");setSupersedesQuoteId("");onCreated?.();
+   setItems([{id:1,description:"",quantity:"1",unitPrice:"",serviceId:"",itemType:"labour"}]);setNextLineId(2);setNotes("");setTerms("");setExpiryDate("");setSupersedesQuoteId("");
+   const refreshed=await fetch("/api/admin/quotes",{cache:"no-store"});const refreshedData=await refreshed.json();if(refreshed.ok){setPriorQuotes(refreshedData.quotes??[]);setEnquiries(refreshedData.enquiries??[]);}
+   onCreated?.();
   }catch{setNotice("Could not create quote.");}
   finally{setBusy(false);}
  }
