@@ -39,7 +39,7 @@ AS $$
     FROM public.users u
     WHERE u.id = p_user_id
       AND u.status = 'active'
-      AND (u.employment_status = 'active' OR u.user_role IN ('ceo_founder','website_development_specialist'))
+      AND (u.employment_status = 'active' OR u.user_role IN ('ceo_founder','website_development_specialist','senior_manager'))
       AND (
         EXISTS (
           SELECT 1 FROM public.user_role_permissions rp
