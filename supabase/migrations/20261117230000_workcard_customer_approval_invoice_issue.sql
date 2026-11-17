@@ -629,7 +629,7 @@ BEGIN
      WHERE id = v_job.id AND business_id = p_business_id
        AND customer_approval_status = 'pending';
 
-    v_issuer_user_id := coalesce(v_job.senior_approved_by,v_job.worker_signed_off_by,p_actor_user_id);
+    v_issuer_user_id := coalesce(v_job.senior_approved_by,v_job.worker_signed_off_by);
     IF v_issuer_user_id IS NULL THEN
       RAISE EXCEPTION 'An authorised staff issuer is required before the final invoice can be issued.' USING ERRCODE = 'P0001';
     END IF;
