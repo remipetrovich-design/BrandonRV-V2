@@ -220,10 +220,12 @@ test("only registered customer accounts can request bookings",async()=>{
 test("Workcard test/check entries are non-billable",async()=>{
  const route=await source("../src/app/api/staff/jobs/[id]/work-entries/route.ts");
  const helper=await source("../src/lib/work-order-lifecycle.mjs");
- const finish=await source("../src/app/api/staff/jobs/[id]/status/route.ts");
+ const finish=await source("../supabase/migrations/20261117210000_atomic_workcard_signoff_invoice.sql");
  assert.ok(route.includes('"labour","parts","note","test"'));
  assert.ok(helper.includes('["note", "test"]'));
- assert.ok(finish.includes('["labour","parts"].includes(x.entry_type)&&x.invoiceable&&Number(x.quantity_used)>0'),"Only actual invoiceable labour and parts can be billed.");
+ assert.ok(finish.includes("e.entry_type IN ('labour','parts')"),"Only labour and parts can be billed.");
+ assert.ok(finish.includes("e.invoiceable = true"),"Only explicitly invoiceable work can be billed.");
+ assert.ok(finish.includes("e.quantity_used > 0"),"Only actual usage can be billed.");
 });
 
 
