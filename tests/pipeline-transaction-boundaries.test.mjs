@@ -11,7 +11,7 @@ test("customer approval updates the Jobcard pipeline in the same database transa
  assert.doesNotMatch(route,/from\("enquiries"\)\.update/);
  assert.doesNotMatch(route,/from\("enquiry_stage_history"\)\.insert/);
  assert.match(migration,/UPDATE public\.enquiries/);
- assert.match(migration,/stage\\s*=\\s*'invoiced'/);
+ assert.match(migration,/stage='invoiced'/);
  assert.match(migration,/INSERT INTO public\.enquiry_stage_history/);
  assert.match(migration,/Customer approved the completed Workcard and the final invoice was issued/);
 });
