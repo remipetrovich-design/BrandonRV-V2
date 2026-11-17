@@ -23,7 +23,7 @@ export default function AdminInvoicePayment({invoiceId,total,amountPaid,status}:
  if(status==="draft"||status==="void")return null;
  return <section className="auth-form">
   <h4>Payments, refunds & credits</h4>
-  <p className="panel-footnote">Net paid: ${Number(ledger?.payments?amountPaid:amountPaid).toFixed(2)} · Credits: ${Number(ledger?.creditTotal??0).toFixed(2)} · Outstanding: ${Number(balance).toFixed(2)}</p>
+  <p className="panel-footnote">Net paid: ${Number(amountPaid).toFixed(2)} · Credits: ${Number(ledger?.creditTotal??0).toFixed(2)} · Outstanding: ${Number(balance).toFixed(2)}</p>
   {loading?<p className="panel-footnote">Loading transaction history…</p>:<div className="panel-footnote">
    <strong>Transaction history</strong>
    {!(ledger?.payments.length||ledger?.refunds.length||ledger?.credits.length)&&<p>No payments, refunds or credits recorded.</p>}
