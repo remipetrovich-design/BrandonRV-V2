@@ -7,7 +7,7 @@ type Refund={id:string;payment_id:string;amount:number;method:string;reference:s
 type Credit={id:string;credit_number:string;amount:number;reason:string;status:string;created_at:string};
 type Ledger={payments:Payment[];refunds:Refund[];credits:Credit[];creditTotal:number;balance:number};
 
-export default function AdminInvoicePayment({invoiceId,total,amountPaid,status}:{invoiceId:string;total:number;amountPaid:number;status:string}){
+export default function AdminInvoicePayment({invoiceId,total,amountPaid,status,canManagePayments=false,canManageInvoices=false}:{invoiceId:string;total:number;amountPaid:number;status:string;canManagePayments?:boolean;canManageInvoices?:boolean}){
  const router=useRouter();
  const [ledger,setLedger]=useState<Ledger|null>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[notice,setNotice]=useState("");
  const [amount,setAmount]=useState(""),[method,setMethod]=useState("bank_transfer"),[paymentType,setPaymentType]=useState("part_payment"),[reference,setReference]=useState(""),[paymentKey,setPaymentKey]=useState("");
@@ -31,7 +31,7 @@ export default function AdminInvoicePayment({invoiceId,total,amountPaid,status}:
    {(ledger?.refunds??[]).map(r=><li key={r.id}>Refund · ${Number(r.amount).toFixed(2)} · {r.method} · {r.reason}</li>)}
    {(ledger?.credits??[]).map(c=><li key={c.id}>Credit note {c.credit_number} · ${Number(c.amount).toFixed(2)} · {c.reason}</li>)}</ul>
   </div>}
-  {["issued","part_paid","overdue"].includes(status)&&balance>0.005&&<form onSubmit={recordPayment}>
+  {canManagePayments&&["issued","part_paid","overdue"].includes(status)&&balance>0.005&&<form onSubmit={recordPayment}>
    <h5>Record a deposit or payment</h5>
    <label>Payment amount<input type="number" min="0.01" max={balance.toFixed(2)} step="0.01" required value={amount} onChange={e=>setAmount(e.target.value)}/></label>
    <label>Payment type<select value={paymentType} onChange={e=>setPaymentType(e.target.value)}><option value="deposit">Deposit</option><option value="part_payment">Part payment</option><option value="final_payment">Final payment (exact balance)</option><option value="other">Other</option></select></label>
@@ -39,7 +39,7 @@ export default function AdminInvoicePayment({invoiceId,total,amountPaid,status}:
    <label>Reference (optional)<input value={reference} onChange={e=>setReference(e.target.value)} maxLength={120}/></label>
    <button className="button button-primary" disabled={busy||!amount}>{busy?"Recording…":"Record payment →"}</button>
   </form>}
-  {availablePayments.length>0&&<form onSubmit={recordRefund}>
+  {canManagePayments&&availablePayments.length>0&&<form onSubmit={recordRefund}>
    <h5>Record a refund</h5>
    <label>Original payment<select value={refundPaymentId} onChange={e=>setRefundPaymentId(e.target.value)}>{availablePayments.map(p=><option key={p.id} value={p.id}>{p.payment_type.replaceAll("_"," ")} · ${Number(p.amount).toFixed(2)} · available ${Number(p.availableToRefund).toFixed(2)}</option>)}</select></label>
    <label>Refund amount<input type="number" min="0.01" max={Number(availablePayments.find(p=>p.id===refundPaymentId)?.availableToRefund??0).toFixed(2)} step="0.01" required value={refundAmount} onChange={e=>setRefundAmount(e.target.value)}/></label>
@@ -48,7 +48,7 @@ export default function AdminInvoicePayment({invoiceId,total,amountPaid,status}:
    <label>Reason<textarea rows={2} required minLength={3} value={refundReason} onChange={e=>setRefundReason(e.target.value)} maxLength={1000}/></label>
    <button className="button button-secondary" disabled={busy||!refundAmount||!refundReason.trim()}>Record refund →</button>
   </form>}
-  {["issued","part_paid","overdue"].includes(status)&&balance>0.005&&<form onSubmit={recordCredit}>
+  {canManageInvoices&&["issued","part_paid","overdue"].includes(status)&&balance>0.005&&<form onSubmit={recordCredit}>
    <h5>Issue a credit note</h5>
    <label>Credit amount<input type="number" min="0.01" max={balance.toFixed(2)} step="0.01" required value={creditAmount} onChange={e=>setCreditAmount(e.target.value)}/></label>
    <label>Reason<textarea rows={2} required minLength={3} value={creditReason} onChange={e=>setCreditReason(e.target.value)} maxLength={1000}/></label>
