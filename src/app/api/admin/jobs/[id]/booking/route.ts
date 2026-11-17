@@ -68,7 +68,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   }
   const {data:bookingResult,error:bookingError}=await db.rpc("update_jobcard_booking",{
    p_business_id:businessId,p_actor_user_id:access.user!.id,p_enquiry_id:enquiryId!,p_appointment_id:appointment.id,
-   p_action:"confirm",p_starts_at:appointment.starts_at,p_ends_at:appointment.ends_at??null,p_location:appointment.location
+   p_action:"confirm",p_starts_at:appointment.starts_at,p_ends_at:appointment.ends_at??null,p_location:appointment.location,p_bypass_conflicts:bypassRestrictions
   });
   if(bookingError){
    if(existing)await db.from("appointments").update({status:existing.status,starts_at:existing.starts_at,ends_at:existing.ends_at,location:existing.location,confirmed_by:existing.confirmed_by??null,confirmed_at:existing.confirmed_at??null,updated_at:existing.updated_at??new Date().toISOString()}).eq("id",appointment.id).eq("business_id",businessId);
