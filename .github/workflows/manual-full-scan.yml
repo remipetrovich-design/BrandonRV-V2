@@ -14,8 +14,9 @@ concurrency:
   cancel-in-progress: false
 jobs:
   full-scan:
-    if: inputs.confirm == 'YES'
+    if: inputs.confirm == 'YES' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: production
     timeout-minutes: 25
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
