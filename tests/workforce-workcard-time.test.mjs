@@ -4,7 +4,7 @@ import {readFile} from "node:fs/promises";
 const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 
 test("staff time entries can link to a Workcard labour line and enforce one open timer per employee",async()=>{
- const migration=await read("../supabase/migrations/20261117120000_workcard_time_tracking.sql");
+ const migration=await read("../supabase/migrations/20261116204004_20261117120000_workcard_time_tracking.sql");
  const route=await read("../src/app/api/staff/time/route.ts");
  const component=await read("../src/components/staff-time-clock.tsx");
  assert.match(migration,/ADD COLUMN IF NOT EXISTS work_entry_id uuid REFERENCES public\.job_work_entries/);
@@ -17,7 +17,7 @@ test("staff time entries can link to a Workcard labour line and enforce one open
 });
 
 test("manager approval updates Workcard actual labour and job hours from approved time only",async()=>{
- const migration=await read("../supabase/migrations/20261117120000_workcard_time_tracking.sql");
+ const migration=await read("../supabase/migrations/20261116204004_20261117120000_workcard_time_tracking.sql");
  const route=await read("../src/app/api/hr/time-entries/route.ts");
  const hub=await read("../src/components/admin-workforce-hub.tsx");
  assert.match(migration,/CREATE OR REPLACE FUNCTION public\.approve_work_time_entry/);
