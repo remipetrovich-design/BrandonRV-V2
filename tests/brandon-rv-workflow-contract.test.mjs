@@ -232,7 +232,8 @@ test("account and guest final Workcard decisions issue invoices through the cont
  const guest=await source("../src/app/api/tickets/[id]/work-order/route.ts");
  assert.match(migration,/CREATE OR REPLACE FUNCTION public\.respond_to_completed_workcard/);
  assert.match(migration,/PERFORM public\.issue_invoice/);
- assert.match(migration,/v_issuer_user_id := coalesce\(v_job\.senior_approved_by,v_job\.worker_signed_off_by,p_actor_user_id\)/);
+ assert.match(migration,/v_issuer_user_id := coalesce\(v_job\.senior_approved_by,v_job\.worker_signed_off_by\)/);
+ assert.doesNotMatch(migration,/v_issuer_user_id := coalesce\([^)]*p_actor_user_id/);
  assert.match(migration,/PERFORM public\.issue_invoice\(v_invoice\.id,p_business_id,v_issuer_user_id\)/);
  assert.match(migration,/REFERENCES public\.users\(id\)/);
  assert.match(migration,/customer_approval_status = 'pending'/);
