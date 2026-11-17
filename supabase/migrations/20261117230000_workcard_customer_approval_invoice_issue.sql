@@ -95,6 +95,113 @@ $function$
 REVOKE ALL ON FUNCTION public.replace_workcard_assignments(uuid,uuid,uuid,uuid[]) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.replace_workcard_assignments(uuid,uuid,uuid,uuid[]) TO service_role;
 
+-- Reconcile the Jobcard stage and Workcard status whenever planned part readiness changes.
+CREATE OR REPLACE FUNCTION public.refresh_workcard_parts_readiness(
+  p_business_id uuid,
+  p_job_id uuid,
+  p_actor_user_id uuid
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $
+DECLARE
+  v_job public.jobs%ROWTYPE;
+  v_has_outstanding boolean := false;
+  v_appointment_status text;
+  v_next_status text;
+  v_next_stage text;
+  v_enquiry_id uuid;
+  v_enquiry record;
+  v_changed boolean := false;
+  v_now timestamptz := clock_timestamp();
+BEGIN
+  SELECT * INTO v_job FROM public.jobs
+   WHERE id=p_job_id AND business_id=p_business_id
+   FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Workcard not found.' USING ERRCODE='P0002';
+  END IF;
+
+  IF v_job.status IN ('completed','cancelled','in_progress') THEN
+    RETURN jsonb_build_object('success',true,'status',v_job.status,'partsOutstanding',false,'stageUpdated',false);
+  END IF;
+
+  SELECT EXISTS(
+    SELECT 1 FROM public.job_work_entries e
+     WHERE e.business_id=p_business_id AND e.job_id=p_job_id
+       AND e.entry_type='parts'
+       AND e.quantity_required > greatest(0,e.quantity_received-e.quantity_returned)
+       AND e.part_order_status <> 'not_required'
+  ) INTO v_has_outstanding;
+
+  IF v_job.appointment_id IS NOT NULL THEN
+    SELECT status INTO v_appointment_status FROM public.appointments
+     WHERE id=v_job.appointment_id AND business_id=p_business_id;
+  END IF;
+
+  IF v_has_outstanding THEN
+    v_next_status := CASE WHEN v_job.status IN ('pending','scheduled') THEN 'waiting_parts' ELSE v_job.status END;
+    v_next_stage := 'parts_required';
+  ELSE
+    v_next_status := CASE
+      WHEN v_job.status='waiting_parts' AND v_appointment_status IN ('confirmed','rescheduled') THEN 'scheduled'
+      WHEN v_job.status='waiting_parts' THEN 'pending'
+      ELSE v_job.status
+    END;
+    v_next_stage := CASE
+      WHEN coalesce(v_job.workcard_review_status,'legacy_approved') NOT IN ('approved','legacy_approved') THEN 'workcard_created'
+      WHEN v_appointment_status IN ('confirmed','rescheduled') THEN 'booked'
+      WHEN v_appointment_status='requested' THEN 'booking_requested'
+      ELSE 'ready_to_schedule'
+    END;
+  END IF;
+
+  IF v_next_status IS DISTINCT FROM v_job.status THEN
+    UPDATE public.jobs SET status=v_next_status,updated_at=v_now
+     WHERE id=p_job_id AND business_id=p_business_id;
+    v_changed := true;
+  END IF;
+
+  IF v_job.quote_id IS NOT NULL THEN
+    SELECT enquiry_id INTO v_enquiry_id FROM public.quotes
+     WHERE id=v_job.quote_id AND business_id=p_business_id;
+  END IF;
+  IF v_enquiry_id IS NULL AND v_job.appointment_id IS NOT NULL THEN
+    SELECT enquiry_id INTO v_enquiry_id FROM public.appointments
+     WHERE id=v_job.appointment_id AND business_id=p_business_id;
+  END IF;
+
+  IF v_enquiry_id IS NOT NULL AND v_job.status IN ('pending','scheduled','waiting_parts') THEN
+    SELECT id,stage,request_type,archived_at INTO v_enquiry
+      FROM public.enquiries WHERE id=v_enquiry_id AND business_id=p_business_id FOR UPDATE;
+    IF FOUND AND v_enquiry.request_type='quote_request' AND v_enquiry.archived_at IS NULL
+       AND v_enquiry.stage IS DISTINCT FROM v_next_stage THEN
+      UPDATE public.enquiries SET stage=v_next_stage,status='converted',updated_at=v_now
+       WHERE id=v_enquiry_id AND business_id=p_business_id;
+      INSERT INTO public.enquiry_stage_history(business_id,enquiry_id,from_stage,to_stage,changed_by,note)
+      VALUES(p_business_id,v_enquiry_id,v_enquiry.stage,v_next_stage,p_actor_user_id,
+        CASE WHEN v_has_outstanding
+          THEN 'The Jobcard is on hold until required parts are received or marked not required.'
+          ELSE 'Parts readiness has been reconciled; the Workcard is released to the next booking stage.' END);
+      v_changed := true;
+    END IF;
+  END IF;
+
+  IF v_changed THEN
+    INSERT INTO public.audit_events(business_id,actor_user_id,action,entity_type,entity_id,details)
+    VALUES(p_business_id,p_actor_user_id,'workcard.parts_readiness_reconciled','job',p_job_id,
+      jsonb_build_object('status',v_next_status,'stage',v_next_stage,'partsOutstanding',v_has_outstanding));
+  END IF;
+
+  RETURN jsonb_build_object('success',true,'status',v_next_status,'stage',v_next_stage,
+    'partsOutstanding',v_has_outstanding,'stageUpdated',v_changed);
+END;
+$;
+REVOKE ALL ON FUNCTION public.refresh_workcard_parts_readiness(uuid,uuid,uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.refresh_workcard_parts_readiness(uuid,uuid,uuid) TO service_role;
+
 -- Supplier receipts release the parts hold only when every required quantity is received
 -- or explicitly marked as not required; the Jobcard returns to the scheduling stage.
 CREATE OR REPLACE FUNCTION public.sync_job_work_entry_procurement(p_business_id uuid, p_work_entry_id uuid, p_actor_user_id uuid)
