@@ -1093,72 +1093,10 @@ button:disabled,.button:disabled,[aria-disabled="true"] { cursor:not-allowed; }
 }
 
 
-/* Customer portal navigation: fixed icon sizing, grouped destinations and a mobile drawer. */
+/* Customer portal navigation: fixed desktop sidebar with grouped destinations. */
 .portal-icon { display:block; width:18px; height:18px; flex:0 0 18px; }
 .portal-sidebar nav { display:flex; flex-direction:column; gap:19px; margin-top:17px; }
 .portal-nav-group { display:grid; gap:5px; }
 .portal-nav-group h2 { margin:12px 14px 3px; color:#859087; font-size:9px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; }
 .portal-nav-link { min-width:0; }
 .portal-nav-link > span { width:auto; min-width:0; flex:1; color:inherit; font-size:11px; text-align:left; }
-.portal-menu-toggle { display:none; }
-.portal-nav-backdrop { display:none; }
-
-@media (max-width:900px) {
-  .portal-shell { display:block; padding-top:24px; padding-bottom:48px; }
-  .portal-main { width:100%; }
-  .portal-sidebar {
-    position:fixed;
-    inset:0 auto 0 0;
-    z-index:70;
-    width:min(86vw,320px);
-    height:100dvh;
-    min-height:100dvh;
-    overflow-y:auto;
-    padding:25px 18px;
-    border-right:1px solid var(--line);
-    background:var(--white);
-    box-shadow:18px 0 50px rgba(20,35,26,.14);
-    transform:translateX(-105%);
-    transition:transform .22s ease;
-  }
-  .portal-sidebar.is-open { transform:translateX(0); }
-  .portal-nav-backdrop {
-    display:block;
-    position:fixed;
-    inset:0;
-    z-index:65;
-    width:100%;
-    height:100%;
-    border:0;
-    background:rgba(18,28,21,.48);
-  }
-  .portal-menu-toggle {
-    display:grid;
-    place-content:center;
-    gap:4px;
-    width:42px;
-    height:42px;
-    flex:0 0 42px;
-    margin-left:auto;
-    border:1px solid var(--line);
-    border-radius:3px;
-    background:var(--white);
-    color:var(--green);
-    cursor:pointer;
-  }
-  .portal-menu-toggle span { display:block; width:17px; height:2px; background:currentColor; }
-  .portal-topbar-inner { gap:13px; }
-  .portal-topbar-right { gap:13px; font-size:9px; }
-  .portal-account-label { display:none; }
-}
-
-@media (max-width:640px) {
-  .portal-topbar-inner { min-height:70px; gap:9px; }
-  .portal-topbar-right { gap:0; margin-left:0; }
-  .portal-workspace-link { display:none; }
-  .portal-topbar-right > a { white-space:nowrap; }
-  .portal-menu-toggle { width:40px; height:40px; flex-basis:40px; }
-  .portal-welcome { align-items:flex-start; flex-direction:column; gap:17px; }
-  .portal-stat-grid { grid-template-columns:1fr; }
-  .portal-panel { padding:18px; }
-}
