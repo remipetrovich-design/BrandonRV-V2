@@ -1,6 +1,7 @@
 export const GLOBAL_ADMIN_ROLES = new Set([
   "ceo_founder",
   "website_development_specialist",
+  "senior_manager",
   // Legacy aliases retained so existing sessions/accounts never lose access.
   "owner",
   "website_developer",
