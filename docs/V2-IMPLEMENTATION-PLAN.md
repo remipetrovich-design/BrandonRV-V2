@@ -82,3 +82,19 @@ Completed in this pass:
 V2 is now deployed through the dedicated `brandon-rv-v2` Vercel project linked to this repository. The latest Production deployment was READY on 17 November 2026. The UI pass changes presentation and route consolidation only; existing business logic and database workflows were retained.
 
 Verification: GitHub Actions runs 166–183 completed successfully for the relevant UI and documentation commits, with tests, typecheck and build passing. Later commits remain subject to their own CI results. This is not a full end-to-end or accessibility certification; real browser rendering, customer/staff account workflows and responsive device checks remain to be completed before deployment.
+
+## 2026-11-17 — Jobcard / Workcard workflow integrity repair
+
+Merged PR #36 as commit 66c33e35ee2e173ecc541035f63e5ef254e83544. Follow-up SQL quoting corrections were committed directly to main; main V2 checks passed.
+
+- Fixed Workcard staff assignment input typing and UUID validation. Replacing the team no longer removes workers who have already accepted an assignment.
+- Unified Workcard, Jobcard, staff, and master-calendar booking changes through update_jobcard_booking. Database-level advisory locking now serializes confirmations and enforces overlap/travel-buffer conflicts; authorised managers retain the explicit override.
+- Jobcard stage transitions are written with Workcard start, worker sign-off, senior review, customer approval, invoice issue, and payment closeout.
+- Parts readiness now holds the Workcard until required quantities are received or explicitly marked not required. Admin/staff work-entry changes reconcile Jobcard status and stage; supplier-order reconciliation preserves not-required decisions.
+- Customer-requested corrections reopen the Workcard, remove the unissued draft invoice, restore accepted assignments, and require fresh worker sign-off and senior review.
+- Final customer approval issues the invoice through issue_invoice. The issuer is the staff member who signed off/approved the work; invoice issuer identity references public.users, not Supabase Auth.
+- Removed the duplicate invoice migration filename/version. The canonical V2 migration 20261117230000_workcard_customer_approval_invoice_issue is applied.
+
+Database verification after migration: 84 migration records; 60 public base tables with RLS enabled; 3 compatibility views; all 10 changed/new workflow functions are SECURITY DEFINER and service_role-only. The project remains ACTIVE_HEALTHY.
+
+Verification: V2 checks passed on main (automated tests, TypeScript typecheck, production build). No production deployment was performed. A live end-to-end customer/booking/invoice scenario remains outstanding because the V2 database currently has no invoice, active booking, waiting-parts Jobcard, or outstanding parts records; no synthetic customer data was created.
