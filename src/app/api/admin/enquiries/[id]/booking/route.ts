@@ -1,7 +1,6 @@
 import {authorizePermission,currentUser,currentMembership,database,jsonError,sameOrigin,userHasPermission} from "@/lib/auth";
 import {validateBookingWindow} from "@/lib/booking-rules";
 import {bookingWindowsConflict} from "@/lib/booking-window-policy.mjs";
-import {isManagerOrAbove} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
 const idPattern=/^[0-9a-f-]{36}$/i;
 
@@ -45,6 +44,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(!idPattern.test(id)||!idPattern.test(appointmentId))return jsonError("Invalid Jobcard or booking ID.");
   if(!["confirm","reschedule","cancel"].includes(action))return jsonError("Choose confirm, reschedule or cancel.");
   const db=database(),businessId=access.membership!.business_id;
+  const bypassRestrictions=await userHasPermission(access.user!.id,"appointments.override_scheduling_restrictions");
   const {data:enquiry,error:enquiryError}=await db.from("enquiries").select("id,stage").eq("id",id).eq("business_id",businessId).maybeSingle();
   if(enquiryError||!enquiry)return jsonError("Jobcard not found.",404);
   const {data:quotes,error:quoteError}=await db.from("quotes").select("id").eq("business_id",businessId).eq("enquiry_id",id);
@@ -61,7 +61,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    const startsAt=new Date(String(body.starts_at??""));
    const endsAt=body.ends_at?new Date(String(body.ends_at)):null;
    const location=String(body.location??"").trim().slice(0,200);
-   const bypassRestrictions=isManagerOrAbove(access.user?.user_role);
+   
    if(!Number.isFinite(startsAt.getTime())||(endsAt&&(!Number.isFinite(endsAt.getTime())||endsAt<=startsAt)))return jsonError("Enter a valid booking start time.");
    if(location.length<3)return jsonError("Enter the agreed service location.");
    const {data:settingsRow}=await db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle();
@@ -78,7 +78,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const {data:result,error:bookingUpdateError}=await db.rpc("update_jobcard_booking",{
    p_business_id:businessId,p_actor_user_id:access.user!.id,p_enquiry_id:id,p_appointment_id:appointment.id,
    p_action:action,p_starts_at:action==="cancel"?null:new Date(String(patch.starts_at)).toISOString(),
-   p_ends_at:action==="cancel"?null:patch.ends_at??null,p_location:action==="cancel"?null:patch.location,p_bypass_conflicts:isManagerOrAbove(access.user?.user_role)
+   p_ends_at:action==="cancel"?null:patch.ends_at??null,p_location:action==="cancel"?null:patch.location,p_bypass_conflicts:bypassRestrictions
   });
   if(bookingUpdateError){const status=bookingUpdateError.code==="P0002"?404:bookingUpdateError.code==="P0001"?409:bookingUpdateError.code==="22023"?400:500;return jsonError(bookingUpdateError.message??"Could not update the booking and linked Workcards.",status);}
   return Response.json(result);
