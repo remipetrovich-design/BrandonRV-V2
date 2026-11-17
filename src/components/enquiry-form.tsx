@@ -1,14 +1,14 @@
 "use client";
-import {FormEvent,useEffect,useMemo,useState} from "react";
+import {FormEvent,useEffect,useMemo,useRef,useState} from "react";
 type Vehicle={id:string;make:string|null;model:string|null;year:number|null;vehicle_type:string|null;registration?:string|null;vin?:string|null;notes?:string|null};
 type Profile={first_name?:string|null;last_name?:string|null;full_name?:string|null;email?:string|null;phone?:string|null;address?:string|null;suburb?:string|null;state?:string|null;postcode?:string|null};
 type Service={id:string;name:string;category:string|null};
 export default function EnquiryForm({preview=false}:{preview?:boolean}={}){
- const [notice,setNotice]=useState("");const [busy,setBusy]=useState(false);const [sent,setSent]=useState(false);const [files,setFiles]=useState<string[]>([]);const [reference,setReference]=useState("");const [guestToken,setGuestToken]=useState("");const [ticketId,setTicketId]=useState("");const [vehicles,setVehicles]=useState<Vehicle[]>([]);const [services,setServices]=useState<Service[]>([]);const [selectedVehicle,setSelectedVehicle]=useState("");const [profile,setProfile]=useState<Profile|null>(null);const [savingVehicle,setSavingVehicle]=useState(false);
+ const [notice,setNotice]=useState("");const [busy,setBusy]=useState(false);const [sent,setSent]=useState(false);const [files,setFiles]=useState<string[]>([]);const [reference,setReference]=useState("");const [guestToken,setGuestToken]=useState("");const [ticketId,setTicketId]=useState("");const [vehicles,setVehicles]=useState<Vehicle[]>([]);const [services,setServices]=useState<Service[]>([]);const [selectedVehicle,setSelectedVehicle]=useState("");const [profile,setProfile]=useState<Profile|null>(null);const [savingVehicle,setSavingVehicle]=useState(false);const submitting=useRef(false);const submissionKey=useRef("");const guestAccessTokenRef=useRef("");
  const selected=useMemo(()=>vehicles.find(v=>v.id===selectedVehicle)??null,[vehicles,selectedVehicle]);
  useEffect(()=>{void(async()=>{try{const [vr,pr,sr]=await Promise.all([fetch("/api/portal/vehicles",{cache:"no-store"}),fetch("/api/portal/profile",{cache:"no-store"}),fetch("/api/public/services",{cache:"no-store"})]);if(vr.ok){const d=await vr.json();setVehicles(d.vehicles??[]);}if(pr.ok){const d=await pr.json();setProfile(d.profile??null);}if(sr.ok){const d=await sr.json();setServices(d.services??[]);}}catch{}})();},[]);
  async function submit(event:FormEvent<HTMLFormElement>){
-  event.preventDefault();setNotice("");setBusy(true);
+  event.preventDefault();if(submitting.current)return;submitting.current=true;if(!submissionKey.current)submissionKey.current=crypto.randomUUID();if(!profile&&!guestAccessTokenRef.current)guestAccessTokenRef.current=crypto.randomUUID()+crypto.randomUUID().replaceAll("-","");setNotice("");setBusy(true);
   const form=event.currentTarget;const data=new FormData(form);
   try{
    let vehicleId=selectedVehicle;
@@ -29,9 +29,9 @@ export default function EnquiryForm({preview=false}:{preview?:boolean}={}){
     "Additional details: "+String(data.get("additionalDetails")??"").trim()
    ].filter(x=>!x.endsWith(": "));
    const description=[String(data.get("description")??"").trim(),...detailLines].filter(Boolean).join("\n\n").slice(0,5000);
-   data.set("requestType","quote_request");data.set("description",description);data.set("vehicleId",vehicleId);data.set("vehicle",selected?[selected.make,selected.model].filter(Boolean).join(" "):[data.get("vehicleMake"),data.get("vehicleModel")].filter(Boolean).join(" "));
+   data.set("requestType","quote_request");data.set("submissionKey",submissionKey.current);if(!profile)data.set("guestAccessToken",guestAccessTokenRef.current);data.set("description",description);data.set("vehicleId",vehicleId);data.set("vehicle",selected?[selected.make,selected.model].filter(Boolean).join(" "):[data.get("vehicleMake"),data.get("vehicleModel")].filter(Boolean).join(" "));
    const response=await fetch("/api/enquiries",{method:"POST",body:data});const result=await response.json();if(!response.ok){setNotice(result.error??"Could not send your quote request.");return;}setReference(result.referenceNumber??"");setGuestToken(result.guestAccessToken??"");setTicketId(result.enquiryId??"");setSent(true);setNotice(result.message??"Your quote request has been received.");
-  }catch{setNotice("Could not submit your request. Please try again.");}finally{setBusy(false);setSavingVehicle(false);}
+  }catch{setNotice("Could not submit your request. Please try again.");}finally{submitting.current=false;setBusy(false);setSavingVehicle(false);}
  }
  if(sent)return <div className="form-success" role="status"><span className="success-mark">✓</span><h2>Quote request received</h2><p>{notice}</p>{reference&&<p>Reference: <strong>{reference}</strong></p>}{guestToken&&<><p>Guest access code: <strong>{guestToken}</strong></p><p>Keep both details safe. They are needed to return to your request conversation.</p><a className="button button-primary" href={"/request-status?ticket="+encodeURIComponent(ticketId)+"&token="+encodeURIComponent(guestToken)}>Open request conversation →</a></>}{!guestToken&&ticketId&&<a className="button button-primary" href="/portal/enquiries">Open your customer portal →</a>}<p>A quote request is not a confirmed booking. The scope, price and appointment must be agreed separately.</p></div>;
  return <form className="enquiry-form" onSubmit={preview?(event)=>event.preventDefault():submit} key={profile?"signed-in":"guest"}>
