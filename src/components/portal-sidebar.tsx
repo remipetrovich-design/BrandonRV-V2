@@ -40,7 +40,7 @@ export default function PortalSidebar() {
       <div className="portal-sidebar-help">
         <span>NEED A HAND?</span>
         <strong>Talk to Brandon RV</strong>
-        <Link href="/general-enquiry" onClick={onNavigate}>Send an enquiry</Link>
+        <Link href="/general-enquiry">Send an enquiry</Link>
       </div>
       <SignOutButton/>
     </aside>
