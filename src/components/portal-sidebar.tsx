@@ -19,10 +19,10 @@ function PortalIcon({name}:{name:string}) {
   return <svg className="portal-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name]??paths.document}/></svg>;
 }
 
-export default function PortalSidebar({isOpen=false,onNavigate=()=>{}}:{isOpen?:boolean;onNavigate?:()=>void}) {
+export default function PortalSidebar() {
   const pathname=usePathname()??"/portal";
   return (
-    <aside id="customer-portal-navigation" className={"portal-sidebar"+(isOpen?" is-open":"")} aria-label="Customer account navigation">
+    <aside id="customer-portal-navigation" className="portal-sidebar" aria-label="Customer account navigation">
       <div className="portal-sidebar-heading">YOUR ACCOUNT</div>
       <nav aria-label="Customer portal">
         {PORTAL_NAV_GROUPS.map(group=>(
@@ -30,7 +30,7 @@ export default function PortalSidebar({isOpen=false,onNavigate=()=>{}}:{isOpen?:
             {group.title&&<h2>{group.title}</h2>}
             {group.items.map(link=>{
               const active=isPortalNavActive(link.href,pathname);
-              return <Link className={active?"portal-nav-link active":"portal-nav-link"} href={link.href} key={link.href} onClick={onNavigate} aria-current={active?"page":undefined}>
+              return <Link className={active?"portal-nav-link active":"portal-nav-link"} href={link.href} key={link.href} aria-current={active?"page":undefined}>
                 <PortalIcon name={link.icon}/><span>{link.label}</span>
               </Link>;
             })}
