@@ -9,10 +9,10 @@ test("staff page hosts the shared roles and permissions manager",async()=>{
  const legacy=await read("../src/app/admin/roles/page.tsx");
  assert.match(staff,/AdminRolePermissions/);
  assert.match(staff,/Roles & permissions/);
- assert.match(manager,//api/admin/roles/);
+ assert.ok(manager.includes('fetch("/api/admin/roles"'));
  assert.match(manager,/Enable all/);
  assert.match(manager,/Clear/);
- assert.match(manager,/developer controls/i);
+ assert.match(manager,/Developer controls/);
  assert.match(legacy,/AdminRolePermissions/);
 });
 
