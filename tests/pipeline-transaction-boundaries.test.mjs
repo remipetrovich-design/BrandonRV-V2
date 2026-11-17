@@ -41,3 +41,11 @@ test("pipeline history is written only when a real Jobcard stage transition occu
  assert.match(migration,/v_enquiry\.stage,'paid'/);
  assert.match(migration,/from_stage,to_stage,changed_by,note/);
 });
+
+test("issued invoice lines cannot be moved into a draft invoice",async()=>{
+ const migration=await read("../supabase/migrations/20261117230000_invoice_issue_metadata_and_immutable_lines.sql");
+ const trigger=migration.slice(migration.indexOf("CREATE OR REPLACE FUNCTION public.prevent_issued_invoice_item_edits"));
+ assert.match(trigger,/WHERE id=OLD\.invoice_id/);
+ assert.match(trigger,/WHERE id=NEW\.invoice_id/);
+ assert.match(trigger,/TG_OP='UPDATE'/);
+});
