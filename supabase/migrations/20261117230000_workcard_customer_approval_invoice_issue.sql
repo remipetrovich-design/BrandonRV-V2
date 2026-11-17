@@ -730,7 +730,9 @@ BEGIN
     'invoiceStatus',v_invoice_status,'invoiceNumber',v_invoice.invoice_number,
     'workcardReopened',p_decision='changes_requested');
 END;
-$$;
+$;
+REVOKE ALL ON FUNCTION public.respond_to_completed_workcard(uuid,uuid,uuid,uuid,text,text,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.respond_to_completed_workcard(uuid,uuid,uuid,uuid,text,text,text) TO service_role;
 
 
 -- Partial payments advance the Jobcard to awaiting_payment; full settlement records
