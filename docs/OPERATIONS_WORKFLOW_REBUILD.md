@@ -120,3 +120,21 @@ Verification recorded for this integration:
 - Enforce permissions server-side.
 - Record every approval with actor, role, timestamp and target revision.
 - No production migration is applied by creating this branch or pull request.
+
+## 2026-11-17 — Verified Jobcard / Workcard operational flow
+
+The merged V2 flow is now:
+
+1. Customer enquiry becomes a quote-request Jobcard.
+2. A customer-accepted quote creates the Workcard and links it to the originating Jobcard.
+3. Workcard setup review approves the work plan. The Jobcard remains in workcard_created until setup is approved.
+4. Required parts place the Workcard on waiting_parts / parts_required. Supplier receipts and staff/admin part updates reconcile readiness. Work cannot start until every required quantity is received or explicitly marked not required.
+5. Booking requests, Workcard booking, Jobcard booking, and master-calendar create/update/cancel all use update_jobcard_booking. Confirmations are serialized and conflict-checked in the database, with a manager override.
+6. Workcard start advances the Jobcard to work_in_progress. Worker sign-off creates the draft invoice from actual invoiceable usage and advances the Jobcard to quality_check.
+7. Senior review either returns the Workcard for corrections or approves it for customer review and ready_to_invoice.
+8. Customer approval calls issue_invoice through the controlled lifecycle and advances the Jobcard to invoiced. Customer-requested corrections reopen the Workcard, discard the draft invoice, restore accepted assignments, and require a new sign-off and senior review.
+9. Payment recording is idempotent. Partial settlement moves the Jobcard to awaiting_payment; full settlement records paid then closed and archives the Jobcard.
+
+All workflow transitions write Jobcard stage history in the same database transaction. Invoice issuer identity is a staff user in public.users. Issued invoices and their line items remain immutable; corrections use credit notes.
+
+The code and migration are merged/applied and the main V2 test/typecheck/build workflow passed. Live end-to-end verification with a populated customer, booking, parts order and invoice remains outstanding; the current V2 database contains no such workflow records. No V1 changes or production deployment were made.
