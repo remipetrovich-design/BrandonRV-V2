@@ -59,7 +59,8 @@ test("a Workcard is created from an accepted quote before booking and only once"
  assert.doesNotMatch(form,/!selected\?\.confirmedBooking/);
  assert.doesNotMatch(form,/appointmentId:selected\?\.confirmedBooking/);
  assert.match(bookingConfirmation,/Create the Workcard from the accepted quote before confirming its booking/);
- assert.match(bookingConfirmation,/scheduleUpdate:any=\{appointment_id:id/);
+ assert.match(bookingConfirmation,/rpc\("update_jobcard_booking"/);
+ assert.match(bookingConfirmation,/p_action:update\.status==="confirmed"\?"confirm":"reschedule"/);
 });
 
 test("general enquiries never expose the ticket reply composer",async()=>{
@@ -118,7 +119,7 @@ test("worker completion is signed off transactionally and cannot bypass senior r
  assert.match(migration,/worker_signed_off_by = p_actor_user_id/);
  assert.match(migration,/senior_approval_status = 'pending'/);
  assert.match(senior,/review_workcard/);
- assert.match(migration,/worker_signed_off_at IS NULL/);
+ assert.match(migration,/worker_signed_off_at IS NOT NULL/);
  assert.match(customer,/rpc\("respond_to_completed_workcard"/);
 });
 
