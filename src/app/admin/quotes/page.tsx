@@ -6,7 +6,7 @@ import AdminQuoteManagement from "@/components/admin-quote-management";
 import AdminQuoteTools from "@/components/admin-quote-tools";
 export const dynamic="force-dynamic";
 const money=(value:number)=>new Intl.NumberFormat("en-AU",{style:"currency",currency:"AUD"}).format(Number(value||0));
-const pretty=(value:string)=>String(value??"").replaceAll("_"," ").replace(/\\b\\w/g,x=>x.toUpperCase());
+const pretty=(value:string)=>String(value??"").replaceAll("_"," ").replace(/\b\w/g,x=>x.toUpperCase());
 export default async function AdminQuotesPage(){
  const user=await currentUser();if(!user)redirect("/portal/sign-in");
  const membership=await currentMembership(user.id);if(!membership)redirect("/portal");
