@@ -80,7 +80,7 @@ Implemented transactional controls:
 - Final customer approval and invoice issuance are transactionally locked together; payment recording and successful-closeout archive are also transactional.
 
 Still required before the workflow can be called complete:
-- Guest and signed-in workflows still need end-to-end testing against a migrated test database, including email delivery, signed file access, duplicate submissions, role boundaries and rollback behavior. The repository CI does not apply or execute the SQL migrations against a live database.
+- Guest and signed-in workflows still need end-to-end testing against a migrated test database, including email delivery, signed file access, duplicate submissions, role boundaries and rollback behavior. The repository CI does not apply or execute SQL migrations. The approved V2 migration batch was manually applied and structurally verified against the dedicated V2 database on 17 November 2026; this does not replace end-to-end workflow validation on a migrated test database.
 - The A4 print output and all page widths/spacing still need browser-rendered visual QA at desktop, tablet and mobile breakpoints. The CSS and type/build checks do not by themselves prove every page looks correct in a live browser.
 - Existing completed Workcards are grandfathered as legacy-approved and clearly labelled as records without a separate historical senior sign-off.
 
