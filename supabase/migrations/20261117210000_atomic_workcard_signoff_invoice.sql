@@ -33,7 +33,7 @@ BEGIN
   SELECT * INTO v_booking FROM public.appointments
    WHERE id=v_job.appointment_id AND business_id=p_business_id
    FOR UPDATE;
-  IF NOT FOUND OR v_booking.status<>'confirmed' OR v_booking.starts_at IS NULL OR length(trim(coalesce(v_booking.location,'')))<3 THEN
+  IF NOT FOUND OR v_booking.status NOT IN ('confirmed','rescheduled') OR v_booking.starts_at IS NULL OR length(trim(coalesce(v_booking.location,'')))<3 THEN
     RAISE EXCEPTION 'A confirmed booking with a start time and customer-site location is required before work can start.' USING ERRCODE='P0001';
   END IF;
   IF NOT EXISTS(SELECT 1 FROM public.job_assignments a WHERE a.business_id=p_business_id AND a.job_id=p_job_id AND a.staff_id=p_staff_id AND a.status='accepted') THEN
