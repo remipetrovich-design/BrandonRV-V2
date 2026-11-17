@@ -32,9 +32,11 @@ test("admin can create and manage a booking directly from a Workcard",async()=>{
  assert.match(route,/starts_at/);
  assert.match(route,/ends_at/);
  assert.match(route,/location/);
- assert.match(route,/workcard\.booking_created/);
+ assert.match(route,/rpc\("update_jobcard_booking"/);
+ assert.match(route,/p_action:"confirm"/);
+ assert.match(route,/p_enquiry_id:enquiryId/);
+ assert.match(route,/workcardsUpdated/);
  assert.match(route,/status:"confirmed"/);
- assert.match(route,/booking_request_accepted/);
  assert.match(route,/status==="requested"/);
  assert.match(route,/business_id/);
  assert.match(route,/bookingWindowsConflict/);
