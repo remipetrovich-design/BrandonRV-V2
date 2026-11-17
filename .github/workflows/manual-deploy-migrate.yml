@@ -3,8 +3,14 @@ name: Manual V2 deploy with database migrations
 on:
   workflow_dispatch:
     inputs:
+      operation:
+        description: "Choose the operation to run."
+        required: true
+        default: "scan_apply"
+        type: choice
+        options: [scan_apply, deploy]
       confirm:
-        description: "Type YES to confirm a production deployment and V2 database migration."
+        description: "Type YES to confirm the selected operation."
         required: true
         default: "NO"
         type: string
@@ -61,20 +67,22 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
-      - name: Pull Vercel Production project configuration
-        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-
-      - name: Pull Vercel-integrated Supabase Production environment
-        run: vercel env pull .env.production.local --yes --environment=production --token="$VERCEL_TOKEN"
-
-      - name: Preview V2 database migration plan
+      - name: Scan pending V2 migrations
+        if: inputs.operation == 'scan_apply'
         run: node scripts/run-supabase-migrations.mjs preview
 
-      - name: Build the production application before database changes
-        run: vercel build --prod --token="$VERCEL_TOKEN"
-
-      - name: Apply V2 database migrations through the Vercel Supabase integration
+      - name: Apply pending V2 migrations
+        if: inputs.operation == 'scan_apply'
         run: node scripts/run-supabase-migrations.mjs apply
 
+      - name: Pull Vercel Production project configuration
+        if: inputs.operation == 'deploy'
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build the latest main commit
+        if: inputs.operation == 'deploy'
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+
       - name: Deploy the verified build to Vercel Production
+        if: inputs.operation == 'deploy'
         run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
