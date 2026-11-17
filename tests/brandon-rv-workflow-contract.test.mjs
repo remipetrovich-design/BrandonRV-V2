@@ -69,19 +69,17 @@ test("general enquiries never expose the ticket reply composer",async()=>{
  assert.match(editor,/no customer reply composer/);
 });
 
-test("quotes can be created with or without a linked Quote Request Jobcard",async()=>{
+test("quotes require an active linked Quote Request Jobcard",async()=>{
  const api=await source("../src/app/api/admin/quotes/route.ts");
  const form=await source("../src/components/admin-create-quote.tsx");
  assert.match(api,/eq\("request_type","quote_request"\)/);
  assert.match(api,/\.is\("archived_at",null\)/);
- assert.match(api,/requestedCustomerId/);
- assert.match(api,/\.from\("customers"\).*\.eq\("id",requestedCustomerId\)/s);
- assert.match(api,/enquiry_id:enquiry\?\.id\?\?null/);
- assert.match(form,/Link Quote Request \/ Jobcard \(optional\)/);
- assert.match(form,/No Jobcard — standalone quote/);
- assert.match(form,/!enquiryId&&<label>Customer/);
- assert.doesNotMatch(form,/Quote Request Jobcard<select[^>]*required/);
- assert.match(form,/!enquiryId&&!customerId/);
+ assert.match(api,/if\(!enquiry\)return jsonError\("Quote Request Jobcard not found\."/);
+ assert.match(api,/let customerId:string\|null=enquiry\?\.customer_id\?\?null/);
+ assert.match(api,/enquiry_id:enquiry\.id/);
+ assert.match(form,/Link Quote Request \/ Jobcard<select required/);
+ assert.doesNotMatch(form,/No Jobcard — standalone quote/);
+ assert.doesNotMatch(form,/!enquiryId&&<label>Customer/);
 });
 
 test("issuing a quote advances the Jobcard atomically",async()=>{
@@ -111,19 +109,19 @@ test("quote issue email resolves the real customer foreign key",async()=>{
 });
 
 
-test("worker completion is separately signed off and cannot bypass senior review",async()=>{
+test("worker completion is separately signed off and cannot bypass senior or customer review",async()=>{
  const worker=await source("../src/app/api/staff/jobs/[id]/status/route.ts");
  const senior=await source("../src/app/api/admin/jobs/[id]/approval/route.ts");
- const migration=await source("../supabase/migrations/20261111130000_workcard_senior_signoff.sql");
+ const signoff=await source("../supabase/migrations/20261117210000_atomic_workcard_signoff_invoice.sql");
  const customer=await source("../src/app/api/portal/jobs/[id]/approval/route.ts");
- assert.match(worker,/worker_signed_off_by:user\.id/);
- assert.match(worker,/senior_approval_status:"pending"/);
- assert.match(senior,/review_workcard/);
- assert.match(migration,/worker_signed_off_at IS NULL/);
- assert.ok(migration.includes("v_job.worker_signed_off_by = p_actor_user_id"));
- assert.match(migration,/customer_approval_status = 'pending'/);
- assert.match(migration,/status = 'in_progress'/);
+ const approval=await source("../supabase/migrations/20261117230000_invoice_issue_metadata_and_immutable_lines.sql");
+ assert.match(worker,/rpc\("finish_workcard_and_create_invoice"/);
+ assert.match(signoff,/worker_signed_off_by = p_actor_user_id/);
+ assert.match(signoff,/senior_approval_status = 'pending'/);
+ assert.match(signoff,/customer_approval_status = 'not_ready'/);
+ assert.match(senior,/rpc\("review_workcard"/);
  assert.match(customer,/rpc\("respond_to_completed_workcard"/);
+ assert.match(approval,/PERFORM public\.issue_invoice/);
 });
 
 test("staff work entry and completion endpoints require an accepted assignment",async()=>{
@@ -135,9 +133,12 @@ test("staff work entry and completion endpoints require an accepted assignment",
 
 test("admin Workcard assignment edits preserve accepted workers",async()=>{
  const api=await source("../src/app/api/admin/jobs/[id]/assign/route.ts");
- assert.match(api,/currentByStaff/);
- assert.match(api,/status:"removed"/);
- assert.match(api,/status:"assigned"/);
+ const migration=await source("../supabase/migrations/20261117190000_atomic_workcard_assignment_booking.sql");
+ assert.match(api,/normalizeWorkcardStaffIds\(body\.staffIds\)/);
+ assert.match(api,/replace_workcard_assignments/);
+ assert.match(migration,/SET status = 'removed'/);
+ assert.match(migration,/SET status = 'assigned'/);
+ assert.match(migration,/status IN \('assigned','accepted'\)/);
  assert.doesNotMatch(api,/from\\("job_assignments"\\)\\.delete\\(\\)/);
 });
 
@@ -243,14 +244,15 @@ test("account and guest final Workcard decisions issue the invoice in the same d
 });
 
 test("full payment archives a quote-request Jobcard and revokes its guest access",async()=>{
- const migration=await source("../supabase/migrations/20261111160000_invoice_payment_and_jobcard_archive.sql");
+ const migration=await source("../supabase/migrations/20261117230000_invoice_issue_metadata_and_immutable_lines.sql");
  const route=await source("../src/app/api/admin/invoices/[id]/payments/route.ts");
- assert.ok(migration.includes("v_status = 'paid' AND v_enquiry_id IS NOT NULL"));
- assert.ok(migration.includes("archived_at = v_now"));
- assert.ok(migration.includes("guest_access_token_hash = NULL"));
- assert.ok(migration.includes("guest_access_expires_at = NULL"));
+ assert.ok(migration.includes("v_status='paid'"));
+ assert.ok(migration.includes("stage='paid'"));
+ assert.ok(migration.includes("archived_at=v_now"));
+ assert.ok(migration.includes("guest_access_token_hash=NULL"));
+ assert.ok(migration.includes("guest_access_expires_at=NULL"));
  assert.ok(migration.includes("Payment exceeds the outstanding balance."));
- assert.ok(route.includes('rpc("record_invoice_payment"'));
+ assert.ok(route.includes('rpc("record_invoice_payment_idempotent"'));
 });
 
 
