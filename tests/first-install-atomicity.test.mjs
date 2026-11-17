@@ -15,7 +15,7 @@ test("first owner creation is serialized and inserts the owner and audit event a
  assert.ok(migration.includes("GRANT EXECUTE ON FUNCTION public.bootstrap_first_owner"));
  assert.ok(route.includes('rpc("bootstrap_first_owner"'));
  assert.ok(!route.includes('.from("users").insert'));
- assert.ok(auth.includes("SUPABASE_URL||process.env.NEXT_PUBLIC_SUPABASE_URL"));
+ assert.ok(auth.includes("resolveSupabaseUrl(process.env)"));
  assert.ok(auth.includes("SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY"));
 });
 
