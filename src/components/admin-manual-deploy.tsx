@@ -22,7 +22,7 @@ export default function AdminManualDeploy({available,activated}:Props){
     <div className="operation-heading"><span>DATABASE OPERATIONS</span><h3>Scan and Apply Migrations</h3></div>
     <p>Checks migration filenames and references, compares the complete migration history with the V2 database, previews pending SQL, then applies pending migrations only.</p>
     <p className="target">Target: Brandon RV V2 · Supabase project lciylmfpcefdpsouoqvm</p>
-    <button disabled={isManualOperationDisabled({busy})} onClick={()=>dispatch("scan_apply")}>{busy==="scan_apply"?"Queueing migration scan…":available?"Scan and Apply Migrations":"Open Scan and Apply Migrations"}</button>
+    <button disabled={!!busy} onClick={()=>dispatch("scan_apply")}>{busy==="scan_apply"?"Queueing migration scan…":available?"Scan and Apply Migrations":"Open Scan and Apply Migrations"}</button>
     <div className="run-status"><b>Last migration run</b><p>{snapshot?runStatus(snapshot.migrationRun):available?"Press Refresh status to load.":<a href="https://github.com/remipetrovich-design/BrandonRV-V2/actions/workflows/manual-scan-apply-migrations.yml" target="_blank" rel="noreferrer">Open migration run history</a>}</p></div>
    </article>
   </div>
