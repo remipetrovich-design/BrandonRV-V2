@@ -16,7 +16,7 @@ test("accepted-quote Workcard creation supplies a unique job number to the atomi
 });
 
 test("accepted-quote Workcard conversion is atomic, idempotent and fully audited",async()=>{
-  const migration=await source("../supabase/migrations/20261115110000_create_workcard_from_accepted_quote_rpc.sql");
+  const migration=await source("../supabase/migrations/20261114153221_20261115110000_create_workcard_from_accepted_quote_rpc.sql");
   for(const statement of [
     "FOR UPDATE",
     "INSERT INTO public.jobs",

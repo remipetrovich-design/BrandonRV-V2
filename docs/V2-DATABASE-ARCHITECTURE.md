@@ -8,14 +8,19 @@ V2 now has its own Supabase project, database, migration history, auth/storage r
 
 ## Current database snapshot
 
-Inspected 15 November 2026 after initial V2 provisioning:
-- 57 base tables in `public` and 3 compatibility views (`customers`, `profiles`, `staff`).
-- All 57 base tables have Row Level Security enabled.
-- One Brandon RV business/workspace seed record (`prelaunch`, Tamworth NSW).
-- No customer, employee or operational records have been copied from V1.
+Inspected 17 November 2026 after V2 operational setup:
+- 58 base tables in `public` and 3 compatibility views (`customers`, `profiles`, `staff`).
+- All 58 base tables have Row Level Security enabled. No direct table grants are present for the Supabase `anon` or `authenticated` roles; application access is through the server-side API layer.
+- The business setting `accepting_enquiries` is explicitly enabled, while the business itself remains in `prelaunch` status.
+- One Brandon RV business/workspace record remains `prelaunch`, based in Tamworth NSW.
+- One active CEO/founder account exists. No customer or employee accounts have been copied from V1.
+- The internal service catalogue contains 9 draft scope records: 2 assessment-required, 2 conditional, 3 deferred and 2 not-offered. All are inactive and unpublished.
+- One provisional Tamworth 20 km service area exists; it is unpublished.
+- Eight website-builder pages exist and none are published.
+- No genuine enquiries, quotes, appointments, Workcards, invoices or payments exist. No fake customer records have been created.
 - One private Storage bucket exists: `brandon-rv-private`.
-- 66 migration records are applied, including the V2 RPC-permission security patch, atomic Workcard update/deletion, and atomic invoice-creation migrations.
-- Email template schema and six default templates exist, but the external mail delivery system remains paused and has not been re-enabled.
+- 76 migration records are applied, including the V2 RPC-permission security patch, Workcard lifecycle, procurement/time tracking, financial reporting, first-owner bootstrap and ALIS installation migrations.
+- The email-template table has no configured rows. Bundled template rendering exists, but external Mail delivery remains paused.
 
 All tables are RLS-enabled. Some internal/service-only tables intentionally have no user-facing RLS policies; their table grants are restricted to `service_role`, with no `anon` or `authenticated` table grants. This is a structural snapshot, not a claim that every workflow is production-ready.
 
@@ -39,7 +44,7 @@ The current schema intentionally keeps a permanent customer identity while attac
 
 ### Initial operating team
 
-The initial internal operating team is two people: Chris as business owner and Lucas as technical/developer support. Customer accounts are not limited to two. The live V2 `public.users` table currently contains no user records. The initial owner and Website Developer accounts still need to be created through the supported account setup flow before role-based staff workflows can be exercised end to end. Do not create placeholder identities or invent account email addresses.
+The intended initial internal operating team is two people: Chris as business owner and Lucas as technical/developer support. Customer accounts are not limited to two. The live V2 `public.users` table currently contains one active CEO/founder account; a separate Website Developer account and employee accounts are not present. Do not create placeholder identities or invent account email addresses.
 
 The system must remain capable of adding staff later, but launch workflows should not assume a large workforce, multiple departments, payroll processing, leave administration or complex HR approvals.
 

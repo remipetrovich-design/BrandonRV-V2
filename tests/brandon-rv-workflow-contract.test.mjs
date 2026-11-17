@@ -47,7 +47,7 @@ test("a Workcard is created from an accepted quote before booking and only once"
  const create=api.slice(api.indexOf("export async function POST"));
  const form=await source("../src/components/admin-create-job.tsx");
  const bookingConfirmation=await source("../src/app/api/admin/[section]/[id]/route.ts");
- const migration=await source("../supabase/migrations/20261115110000_create_workcard_from_accepted_quote_rpc.sql");
+ const migration=await source("../supabase/migrations/20261114153221_20261115110000_create_workcard_from_accepted_quote_rpc.sql");
  assert.match(create,/rpc\("create_workcard_from_accepted_quote"/);
  assert.match(migration,/v_quote\.status <> 'accepted'/);
  assert.match(migration,/v_quote\.quote_kind <> 'standard'/);

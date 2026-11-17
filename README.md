@@ -38,19 +38,17 @@ Database migrations are stored in `supabase/migrations/` and belong exclusively 
 
 ### GitHub Actions secrets
 
-Add these as repository Actions secrets:
+The manual deployment workflow uses the existing Vercel-Supabase integration. Do not create or maintain a separate Supabase CLI token or database password for this workflow.
 
 | Secret | Purpose |
 | --- | --- |
-| `SUPABASE_ACCESS_TOKEN` | Supabase personal access token used by the Supabase CLI |
-| `SUPABASE_DB_PASSWORD` | Database password for the target Supabase project |
 | `VERCEL_TOKEN` | Vercel deployment token |
-| `VERCEL_ORG_ID` | Vercel team/account ID for the V2 project |
+| `VERCEL_ORG_ID` | Vercel team ID for the V2 project |
 | `VERCEL_PROJECT_ID` | Vercel project ID for Brandon RV V2 |
 
-The workflow pins the Supabase project reference to `lciylmfpcefdpsouoqvm` in its YAML; no `SUPABASE_PROJECT_ID` Actions secret is required. The Vercel identifiers must refer only to the V2 project.
+The workflow pulls the Vercel Production environment, verifies `NEXT_PUBLIC_SUPABASE_URL` is the dedicated V2 project, and uses the integration-provided `POSTGRES_URL_NON_POOLING` direct database connection for Supabase CLI migration preview and apply. The Supabase project reference is fixed as `lciylmfpcefdpsouoqvm`.
 
-**Migration status:** The dedicated V2 project has its own migration history; the latest inspected snapshot records 66 applied migration records. No V1 operational data was copied. See `docs/V2-DATABASE-ARCHITECTURE.md` for the inspected database snapshot.
+**Migration status:** The V2 database has 76 applied migration records. This branch aligns the repository migration filenames with those exact remote versions; no migration is applied by this change. No V1 operational data was copied. See [docs/V2-DATABASE-ARCHITECTURE.md](./docs/V2-DATABASE-ARCHITECTURE.md) for the inspected database snapshot.
 
 Do not commit access tokens, database passwords, service-role keys or other credentials to this repository.
 
@@ -69,24 +67,24 @@ Set the required values in `.env.local` before using application features that c
 Available scripts:
 
 - `npm run dev` — start the local development server
-- `npm test` — run the user-role access policy tests
+- `npm test` — run the Node unit tests for role policy, portal navigation, service approval, deployment configuration and email templates
 - `npm run typecheck` — run the TypeScript check
 - `npm run build` — create a production build
 - `npm run start` — start the production server
 
 ## Environment variables
 
-The root `.env.example` is the complete list of application runtime variables. See [Environment and pre-deployment setup](./docs/PRODUCTION_SETUP.md) for the exact purpose of each variable and whether it belongs in GitHub Actions or Vercel. The standard V2 checks workflow requires no secrets. The separate manual deploy workflow is dormant and requires dedicated GitHub Actions secrets and activation gates; see [Environment and pre-deployment setup](./docs/PRODUCTION_SETUP.md). Runtime variables belong in local `.env.local` and, when hosting is configured, in Vercel. Never commit actual secret values.
+The root `.env.example` is the complete list of application runtime variables. See [Environment and pre-deployment setup](./docs/PRODUCTION_SETUP.md) for the exact purpose of each variable and whether it belongs in GitHub Actions or Vercel. The standard V2 checks workflow requires no secrets. The separate manual deploy workflow is dormant, uses the Vercel-Supabase integration for database migrations, and requires Vercel deployment secrets plus activation gates; see [Environment and pre-deployment setup](./docs/PRODUCTION_SETUP.md). Runtime variables belong in local `.env.local` and, when hosting is configured, in Vercel. Never commit actual secret values.
 
 ## Transactional email and staff invitations
 
-V2 uses `NEXT_PUBLIC_APP_URL` for account verification, password reset and staff invitation links when configured. If it is blank, links use the current request origin. Set it to the V2 production URL when V2 is connected to Vercel; do not set it to the original Brandon RV production URL.
+V2 uses `NEXT_PUBLIC_APP_URL` for account verification, password reset and staff invitation links when configured. If it is blank, those auth links use the current request origin. Bundled email templates fall back to the V2 Vercel domain, not the old V1 domain. Set `NEXT_PUBLIC_APP_URL` to the V2 production URL; do not set it to the original Brandon RV production URL.
 
-Transactional mail is sent through the existing OrbitFS Mail integration. Configure `ORBITFS_MAIL_URL` and `BRANDONSRV_MAIL_API_KEY` in the Vercel environment. The email-template admin page is available under Admin → Business configuration → Email templates and requires `business.settings.manage`.
+Transactional mail is intended to use the existing OrbitFS Mail integration, but delivery is currently paused because `ORBITFS_MAIL_URL` and `BRANDONSRV_MAIL_API_KEY` are empty. Do not enable outbound mail until those existing integration values are configured and tested. `BRANDONRV_PUBLIC_EMAIL` must remain blank until the supplied address, domain and mailbox are verified. The email-template admin page is available under Admin → Business configuration → Email templates and requires `business.settings.manage`.
 
 Administrators can create, edit and delete custom templates, attach templates to registered application events/functions, enable or disable eligible templates, and select a sender mailbox from the live sender assignments returned by OrbitFS Mail. Sender mailbox IDs are checked against the current Mail System directory before sending. Required account-security templates cannot be disabled, moved to another event or deleted.
 
-The shared email renderer applies Brandon RV branding to automated and manually-triggered template emails: branded header with the business logo and tagline, message content, and footer with logo, website, phone and email contact details, privacy/sensitive-information handling notice and copyright. Messages sent from a `noreply` mailbox display an additional notice at the top stating that the mailbox is unmonitored and replies or messages sent to it will not be read. The current shared logo asset is `public/brv-mark.webp`.
+The shared email renderer applies Brandon RV branding to automated and manually-triggered template emails: branded header with the business logo and tagline, message content, and footer with logo, website and phone, plus an optional verified public email address, privacy/sensitive-information handling notice and copyright. Messages sent from a `noreply` mailbox display an additional notice at the top stating that the mailbox is unmonitored and replies or messages sent to it will not be read. The current shared logo asset is `public/brv-mark.webp`.
 
 ### Staff invitation flow
 

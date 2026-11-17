@@ -51,7 +51,7 @@ test("quote-specific PATCH route retains atomic issue and customer email behavio
 
 test("accepted quote Workcard selector disambiguates customer and enquiry relationships",async()=>{
  const route=await read("../src/app/api/admin/jobs/route.ts");
- const migration=await read("../supabase/migrations/20261115110000_create_workcard_from_accepted_quote_rpc.sql");
+ const migration=await read("../supabase/migrations/20261114153221_20261115110000_create_workcard_from_accepted_quote_rpc.sql");
  assert.match(route,/users!quotes_user_id_users_fkey\(full_name\)/);
  assert.match(route,/enquiries!quotes_enquiry_id_fkey\(contact_name,request_number,request_type,archived_at\)/);
  assert.match(route,/status\",\"accepted/);

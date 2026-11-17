@@ -31,7 +31,7 @@ test('legacy application licensing is removed while external ALIS licensing rema
  const env=read('.env.example');
  assert.doesNotMatch(env,/BRANDON_RV_LICENSE|BRANDON_RV_VERSION/);
  const setup=read('src/app/api/auth/bootstrap-owner/route.ts');
- const bootstrap=read('supabase/migrations/20261117160000_atomic_first_owner_bootstrap.sql');
+ const bootstrap=read('supabase/migrations/20261116210934_20261117160000_atomic_first_owner_bootstrap.sql');
  assert.match(bootstrap,/ceo_founder/);
  const removal=read('supabase/migrations/20261116164445_remove_legacy_application_license.sql');
  assert.match(removal,/DROP TABLE IF EXISTS public\.application_license/i);

@@ -4,8 +4,8 @@ import {usePathname} from "next/navigation";
 import PortalSidebar from "@/components/portal-sidebar";
 import PortalAuthGuard from "@/components/portal-auth-guard";
 export default function PortalLayout({children}:{children:React.ReactNode}) {
- const pathname=usePathname();
- const isAuthPage=["/portal/sign-in","/portal/register","/portal/verify-email","/portal/forgot-password","/portal/reset-password"].includes(pathname);
+ const pathname=usePathname()??"";
+ const isAuthPage=["/portal/sign-in","/portal/register","/portal/verify-email","/portal/forgot-password","/portal/reset-password","/portal/accept-staff-invitation"].includes(pathname);
  return <div className="portal-page">
   <header className="portal-topbar"><div className="shell portal-topbar-inner">
    <Link href="/" className="brand" aria-label="Brandon RV website"><span className="brand-symbol"><img src="/brv-mark.webp" alt=""/></span><span className="brand-name"><strong>BRANDON <span>RV</span></strong><small>YOUR ACCOUNT</small></span></Link>

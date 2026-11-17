@@ -4,7 +4,7 @@ import {readFile} from "node:fs/promises";
 const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 
 test("supplier order creation links each purchase line to an actual Workcard parts entry",async()=>{
- const migration=await read("../supabase/migrations/20261117110000_workcard_supplier_procurement.sql");
+ const migration=await read("../supabase/migrations/20261116204001_20261117110000_workcard_supplier_procurement.sql");
  const route=await read("../src/app/api/admin/supplier-orders/route.ts");
  assert.match(migration,/ADD COLUMN IF NOT EXISTS work_entry_id uuid REFERENCES public\.job_work_entries/);
  assert.match(migration,/CREATE OR REPLACE FUNCTION public\.create_supplier_order/);
@@ -15,7 +15,7 @@ test("supplier order creation links each purchase line to an actual Workcard par
 });
 
 test("supplier order placement and goods receipt synchronise Workcard procurement quantities transactionally",async()=>{
- const migration=await read("../supabase/migrations/20261117110000_workcard_supplier_procurement.sql");
+ const migration=await read("../supabase/migrations/20261116204001_20261117110000_workcard_supplier_procurement.sql");
  const transition=await read("../src/app/api/admin/supplier-orders/[id]/route.ts");
  const receive=await read("../src/app/api/admin/supplier-orders/[id]/receive/route.ts");
  assert.match(migration,/CREATE OR REPLACE FUNCTION public\.transition_supplier_order/);

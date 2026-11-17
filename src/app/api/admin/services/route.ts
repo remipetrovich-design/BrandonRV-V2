@@ -20,7 +20,7 @@ export async function POST(request:Request){
   const approvalStatus=approvalStatuses.includes(String(body.approval_status))?String(body.approval_status):"assessment_required";
   if(body.is_published===true&&approvalStatus!=="approved_for_launch")return jsonError("Only services approved for launch can be published.");
   const db=database();const {data:existing}=await db.from("services").select("id").eq("business_id",access.membership!.business_id).eq("slug",slug).maybeSingle();if(existing)return jsonError("A service with that name already exists.",409);
-  const {data:service,error}=await db.from("services").insert({business_id:access.membership!.business_id,name,slug,category:category||null,description:description||null,scope_notes:scope_notes||null,price_from:priceFrom,pricing_label:clean(body.pricing_label,100)||null,approval_status:approvalStatus,is_active:true,is_published:false,sort_order:100}).select(columns).single();
+  const {data:service,error}=await db.from("services").insert({business_id:access.membership!.business_id,name,slug,category:category||null,description:description||null,scope_notes:scope_notes||null,price_from:priceFrom,pricing_label:clean(body.pricing_label,100)||null,approval_status:approvalStatus,is_active:approvalStatus==="approved_for_launch",is_published:false,sort_order:100}).select(columns).single();
   if(error||!service)return jsonError("Could not create service.",500);
   await db.from("audit_events").insert({business_id:access.membership!.business_id,actor_user_id:access.user!.id,action:"service.created",entity_type:"service",entity_id:service.id,details:{name,slug,approval_status:approvalStatus}});
   return Response.json({service},{status:201});
@@ -39,13 +39,18 @@ export async function PATCH(request:Request){
   if(body.scope_notes!==undefined)update.scope_notes=clean(body.scope_notes,3000)||null;
   if(body.price_from!==undefined){const n=price(body.price_from);if(n!==null&&(!Number.isFinite(n)||n<0||n>10000000))return jsonError("Enter a valid starting price.");update.price_from=n;}
   if(body.pricing_label!==undefined)update.pricing_label=clean(body.pricing_label,100)||null;
-  if(body.approval_status!==undefined){if(!approvalStatuses.includes(String(body.approval_status)))return jsonError("Select a valid service approval status.");update.approval_status=String(body.approval_status);if(body.approval_status!=="approved_for_launch")update.is_published=false;}
+  if(body.approval_status!==undefined){
+  if(!approvalStatuses.includes(String(body.approval_status)))return jsonError("Select a valid service approval status.");
+  update.approval_status=String(body.approval_status);
+  if(body.approval_status!=="approved_for_launch"){update.is_published=false;update.is_active=false;}
+ }
   if(body.is_active!==undefined){if(typeof body.is_active!=="boolean")return jsonError("Invalid active setting.");update.is_active=body.is_active;if(!body.is_active)update.is_published=false;}
   if(body.is_published!==undefined){if(typeof body.is_published!=="boolean")return jsonError("Invalid publication setting.");if(body.is_published&&(body.approval_status??"approved_for_launch")!=="approved_for_launch")return jsonError("Only services approved for launch can be published.");if(body.is_published&&body.is_active===false)return jsonError("An inactive service cannot be published.");update.is_published=body.is_published;}
   if(body.sort_order!==undefined){const n=Number(body.sort_order);if(!Number.isInteger(n)||n<0||n>10000)return jsonError("Invalid display order.");update.sort_order=n;}
   const db=database();const {data:current}=await db.from("services").select("approval_status,is_active").eq("id",id).eq("business_id",access.membership!.business_id).maybeSingle();if(!current)return jsonError("Service not found.",404);
   const nextApproval=String(update.approval_status??current.approval_status??"assessment_required");
   const nextActive=Boolean(update.is_active??current.is_active);
+  if(nextApproval!=="approved_for_launch"&&nextActive)return jsonError("Only services approved for launch can be active.");
   if(update.is_published===true&&(nextApproval!=="approved_for_launch"||!nextActive))return jsonError("Only active services approved for launch can be published.");
   const {data:service,error}=await db.from("services").update(update).eq("id",id).eq("business_id",access.membership!.business_id).select(columns).maybeSingle();
   if(error||!service)return jsonError("Could not update service.",500);

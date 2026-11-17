@@ -28,8 +28,8 @@ export default async function HomePage() {
   const callLink=phoneHref(phone);
   const location=[business.city,business.region].filter(Boolean).join(", ")||"Tamworth, NSW";
   const services=publishedServices.slice(0,3).map(service=>({title:service.name,description:service.description??service.scope_notes??"Contact Brandon RV to discuss this service."}));
-  const heroTitle=contentText(page?.content,"hero_title","Caravan repairs, without the workshop trip.");
-  const intro=contentText(page?.content,"intro","Mobile caravan and motorhome repair and accessory services around Tamworth, NSW. Tell us what you need and we will discuss the best way forward.");
+  const heroTitle=contentText(page?.content,"hero_title","Interior repairs and accessories, assessed on site.");
+  const intro=contentText(page?.content,"intro","Mobile caravan and motorhome interior repair and accessory assessments based in Tamworth, NSW. Each request is checked for scope and suitability before a quote or visit is discussed.");
   const primaryAction=contentText(page?.content,"primary_action","Request a quote");
   const brandLine=business.brand_line??"From Factory Experience to Repairs On The Go";
 
@@ -37,7 +37,7 @@ export default async function HomePage() {
     <section className="home-hero">
       <div className="shell home-hero-grid">
         <div className="home-hero-copy">
-          <p className="home-eyebrow"><span/> MOBILE CARAVAN & MOTORHOME SERVICE</p>
+          <p className="home-eyebrow"><span/> MOBILE CARAVAN & MOTORHOME INTERIOR SERVICE</p>
           <h1>{heroTitle}</h1>
           <p className="home-hero-intro">{intro}</p>
           <div className="home-hero-actions">
@@ -70,8 +70,8 @@ export default async function HomePage() {
     </div></section>
 
     <section className="section services-section"><div className="shell">
-      <div className="section-heading"><div><p className="eyebrow"><span className="eyebrow-line"/> OUR SERVICES</p><h2>Services that keep you<br/><em>more time on the road.</em></h2></div><p className="section-lead">These are the services Brandon RV currently offers. Contact Chris to discuss your requirements or ask about something not listed.</p></div>
-      {services.length?<div className="service-grid">{services.map((service,index)=><article className="service-card" key={service.title}><span className="service-number">{String(index+1).padStart(2,"0")}</span><span className="service-arrow" aria-hidden="true">↗</span><h3>{service.title}</h3><p>{service.description}</p></article>)}</div>:<p>Our service list is being updated. Contact Chris to discuss what you need.</p>}
+      <div className="section-heading"><div><p className="eyebrow"><span className="eyebrow-line"/> OUR SERVICES</p><h2>Services that keep you<br/><em>more time on the road.</em></h2></div><p className="section-lead">Only services approved for launch will appear here. If you are unsure whether a job is suitable, send an assessment request.</p></div>
+      {services.length?<div className="service-grid">{services.map((service,index)=><article className="service-card" key={service.title}><span className="service-number">{String(index+1).padStart(2,"0")}</span><span className="service-arrow" aria-hidden="true">↗</span><h3>{service.title}</h3><p>{service.description}</p></article>)}</div>:<p>The service list is being finalised. Send an assessment request and Brandon RV will confirm whether the work is within scope.</p>}
       <div className="section-link-row"><Link href="/services" className="text-link">Explore service information <span aria-hidden="true">→</span></Link></div>
     </div></section>
 
@@ -86,7 +86,7 @@ export default async function HomePage() {
     </div></section>
 
     <section className="home-value-section"><div className="shell">
-      <div className="section-heading"><div><p className="eyebrow"><span className="eyebrow-line"/> THE BRANDON RV APPROACH</p><h2>Practical, clear<br/><em>and considered.</em></h2></div><p className="section-lead">The aim is to make caravan and motorhome repairs easier to organise, with clear communication from first enquiry through to completion.</p></div>
+      <div className="section-heading"><div><p className="eyebrow"><span className="eyebrow-line"/> THE BRANDON RV APPROACH</p><h2>Practical, clear<br/><em>and considered.</em></h2></div><p className="section-lead">The aim is to make suitable caravan and motorhome interior work easier to organise, with clear communication from first enquiry through to completion.</p></div>
       <div className="home-value-grid">
         <article className="home-value-card"><span>01</span><h3>Understand the issue</h3><p>Vehicle details, photos and a clear description help identify the right next step.</p></article>
         <article className="home-value-card"><span>02</span><h3>Agree before work</h3><p>Scope, costs, parts and any changes are discussed and approved before work proceeds.</p></article>
