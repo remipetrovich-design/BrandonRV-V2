@@ -1,7 +1,6 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
 import {validateBookingWindow} from "@/lib/booking-rules";
 import {bookingWindowsConflict} from "@/lib/booking-window-policy.mjs";
-import {isManagerOrAbove} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
@@ -11,7 +10,7 @@ export async function POST(request:Request){
   const startsAt=new Date(String(body.starts_at??""));
   const endsAt=body.ends_at?new Date(String(body.ends_at)):null;
   const location=String(body.location??"").trim().slice(0,200);
-  const bypassRestrictions=isManagerOrAbove(access.user?.user_role);
+  const bypassRestrictions=await userHasPermission(access.user!.id,"appointments.override_scheduling_restrictions");
   if(!/^[0-9a-f-]{36}$/i.test(jobId))return jsonError("Select a Workcard for this appointment.");
   if(!Number.isFinite(startsAt.getTime())||(endsAt&&(!Number.isFinite(endsAt.getTime())||endsAt<=startsAt)))return jsonError("Enter a valid appointment start time.");
   if(location.length<3)return jsonError("Enter the agreed service location.");
