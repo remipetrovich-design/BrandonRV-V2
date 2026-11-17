@@ -51,6 +51,14 @@ test("Workcard variations require an active approved Workcard and valid customer
  assert.match(migration,/respond_to_guest_job_variation/);
 });
 
+test("admin Workcard entries cannot bypass customer-approved variations after work starts",async()=>{
+ const route=await source("../src/app/api/admin/jobs/[id]/work-entries/route.ts");
+ assert.match(route,/job\.status==="in_progress"&&\["labour","parts"\]/);
+ assert.match(route,/Additional labour or parts must be added through an approved Workcard variation/);
+ assert.match(route,/Additional scope, approved quantities and customer charges must be changed through an approved Workcard variation/);
+ assert.match(route,/quantityUsed>quantityRequired/);
+});
+
 test("registered customers retain the dedicated variation lifecycle",async()=>{
  const route=await source("../src/app/api/portal/quotes/respond/route.ts");
  const migration=await source("../supabase/migrations/20261112110759_workcard_quote_variations.sql");
