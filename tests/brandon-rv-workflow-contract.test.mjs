@@ -187,7 +187,8 @@ test("legacy Contact routes to a separate General Enquiry page",async()=>{
 
 test("customer invoice is hidden until the final Jobcard is approved",async()=>{
  const component=await source("../src/components/customer-work-approval.tsx");
- assert.ok(component.includes('invoice&&approvalStatus==="approved"'));
+ assert.ok(component.includes('invoice&&(approvalStatus==="approved"||Boolean(approvalBypassedAt))'));
+ assert.ok(component.includes("approvalBypassedAt"));
 });
 
 

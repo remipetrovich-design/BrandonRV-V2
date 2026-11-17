@@ -1,5 +1,6 @@
 "use client";
 import {FormEvent,useEffect,useState} from "react";
+import WorkcardPreparation from "@/components/workcard-preparation";
 
 type Entry={id:string;source_quote_item_id?:string|null;entry_type:string;description:string;quantity:number;quantity_required:number;quantity_used:number;quantity_ordered:number;quantity_received:number;quantity_returned:number;part_order_status:string;supplier_order_reference:string|null;ordered_at:string|null;expected_at:string|null;received_at:string|null;part_number:string|null;supplier_name:string|null;customer_visible:boolean;occurred_at:string};
 type Attachment={id:string;file_name:string;mime_type:string;customer_visible:boolean;url:string|null};
@@ -91,6 +92,7 @@ export default function StaffWorkOrders(){
     </>}
     {job.status==="completed"&&<div className="brv-workcard-completed"><span className="panel-kicker">SUBMITTED WORKCARD</span><p>{job.work_summary||"Worker sign-off recorded."}</p><div className="brv-workcard-entries"><strong>Recorded work</strong>{job.entries.length?job.entries.map(x=><div className="brv-workcard-entry" key={x.id}><span>{pretty(x.entry_type)}</span><p>{x.description}</p><small>{["note","test"].includes(x.entry_type)?"Non-billable":"Qty "+x.quantity}</small></div>):<p className="panel-footnote">No work entries were recorded.</p>}</div>{attachments[job.id]?.length>0&&<div className="brv-workcard-photo-grid">{attachments[job.id].map(file=><a href={file.url??"#"} key={file.id} target="_blank" rel="noreferrer">{file.url&&<img src={file.url} alt={file.file_name}/>}<span>{file.file_name}</span><small>{file.customer_visible?"Customer-visible":"Staff only"}</small></a>)}</div>}<p className="inline-notice">Worker sign-off: {job.worker_signed_off_at?new Date(job.worker_signed_off_at).toLocaleString("en-AU"):"Recorded"} · Senior review: {pretty(job.senior_approval_status??"pending")}{job.senior_approved_at?" · "+new Date(job.senior_approved_at).toLocaleString("en-AU"):""}</p>{job.senior_approval_note&&<p className="panel-footnote">{job.senior_approval_note}</p>}</div>}
     {job.status==="waiting_parts"&&<p className="panel-footnote">This Workcard is waiting for parts. Keep the job notes up to date.</p>}
+    {!["completed","cancelled"].includes(job.status)&&<WorkcardPreparation jobId={job.id}/>}
    </div>}
   </article>)}</div>:<p className="panel-footnote">No Workcards are currently assigned to you.</p>}
   {notice&&<p className="inline-notice" role="status">{notice}</p>}
