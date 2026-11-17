@@ -31,6 +31,16 @@ test("accepted Workcard assignments survive team edits",async()=>{
  assert.doesNotMatch(migration,/DELETE FROM public\.job_assignments/);
 });
 
+test("parts procurement holds work until required quantities are received or marked not required",async()=>{
+ const migration=await read(migrationPath);
+ assert.match(migration,/All required parts must be received or marked not required before work can start/);
+ assert.match(migration,/e\.quantity_required > greatest\(0,e\.quantity_received-e\.quantity_returned\)/);
+ assert.match(migration,/e\.part_order_status <> 'not_required'/);
+ assert.match(migration,/CREATE OR REPLACE FUNCTION public\.sync_job_work_entry_procurement/);
+ assert.match(migration,/parts\.part_order_status <> 'not_required'/);
+ assert.match(migration,/ELSE 'ready_to_schedule'/);
+});
+
 test("Workcard execution and review advance the original Jobcard pipeline",async()=>{
  const migration=await read(migrationPath);
  assert.match(migration,/stage='work_in_progress'/);
