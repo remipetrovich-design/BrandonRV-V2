@@ -15,8 +15,9 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    if: inputs.confirm == 'YES'
+    if: inputs.confirm == 'YES' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: production
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
