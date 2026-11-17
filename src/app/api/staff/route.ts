@@ -62,11 +62,18 @@ export async function PATCH(request:Request){
   if(body.additionalPermissions!==undefined){
    if(!Array.isArray(body.additionalPermissions)||body.additionalPermissions.some((x:unknown)=>typeof x!=="string"))return jsonError("Additional permissions must be a list.");
    const requested=[...new Set(body.additionalPermissions as string[])];const {data:catalogue}=await db.from("permissions").select("permission_key").in("permission_key",requested);
-   if((catalogue??[]).length!==requested.length)return jsonError("One or more additional permissions are invalid.");const grantable=await userHasPermissions(access.user!.id,requested);if(requested.some(key=>!grantable.has(key)))return jsonError("You cannot grant permissions that you do not hold.",403);
-   const reason=String(body.permissionReason??"").trim();if(!reason)return jsonError("A reason is required for additional permission grants.");
+   if((catalogue??[]).length!==requested.length)return jsonError("One or more additional permissions are invalid.");
+   const {data:existingGrants}=await db.from("user_permission_grants").select("permission_key").eq("user_id",userId).is("revoked_at",null);
+   const existing=(existingGrants??[]).map(grant=>grant.permission_key as string);
+   const additions=requested.filter(key=>!existing.includes(key));
+   const removals=existing.filter(key=>!requested.includes(key));
+   const grantable=await userHasPermissions(access.user!.id,[...additions,...removals]);
+   if(additions.some(key=>!grantable.has(key)))return jsonError("You cannot grant permissions that you do not hold.",403);
+   const permittedRemovals=removals.filter(key=>grantable.has(key));
+   const reason=String(body.permissionReason??"").trim();if(!reason)return jsonError("A reason is required for additional permission changes.");
    const expiry=body.permissionExpiresAt?String(body.permissionExpiresAt):null;if(expiry&&Number.isNaN(Date.parse(expiry)))return jsonError("Enter a valid permission expiry date.");
-   await db.from("user_permission_grants").update({revoked_at:new Date().toISOString(),revoked_by:access.user!.id}).eq("user_id",userId).is("revoked_at",null);
-   if(requested.length){const {error:grantError}=await db.from("user_permission_grants").insert(requested.map(permission_key=>({user_id:userId,permission_key,granted_by:access.user!.id,reason,expires_at:expiry})));if(grantError)return jsonError("Could not save additional permissions.",500);}
+   if(permittedRemovals.length){const {error:revokeError}=await db.from("user_permission_grants").update({revoked_at:new Date().toISOString(),revoked_by:access.user!.id}).eq("user_id",userId).is("revoked_at",null).in("permission_key",permittedRemovals);if(revokeError)return jsonError("Could not revoke additional permissions.",500);}
+   if(additions.length){const {error:grantError}=await db.from("user_permission_grants").insert(additions.map(permission_key=>({user_id:userId,permission_key,granted_by:access.user!.id,reason,expires_at:expiry})));if(grantError)return jsonError("Could not save additional permissions.",500);}
   }
   const {data:updated,error}=await db.from("users").update(updates).eq("id",userId).eq("business_id",businessId).eq("updated_at",employee.updated_at).not("user_role","is",null).neq("user_role","customer").select("id").maybeSingle();if(error)return jsonError("Could not update employee details.",500);if(!updated)return jsonError("This employee record changed during the update. Refresh and try again.",409);
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"employee.updated",entity_type:"user",entity_id:userId,details:{...updates,additionalPermissions:body.additionalPermissions??undefined}});
