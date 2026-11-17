@@ -1,0 +1,5 @@
+-- The invoice metadata and immutable-line correction was first applied to V2
+-- through the Supabase MCP migration endpoint, which assigned remote version
+-- 20261117131305. The canonical, replayable SQL is retained in
+-- 20261117240000_invoice_issue_metadata_and_immutable_lines.sql.
+-- This placeholder keeps local and remote migration histories aligned.
