@@ -1,13 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { isManualOperationDisabled } from "../src/lib/deployment-control.mjs";
+import { readFile } from "node:fs/promises";
 
-test("manual workflow buttons stay enabled when direct dispatch is unavailable", () => {
-  assert.equal(isManualOperationDisabled({ busy: "" }), false);
-  assert.equal(isManualOperationDisabled({ busy: null }), false);
-});
+const component = await readFile(new URL("../src/components/admin-manual-deploy.tsx", import.meta.url), "utf8");
 
-test("manual workflow buttons disable only while an operation is being queued", () => {
-  assert.equal(isManualOperationDisabled({ busy: "deploy" }), true);
-  assert.equal(isManualOperationDisabled({ busy: "scan_apply" }), true);
+test("both manual operation buttons remain enabled when in-app dispatch is unavailable", () => {
+  assert.equal((component.match(/disabled=\{!!busy\}/g) || []).length, 2);
+  assert.doesNotMatch(component, /disabled=\{!activated/);
+  assert.match(component, /if\(busy\)return;[\s\S]*?if\(!available\)[\s\S]*?window\.open/);
 });

@@ -1,6 +1,5 @@
 "use client";
 import {useState} from "react";
-import {isManualOperationDisabled} from "@/lib/deployment-control.mjs";
 type Run={id:number;name:string;status:string;conclusion:string|null;url:string;createdAt:string};
 type Snapshot={latestCommit:string|null;deploymentRun:Run|null;migrationRun:Run|null};
 type Props={available:boolean;configured:boolean;activated:boolean};
@@ -16,14 +15,14 @@ export default function AdminManualDeploy({available,activated}:Props){
     <div className="operation-heading"><span>APPLICATION RELEASE</span><h3>Deploy Latest Commit</h3></div>
     <p>Fetches the newest commit on main with full Git history, builds that exact source and deploys it to Vercel Production. All commits already merged into main are part of the deployed source.</p>
     <p className="target">Target: BrandonRV V2 · Vercel Production</p>
-    <button disabled={isManualOperationDisabled({busy})} onClick={()=>dispatch("deploy")}>{busy==="deploy"?"Queueing deployment…":available?"Deploy Latest Commit":"Open Deploy Latest Commit"}</button>
+    <button disabled={!!busy} onClick={()=>dispatch("deploy")}>{busy==="deploy"?"Queueing deployment…":available?"Deploy Latest Commit":"Open Deploy Latest Commit"}</button>
     <div className="run-status"><b>Last deployment</b><p>{snapshot?runStatus(snapshot.deploymentRun):available?"Press Refresh status to load.":<a href="https://github.com/remipetrovich-design/BrandonRV-V2/actions/workflows/manual-deploy-latest.yml" target="_blank" rel="noreferrer">Open deployment run history</a>}</p></div>
    </article>
    <article className="operation">
     <div className="operation-heading"><span>DATABASE OPERATIONS</span><h3>Scan and Apply Migrations</h3></div>
     <p>Checks migration filenames and references, compares the complete migration history with the V2 database, previews pending SQL, then applies pending migrations only.</p>
     <p className="target">Target: Brandon RV V2 · Supabase project lciylmfpcefdpsouoqvm</p>
-    <button disabled={isManualOperationDisabled({busy})} onClick={()=>dispatch("scan_apply")}>{busy==="scan_apply"?"Queueing migration scan…":available?"Scan and Apply Migrations":"Open Scan and Apply Migrations"}</button>
+    <button disabled={!!busy} onClick={()=>dispatch("scan_apply")}>{busy==="scan_apply"?"Queueing migration scan…":available?"Scan and Apply Migrations":"Open Scan and Apply Migrations"}</button>
     <div className="run-status"><b>Last migration run</b><p>{snapshot?runStatus(snapshot.migrationRun):available?"Press Refresh status to load.":<a href="https://github.com/remipetrovich-design/BrandonRV-V2/actions/workflows/manual-scan-apply-migrations.yml" target="_blank" rel="noreferrer">Open migration run history</a>}</p></div>
    </article>
   </div>
