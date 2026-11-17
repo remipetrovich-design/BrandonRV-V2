@@ -3,16 +3,19 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const deploy = await readFile(new URL("../.github/workflows/manual-deploy-latest.yml", import.meta.url), "utf8");
+const fullScan = await readFile(new URL("../.github/workflows/manual-full-scan.yml", import.meta.url), "utf8");
 const migrations = await readFile(new URL("../.github/workflows/manual-scan-apply-migrations.yml", import.meta.url), "utf8");
 const dispatch = await readFile(new URL("../src/app/api/admin/deployment/dispatch/route.ts", import.meta.url), "utf8");
 const status = await readFile(new URL("../src/app/api/admin/deployment/status/route.ts", import.meta.url), "utf8");
 const page = await readFile(new URL("../src/components/admin-manual-deploy.tsx", import.meta.url), "utf8");
 
-test("manual production deployment fetches and deploys the newest complete main history", () => {
+test("manual production deployment fetches and deploys the newest complete main history after exact-commit Full Scan", () => {
   assert.match(deploy, /git fetch origin main --force/);
   assert.match(deploy, /git checkout --detach origin\/main/);
   assert.match(deploy, /fetch-depth: 0/);
   assert.match(deploy, /git rev-list --count HEAD/);
+  assert.match(deploy, /manual-full-scan\.yml\/runs/);
+  assert.match(deploy, /\.head_sha == \$sha and \.status == "completed" and \.conclusion == "success"/);
   assert.match(deploy, /vercel build --prod/);
   assert.match(deploy, /vercel deploy --prebuilt --prod/);
   assert.match(deploy, /workflow_dispatch:/);
@@ -21,7 +24,17 @@ test("manual production deployment fetches and deploys the newest complete main 
   assert.doesNotMatch(deploy, /supabase db push|run-supabase-migrations/);
 });
 
-test("manual migration workflow scans and applies V2 migrations without deploying", () => {
+test("Full Scan is a confirmed read-only test, typecheck, migration-check and Production build workflow", () => {
+  assert.match(fullScan, /workflow_dispatch:/);
+  assert.match(fullScan, /confirm == 'YES'/);
+  assert.match(fullScan, /run: npm test/);
+  assert.match(fullScan, /run: npm run typecheck/);
+  assert.match(fullScan, /node scripts\/check-migrations\.mjs/);
+  assert.match(fullScan, /vercel build --prod/);
+  assert.doesNotMatch(fullScan, /vercel deploy|supabase db push|run-supabase-migrations\.mjs apply/);
+});
+
+test("manual migration workflow applies V2 migrations independently and never deploys", () => {
   assert.match(migrations, /lciylmfpcefdpsouoqvm/);
   assert.match(migrations, /scripts\/check-migrations\.mjs/);
   assert.match(migrations, /run-supabase-migrations\.mjs preview/);
@@ -30,16 +43,18 @@ test("manual migration workflow scans and applies V2 migrations without deployin
 });
 
 test("deployment API dispatches each action to its own workflow", () => {
+  assert.match(dispatch, /full_scan:"manual-full-scan\.yml"/);
   assert.match(dispatch, /scan_apply:"manual-scan-apply-migrations\.yml"/);
   assert.match(dispatch, /deploy:"manual-deploy-latest\.yml"/);
-  assert.doesNotMatch(dispatch, /manual-deploy-migrate\.yml/);
 });
 
-test("deployment status and admin page expose separate workflow results and controls", () => {
+test("deployment status and admin page expose separate workflow results and checks", () => {
+  assert.match(status, /fullScanRun/);
   assert.match(status, /deploymentRun/);
   assert.match(status, /migrationRun/);
+  assert.match(status, /check-runs/);
+  assert.match(page, /Run Full Scan/);
   assert.match(page, /Deploy Latest Commit/);
   assert.match(page, /Scan and Apply Migrations/);
-  assert.match(page, /snapshot\.deploymentRun/);
-  assert.match(page, /snapshot\.migrationRun/);
+  assert.match(page, /Commit checks/);
 });

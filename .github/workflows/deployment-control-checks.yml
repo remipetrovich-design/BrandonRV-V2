@@ -1,0 +1,33 @@
+name: V2 deployment control checks
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/app/admin/deployment/**"
+      - "src/app/api/admin/deployment/**"
+      - "src/components/admin-manual-deploy.tsx"
+      - "src/lib/deployment-control.mjs"
+      - ".github/workflows/manual-*.yml"
+      - "tests/deployment-*.test.mjs"
+      - "tests/manual-deployment-workflows.test.mjs"
+      - "package.json"
+      - "scripts/check-migrations.mjs"
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install project dependencies
+        run: npm install --no-package-lock
+      - name: Run full automated test suite
+        run: npm test
+      - name: Run TypeScript validation
+        run: npm run typecheck
+      - name: Validate migration filenames and references
+        run: node scripts/check-migrations.mjs
