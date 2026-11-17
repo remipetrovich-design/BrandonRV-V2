@@ -12,6 +12,19 @@ FROM unnest(ARRAY['ceo_founder','website_development_specialist','senior_manager
 CROSS JOIN public.permissions p
 ON CONFLICT DO NOTHING;
 
+-- Deployment and migration controls are technical capabilities reserved for
+-- the Website Development Specialist, separate from ordinary executive access.
+INSERT INTO public.permissions(permission_key,description) VALUES
+ ('developer.deploy','Dispatch and inspect Brandon RV V2 production deployments.'),
+ ('developer.migrations.manage','Dispatch and inspect V2 database migration operations.')
+ON CONFLICT(permission_key) DO UPDATE SET description=EXCLUDED.description;
+
+INSERT INTO public.user_role_permissions(role_key,permission_key)
+VALUES
+ ('website_development_specialist','developer.deploy'),
+ ('website_development_specialist','developer.migrations.manage')
+ON CONFLICT DO NOTHING;
+
 CREATE OR REPLACE FUNCTION public.user_has_effective_permission(
   p_user_id uuid,
   p_permission_key text
