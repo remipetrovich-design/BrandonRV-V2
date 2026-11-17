@@ -10,7 +10,8 @@ V2 now has its own Supabase project, database, migration history, auth/storage r
 
 Inspected 17 November 2026 after V2 operational setup:
 - 58 base tables in `public` and 3 compatibility views (`customers`, `profiles`, `staff`).
-- All 58 base tables have Row Level Security enabled.
+- All 58 base tables have Row Level Security enabled. No direct table grants are present for the Supabase `anon` or `authenticated` roles; application access is through the server-side API layer.
+- The business setting `accepting_enquiries` is explicitly enabled, while the business itself remains in `prelaunch` status.
 - One Brandon RV business/workspace record remains `prelaunch`, based in Tamworth NSW.
 - One active CEO/founder account exists. No customer or employee accounts have been copied from V1.
 - The internal service catalogue contains 9 draft scope records: 2 assessment-required, 2 conditional, 3 deferred and 2 not-offered. All are inactive and unpublished.
