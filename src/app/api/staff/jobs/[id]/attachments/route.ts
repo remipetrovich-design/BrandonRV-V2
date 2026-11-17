@@ -9,7 +9,7 @@ async function access(jobId:string,userId:string,businessId:string,write=false){
   db.from("jobs").select("id,status").eq("id",jobId).eq("business_id",businessId).maybeSingle()
  ]);
  if(!staff||!job)return {db,staff:null,job:null,allowed:false};
- const {data:assignment}=await db.from("job_assignments").select("status").eq("job_id",jobId).eq("staff_id",staff.id).maybeSingle();
+ const {data:assignment}=await db.from("job_assignments").select("status").eq("business_id",businessId).eq("job_id",jobId).eq("staff_id",staff.id).maybeSingle();
  const allowed=write?assignment?.status==="accepted"&&job.status==="in_progress":["accepted","completed"].includes(String(assignment?.status));
  return {db,staff,job,allowed};
 }
