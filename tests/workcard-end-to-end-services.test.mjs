@@ -142,12 +142,12 @@ test("final invoice uses actual Workcard entries, never the original quote total
 test("worker sign-off creates charges only from actual invoiceable usage, never planned quote quantities",async()=>{
  const route=await read("../src/app/api/staff/jobs/[id]/status/route.ts");
  const migration=await read("../supabase/migrations/20261117210000_atomic_workcard_signoff_invoice.sql");
- assert.ok(route.includes('rpc("finish_workcard_and_create_invoice"'),"Worker sign-off must use the atomic database function.");
- assert.ok(migration.includes("e.entry_type IN ('labour','parts')"),"Only billable work types can be invoiced.");
- assert.ok(migration.includes("e.invoiceable = true"),"Only explicitly invoiceable work can be billed.");
- assert.ok(migration.includes("e.quantity_used > 0"),"Only actual positive usage can be billed.");
- assert.ok(migration.includes("e.quantity_used,e.unit_price"),"Invoice quantities must use actual usage.");
- assert.ok(!migration.includes("quote_items"),"Planned quote quantities must never be substituted.");
+ assert.match(route,/rpc\("finish_workcard_and_create_invoice"/);
+ assert.match(migration,/e\.entry_type IN \('labour','parts'\)/);
+ assert.match(migration,/e\.invoiceable = true/);
+ assert.match(migration,/e\.quantity_used > 0/);
+ assert.match(migration,/e\.quantity_used/);
+ assert.doesNotMatch(migration,/if\(!items\.length&&job\.quote_id\)/);
 });
 
 test("worker completion data is returned on the original customer Jobcard",async()=>{

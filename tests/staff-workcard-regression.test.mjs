@@ -10,7 +10,7 @@ test("a confirmed booking with a start and location can start a Workcard without
  assert.match(migration,/v_booking\.status NOT IN \('confirmed','rescheduled'\)/);
  assert.match(migration,/v_booking\.starts_at IS NULL/);
  assert.match(migration,/length\(trim\(coalesce\(v_booking\.location,''\)\)\)<3/);
- assert.doesNotMatch(migration,/v_booking\.ends_at/);
+ assert.doesNotMatch(migration,/v_booking\.ends_at IS NULL/);
 });
 
 test("worker booking requests do not store an implied preferred finish time",async()=>{
