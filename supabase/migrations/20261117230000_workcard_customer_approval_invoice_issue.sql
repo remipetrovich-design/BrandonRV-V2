@@ -90,7 +90,7 @@ BEGIN
 
   RETURN jsonb_build_object('success', true, 'assigned_count', v_assigned);
 END;
-$function$
+$function$;
 
 REVOKE ALL ON FUNCTION public.replace_workcard_assignments(uuid,uuid,uuid,uuid[]) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.replace_workcard_assignments(uuid,uuid,uuid,uuid[]) TO service_role;
@@ -358,7 +358,7 @@ BEGIN
        pg_catalog.jsonb_build_object('status',v_next_job_status,'stage',v_next_stage));
   END IF;
 END;
-$function$
+$function$;
 
 REVOKE ALL ON FUNCTION public.sync_job_work_entry_procurement(uuid,uuid,uuid) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.sync_job_work_entry_procurement(uuid,uuid,uuid) TO service_role;
@@ -435,7 +435,7 @@ BEGIN
   VALUES(p_business_id,p_actor_user_id,'work_order.started','job',p_job_id,jsonb_build_object('staff_id',p_staff_id,'started_at',v_now));
   RETURN jsonb_build_object('success',true,'status','in_progress','already_started',false);
 END;
-$function$
+$function$;
 
 REVOKE ALL ON FUNCTION public.start_workcard(uuid,uuid,uuid,uuid) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.start_workcard(uuid,uuid,uuid,uuid) TO service_role;
@@ -593,7 +593,7 @@ BEGIN
     jsonb_build_object('id',v_invoice.id,'invoice_number',v_invoice.invoice_number,
       'total',v_invoice.total,'status',v_invoice.status));
 END;
-$function$
+$function$;
 
 REVOKE ALL ON FUNCTION public.finish_workcard_and_create_invoice(uuid,uuid,uuid,uuid,text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.finish_workcard_and_create_invoice(uuid,uuid,uuid,uuid,text) TO service_role;
@@ -692,7 +692,7 @@ BEGIN
     'reviewed_at', v_now
   );
 END;
-$function$
+$function$;
 
 REVOKE ALL ON FUNCTION public.review_workcard_setup(uuid,uuid,uuid,text,text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.review_workcard_setup(uuid,uuid,uuid,text,text) TO service_role;
@@ -798,7 +798,7 @@ BEGIN
 
   RETURN jsonb_build_object('success',true,'decision',p_decision,'reviewed_at',v_now);
 END;
-$function$
+$function$;
 
 REVOKE ALL ON FUNCTION public.review_workcard(uuid,uuid,uuid,text,text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.review_workcard(uuid,uuid,uuid,text,text) TO service_role;
@@ -1163,7 +1163,7 @@ BEGIN
   RETURN jsonb_build_object('success',true,'already_recorded',false,'payment',to_jsonb(v_payment),
     'amountPaid',v_amount_paid,'creditTotal',v_credit_total,'balance',round(v_invoice.total-v_amount_paid-v_credit_total,2),'invoiceStatus',v_status,'jobcardArchived',v_archived);
 END;
-$function$
+$function$;
 
 REVOKE ALL ON FUNCTION public.record_invoice_payment_idempotent(uuid,uuid,uuid,numeric,text,text,text,uuid) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.record_invoice_payment_idempotent(uuid,uuid,uuid,numeric,text,text,text,uuid) TO service_role;
@@ -1359,7 +1359,7 @@ BEGIN
 
   RETURN jsonb_build_object('appointment',to_jsonb(v_appointment),'workcardsUpdated',v_workcards_updated);
 END;
-$function$
+$function$;
 
 
 
