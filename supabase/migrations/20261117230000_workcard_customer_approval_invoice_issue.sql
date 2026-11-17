@@ -169,6 +169,7 @@ BEGIN
      SET quantity_ordered = v_ordered,
          quantity_received = v_received,
          part_order_status = CASE
+           WHEN part_order_status = 'not_required' THEN 'not_required'
            WHEN v_ordered = 0 THEN 'not_ordered'
            WHEN v_received >= v_ordered THEN 'received'
            WHEN v_received > 0 THEN 'part_received'
