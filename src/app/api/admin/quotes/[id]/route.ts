@@ -15,12 +15,13 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
 }
 export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
- const access=await authorizePermission("quotes.manage");if(access.response)return access.response;
+ const primary=await authorizePermission("quotes.manage");let access=primary,workcardOnly=false;if(primary.response){const alternate=await authorizePermission("jobs.manage");if(alternate.response)return primary.response;access=alternate;workcardOnly=true;}
  const {id}=await params;if(!isUuid(id))return jsonError("Invalid quote ID.");
  try{
   const body=await request.json(),db=database(),businessId=access.membership!.business_id;
   const {data:quote,error:loadError}=await db.from("quotes").select("id,status,quote_kind,subtotal,tax_amount,total,quote_items(description,quantity,unit_price,tax_rate,line_total,sort_order)").eq("id",id).eq("business_id",businessId).maybeSingle();
   if(loadError||!quote)return jsonError("Quote not found.",404);
+  if(workcardOnly&&quote.quote_kind!=="variation")return jsonError("Quote management permission is required for standard quotes.",403);
   if(body.status==="sent"){
    const issueRpc=quote.quote_kind==="variation"?"issue_job_variation_quote":"issue_quote_for_jobcard";
    const {data:issued,error:issueError}=await db.rpc(issueRpc,{p_quote_id:id,p_business_id:businessId,p_actor_user_id:access.user!.id});
