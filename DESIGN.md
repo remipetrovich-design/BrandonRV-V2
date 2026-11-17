@@ -4,9 +4,9 @@
 Brandon RV is a mobile caravan and motorhome interior repair and accessory service based in Tamworth NSW. The public brand earns trust and gathers accurate job details. The authenticated workspace helps a small team assess, quote, schedule, execute, approve and close work without a workshop-style enterprise interface.
 
 ## Two visual registers, one system
-The public website and customer portal retain the established Brandon RV identity: warm neutral surfaces, deep green, orange accent and editorial serif display typography. Do not recolour the public brand to match the admin panel. Public palette tokens are defined at the root in `brv-refresh.css`; the authenticated workspace overrides them only within `.brv-admin-frame`.
+The public website and customer portal use the supplied Brandon RV logo identity: navy and charcoal structure, clear blue accents, white and cool-neutral surfaces, and restrained editorial serif display typography. Keep the customer-facing experience distinct from the denser operational admin workspace even though both share the logo's navy/blue family. The active public/customer palette is defined in `brv-brand-system.css`, loaded after the legacy base and refresh stylesheets. The authenticated workspace overrides presentation only within `.brv-admin-frame`.
 
-The authenticated admin workspace uses a practical workshop-office register: navy structure, restrained blue actions, white work surfaces and cool neutral page backgrounds. The customer portal retains the public brand palette but follows the same spacing, typography hierarchy, controls and interaction rules. Contact details in the portal must come from business configuration or link to the contact form; never hardcode a phone number. Staff tools use the compact operational register, with touch-safe actions for on-site use.
+The authenticated admin workspace uses a practical workshop-office register: navy structure, restrained blue actions, white work surfaces and cool neutral page backgrounds. The customer portal retains the public logo palette but follows the same spacing, typography hierarchy, controls and interaction rules. Contact details in the portal must come from business configuration or link to the contact form; never hardcode a phone number. Staff tools use the compact operational register, with touch-safe actions for on-site use.
 
 ## Operational palette
 - Navy: `#10283F` — admin navigation, headings and strong surfaces.
@@ -19,7 +19,7 @@ The authenticated admin workspace uses a practical workshop-office register: nav
 - Danger: semantic red with text/icon; never rely on colour alone.
 
 ## Public brand palette
-Use the existing global CSS variables: green `#244D3D`, dark green `#172F27`, orange `#E9783E`, warm paper `#F5F4ED`, white `#FFFEFA` and muted grey-green. The existing Georgia display and Arial body pairing remains the public-site identity unless a separately approved rebrand is requested.
+Use the active brand variables: navy `#142B43`, blue `#155FBA`, pale blue `#EDF4FC`, white `#FFFFFF`, cool page neutral `#F4F7FB` and border `#DCE5EF`. The logo's charcoal/black is retained for strong wordmark contrast. The existing Georgia display and Inter/system body pairing remains the public-site identity unless a separately approved rebrand is requested.
 
 ## Typography and density
 - Operational body text: 12–14px where dense records require it; 14–16px for customer explanations.
