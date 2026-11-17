@@ -14,6 +14,8 @@ export default function AdminShell({children,userName,role,groups}:{children:Rea
  const current=items.find(item=>pathname===item.href||(item.href!=="/admin"&&pathname.startsWith(item.href+"/")));
  const title=pathname==="/admin"?"Overview":current?.label??"Business workspace";const active=(href:string)=>pathname===href||(href!=="/admin"&&pathname.startsWith(href+"/"));
  const initials=userName.split(/\s+/).filter(Boolean).slice(0,2).map(part=>part[0]?.toUpperCase()).join("")||"BR";
+ useEffect(()=>{setMenuOpen(false);},[pathname]);
+ useEffect(()=>{if(!menuOpen)return;const closeOnEscape=(event:KeyboardEvent)=>{if(event.key==="Escape")setMenuOpen(false);};window.addEventListener("keydown",closeOnEscape);return()=>window.removeEventListener("keydown",closeOnEscape);},[menuOpen]);
  return <div className="brv-admin-frame"><aside id="brv-admin-navigation" className={"brv-admin-sidebar"+(menuOpen?" is-open":"")} aria-label="Main navigation">
   <Link href="/admin" className="brv-admin-brand" onClick={()=>setMenuOpen(false)}><img src="/brv-mark.webp" alt=""/><span><strong>BRANDON <em>RV</em></strong><small>BUSINESS WORKSPACE</small></span></Link>
   <nav className="brv-admin-nav" aria-label="Business workspace"><Link href="/admin" className={"brv-admin-overview"+(pathname==="/admin"?" active":"")} aria-current={pathname==="/admin"?"page":undefined} onClick={()=>setMenuOpen(false)}><NavIcon name="home"/><span>Overview</span></Link>
