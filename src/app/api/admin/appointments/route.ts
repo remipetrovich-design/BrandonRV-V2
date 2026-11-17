@@ -1,4 +1,4 @@
-import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
+import {authorizePermission,database,jsonError,sameOrigin,userHasPermission} from "@/lib/auth";
 import {validateBookingWindow} from "@/lib/booking-rules";
 import {bookingWindowsConflict} from "@/lib/booking-window-policy.mjs";
 export const runtime="nodejs";
