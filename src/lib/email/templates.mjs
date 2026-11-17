@@ -7,12 +7,15 @@
  * Merge vars using literal placeholders such as {firstname}, {lastname},
  * {site_name}, {site_url}, {action_url}, {booking_date}, {quote_number}.
  */
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://brandon-rv-v2.vercel.app").replace(/\\/+$/, "");
+
 const DEFAULTS = Object.freeze({
   site_name: "Brandon RV",
-  site_url: "https://brandon-rv.vercel.app",
-  logo_url: "https://brandon-rv.vercel.app/brv-mark.webp",
+  site_url: APP_URL,
+  logo_url: `${APP_URL}/brv-mark.webp`,
   business_phone: "0407 189 087",
-  business_email: "enquires@brandonrv.com.au",
+  // The supplied business email is not yet verified for public use.
+  business_email: process.env.BRANDONRV_PUBLIC_EMAIL?.trim() || "",
   tagline: "From Factory Experience to Repairs On The Go",
   current_year: String(new Date().getFullYear()),
 });
@@ -413,6 +416,7 @@ export function renderBrandonRvEmail(templateId, variables = {}, overrides = {})
   const logo = safeHref(vars.logo_url);
   const phone = text(vars.business_phone);
   const email = text(vars.business_email);
+  const contactDetails = email ? `${phone} &nbsp;|&nbsp; <a href="mailto:${email}" style="color:#1672ad;text-decoration:none;">${email}</a>` : phone;
   const siteName = text(vars.site_name);
   const noreplyNotice = vars.sender_type === "noreply" ? `<div style="margin:0 0 22px;padding:12px 15px;background:#fff8e8;border:1px solid #f2e3bd;color:#70551b;font-size:12px;line-height:1.6;"><strong>Unmonitored email address:</strong> This mailbox is not monitored. Replies to this email or messages sent to this address will not be read. Please contact Brandon RV using the details in the footer.</div>` : "";
   const content = [
@@ -439,7 +443,7 @@ ${content}
 </td></tr>
 <tr><td align="center" style="padding:23px 26px;background:#f5f7fa;border-top:1px solid #e6ebf0;">
 <a href="${escapeHtml(website)}" style="text-decoration:none;"><img src="${escapeHtml(logo)}" width="125" alt="${siteName}" style="display:block;width:125px;max-width:55%;height:auto;border:0;margin:0 auto 12px;"></a>\n<div style="font-size:13px;font-weight:700;color:#173451;">${siteName}</div>
-<div style="margin-top:7px;font-size:12px;color:#64748b;">${phone} &nbsp;|&nbsp; <a href="mailto:${email}" style="color:#1672ad;text-decoration:none;">${email}</a></div>
+<div style="margin-top:7px;font-size:12px;color:#64748b;">${contactDetails}</div>
 <div style="margin-top:8px;font-size:12px;"><a href="${escapeHtml(website)}" style="color:#1672ad;text-decoration:none;">${escapeHtml(String(vars.site_url).replace(/^https?:\/\//, ""))}</a></div>
 <div style="margin:15px auto 0;max-width:470px;font-size:11px;line-height:1.6;color:#8a96a5;">This email and any attachments may contain private or sensitive customer, vehicle or business information. It is intended only for the addressed recipient. If you received it by mistake, do not forward, copy or use its contents; please notify Brandon RV and delete it. Please use the contact details above for assistance.</div>
 <div style="margin-top:9px;font-size:10px;color:#a0aab6;">© ${text(vars.current_year)} ${siteName}. All rights reserved.</div>
