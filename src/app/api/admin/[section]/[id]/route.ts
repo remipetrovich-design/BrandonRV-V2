@@ -40,7 +40,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
   }
   let appointment:any=null;let quote:any=null;let linkedWorkcard:any=null;
   if(section==="appointments"&&["confirmed","rescheduled"].includes(String(update.status??""))){
-   const result=await db.from("appointments").select("id,business_id,customer_id,user_id,quote_id,location,starts_at,ends_at,preferred_start,preferred_end,guest_name,guest_email,confirmed_by,confirmed_at,updated_at").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
+   const result=await db.from("appointments").select("id,business_id,customer_id,user_id,quote_id,enquiry_id,location,starts_at,ends_at,preferred_start,preferred_end,guest_name,guest_email,confirmed_by,confirmed_at,updated_at").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
    appointment=result.data;
    if(result.error||!appointment)return jsonError("Could not load the appointment.",404);
    const startsAt=new Date(String(update.starts_at??appointment.starts_at??appointment.preferred_start??""));
@@ -71,6 +71,32 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
    }
    update.starts_at=startsAt.toISOString();update.ends_at=endsAt?.toISOString()??null;update.location=location;
    if(update.status==="confirmed"){update.confirmed_by=user.id;update.confirmed_at=new Date().toISOString();}
+   const enquiryId=quote?.enquiry_id??appointment.enquiry_id;
+   if(!enquiryId)return jsonError("This calendar booking must be linked to a customer Jobcard.",409);
+   const {data:bookingResult,error:bookingError}=await db.rpc("update_jobcard_booking",{
+    p_business_id:membership.business_id,p_actor_user_id:user.id,p_enquiry_id:enquiryId,p_appointment_id:id,
+    p_action:update.status==="confirmed"?"confirm":"reschedule",
+    p_starts_at:update.starts_at,p_ends_at:update.ends_at,p_location:update.location,
+    p_bypass_conflicts:bypassRestrictions
+   });
+   if(bookingError){const status=bookingError.code==="P0002"?404:bookingError.code==="P0001"?409:bookingError.code==="22023"?400:500;return jsonError(bookingError.message??"Could not update the booking and linked Workcard.",status);}
+   return Response.json({success:true,emailSent:false,workcardLinked:(bookingResult?.workcardsUpdated??0)>0,booking:bookingResult});
+  }
+  if(section==="appointments"&&update.status==="cancelled"){
+   const {data:appointment,error:appointmentError}=await db.from("appointments").select("id,enquiry_id,quote_id").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
+   if(appointmentError||!appointment)return jsonError("Could not load the appointment.",404);
+   let enquiryId=appointment.enquiry_id??null;
+   if(!enquiryId&&appointment.quote_id){
+    const {data:quote}=await db.from("quotes").select("enquiry_id").eq("id",appointment.quote_id).eq("business_id",membership.business_id).maybeSingle();
+    enquiryId=quote?.enquiry_id??null;
+   }
+   if(!enquiryId)return jsonError("This calendar booking must be linked to a customer Jobcard.",409);
+   const {data:bookingResult,error:bookingError}=await db.rpc("update_jobcard_booking",{
+    p_business_id:membership.business_id,p_actor_user_id:user.id,p_enquiry_id:enquiryId,p_appointment_id:id,
+    p_action:"cancel",p_starts_at:null,p_ends_at:null,p_location:null,p_bypass_conflicts:false
+   });
+   if(bookingError){const status=bookingError.code==="P0002"?404:bookingError.code==="P0001"?409:500;return jsonError(bookingError.message??"Could not cancel the booking and update its Workcard.",status);}
+   return Response.json({success:true,emailSent:false,workcardLinked:(bookingResult?.workcardsUpdated??0)>0,booking:bookingResult});
   }
   update.updated_at=new Date().toISOString();
   let record:any={id};
