@@ -1,4 +1,4 @@
-import {authorizePermission,database,jsonError,sameOrigin,userHasPermission} from "@/lib/auth";
+import {authorizePermission,database,jsonError,sameOrigin,userHasPermission,userHasPermissions} from "@/lib/auth";
 import {getWorkforceRankGroup} from "@/lib/workforce-rank-groups.mjs";
 import {isUuid,isCalendarDate} from "@/lib/api-validation.mjs";
 export const runtime="nodejs";
