@@ -6,12 +6,11 @@ const root=new URL('../',import.meta.url);
 const exists=path=>existsSync(new URL(path,root));
 const read=path=>readFileSync(new URL(path,root),'utf8');
 
-test('the application has no bundled licence enforcement or activation surfaces',()=>{
+test('legacy application licensing is removed while external ALIS licensing remains isolated',()=>{
  for(const path of [
   'src/lib/brandon-license.ts',
   'src/lib/license-manager-client.js',
   'src/lib/license-manager-client.d.ts',
-  'src/app/license/page.tsx',
   'src/app/admin/license/page.tsx',
   'src/app/api/license/route.ts',
   'src/app/api/admin/license/route.ts',
@@ -24,7 +23,9 @@ test('the application has no bundled licence enforcement or activation surfaces'
  const proxy=read('src/proxy.ts');
  assert.match(proxy,/requiresFirstOwnerSetup/);
  assert.match(proxy,/\/setup/);
- assert.doesNotMatch(proxy,/license|licence/i);
+ assert.match(proxy,/checkAlisLicense/);
+ assert.doesNotMatch(proxy,/brandon-license|application_license|licence_required/i);
+ for(const path of ['.alis/proxy-license.js','.alis/proxy-license.d.ts','.alis/config.d.ts','.alis/license-storage.d.ts','.alis/license-client/index.d.ts','src/app/api/alis/license/route.ts','src/app/license/page.tsx']) assert.equal(exists(path),true,path+' should exist for the external ALIS integration');
  const adminLayout=read('src/app/admin/layout.tsx');
  assert.doesNotMatch(adminLayout,/\/admin\/license|Application licence/i);
  const env=read('.env.example');

@@ -1,5 +1,5 @@
 import { currentUser } from '@/lib/auth';
-import { isGlobalAdministrator } from '@/lib/user-role-policy';
+import { isGlobalAdministrator } from '@/lib/user-role-policy.mjs';
 import AlisLicenseClient from './license-client';
 export const dynamic = 'force-dynamic';
 export default async function AlisLicensePage() {
