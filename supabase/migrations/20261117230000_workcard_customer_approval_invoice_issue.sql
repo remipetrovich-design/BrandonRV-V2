@@ -235,7 +235,7 @@ BEGIN
     RETURN;
   END IF;
 
-  SELECT id,status,appointment_id,quote_id
+  SELECT id,status,appointment_id,quote_id,workcard_review_status
     INTO v_job
     FROM public.jobs
    WHERE id = v_job_id AND business_id = p_business_id
@@ -308,7 +308,11 @@ BEGIN
       WHEN v_appointment_status IN ('confirmed','rescheduled') THEN 'scheduled'
       ELSE 'pending'
     END;
-    v_next_stage := CASE WHEN v_next_job_status = 'scheduled' THEN 'booked' ELSE 'ready_to_schedule' END;
+    v_next_stage := CASE
+      WHEN coalesce(v_job.workcard_review_status,'legacy_approved') NOT IN ('approved','legacy_approved') THEN 'workcard_created'
+      WHEN v_next_job_status = 'scheduled' THEN 'booked'
+      ELSE 'ready_to_schedule'
+    END;
 
     UPDATE public.jobs
        SET status = v_next_job_status,
