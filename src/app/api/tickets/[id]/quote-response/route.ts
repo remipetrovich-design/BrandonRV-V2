@@ -31,6 +31,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
    if(error.code==="P0001")return jsonError("This quote or guest access is no longer available.",409);
    return jsonError("Could not save your quote response. No changes were made.",500);
   }
+  if(data?.expired)return jsonError("This quote has expired. Contact Brandon RV for a current revision.",409);
   if(!data?.success)return jsonError("Could not confirm your quote response. No changes were made.",500);
   return Response.json({success:true,response,archived:data.request_archived===true});
  }catch{return jsonError("Could not save your quote response.",500);}
