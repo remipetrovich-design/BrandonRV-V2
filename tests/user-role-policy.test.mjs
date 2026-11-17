@@ -16,8 +16,8 @@ test("leave, suspended and terminated employees have no employee access",()=>{
  }
 });
 
-test("Owner and Website Developer are global administrators",()=>{
- for(const role of ["owner","website_developer"]){
+test("CEO, Website Development Specialist and Senior Manager are unrestricted executive roles",()=>{
+ for(const role of ["ceo_founder","website_development_specialist","senior_manager","owner","website_developer"]){
   assert.equal(isGlobalAdministrator(role),true);
   assert.equal(hasEmployeeAccess({user_role:role,employment_status:null}),true);
  }
