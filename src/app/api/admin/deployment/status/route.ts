@@ -1,5 +1,4 @@
-import {currentUser,jsonError,sameOrigin} from "@/lib/auth";
-import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
+import {currentUser,jsonError,sameOrigin,userHasPermissions} from "@/lib/auth";
 export const runtime="nodejs";export const dynamic="force-dynamic";
 const REPO="remipetrovich-design/BrandonRV-V2";
 const WORKFLOWS={deployment:"manual-deploy-latest.yml",migrations:"manual-scan-apply-migrations.yml"};
@@ -12,7 +11,8 @@ async function latestWorkflowRun(headers:HeadersInit,workflow:string){
 export async function GET(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const user=await currentUser();if(!user)return jsonError("Not signed in.",401);
- if(!isGlobalAdministrator(String(user.user_role??"").toLowerCase()))return jsonError("Not authorised.",403);
+ const deploymentAccess=await userHasPermissions(user.id,["developer.deploy","developer.migrations.manage"]);
+ if(!deploymentAccess.size)return jsonError("Not authorised.",403);
  const token=process.env.GITHUB_ACTIONS_DISPATCH_TOKEN;if(!token)return jsonError("GitHub status connection is not configured.",503);
  const headers={Accept:"application/vnd.github+json",Authorization:"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28"};
  const [commit,deploymentRun,migrationRun]=await Promise.all([

@@ -15,7 +15,7 @@ test("legacy administrator keys remain unrestricted during account migration",()
 });
 
 test("workforce roles are not global administrators",()=>{
-  for(const role of BUILT_IN_STAFF_ROLES.filter(x=>!["ceo_founder","website_development_specialist"].includes(x))){
+  for(const role of BUILT_IN_STAFF_ROLES.filter(x=>!["ceo_founder","website_development_specialist","senior_manager"].includes(x))){
     assert.equal(isGlobalAdministrator(role),false,role);
   }
 });

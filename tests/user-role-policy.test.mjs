@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {hasEmployeeAccess,isGlobalAdministrator,isHireableCustomer,isManagerOrAbove,canOverrideQuoteSelfReview,BUILT_IN_STAFF_ROLES} from "../src/lib/user-role-policy.mjs";
+import {hasEmployeeAccess,isGlobalAdministrator,isHireableCustomer,BUILT_IN_STAFF_ROLES} from "../src/lib/user-role-policy.mjs";
 
 test("customer-only accounts have no employee access",()=>{
  assert.equal(hasEmployeeAccess({user_role:null,employment_status:null}),false);
@@ -16,8 +16,8 @@ test("leave, suspended and terminated employees have no employee access",()=>{
  }
 });
 
-test("Owner and Website Developer are global administrators",()=>{
- for(const role of ["owner","website_developer"]){
+test("CEO, Website Development Specialist and Senior Manager are unrestricted executive roles",()=>{
+ for(const role of ["ceo_founder","website_development_specialist","senior_manager","owner","website_developer"]){
   assert.equal(isGlobalAdministrator(role),true);
   assert.equal(hasEmployeeAccess({user_role:role,employment_status:null}),true);
  }
@@ -52,21 +52,9 @@ test("inactive or non-customer accounts cannot be hired",()=>{
 });
 
 
-test("every management and executive rank bypasses booking scheduling restrictions",()=>{
- for(const role of ["office_manager","manager","senior_manager","administrator","general_manager","website_development_specialist","ceo_founder","owner","website_developer"]){assert.equal(isManagerOrAbove(role),true,role+" should bypass booking restrictions");}
-});
-
-test("supervisors and workers retain configured booking restrictions",()=>{
- for(const role of ["trial_apprentice","apprentice","senior_apprentice","team_leader","supervisor","office_admin","office_supervisor","accounts"]){assert.equal(isManagerOrAbove(role),false,role+" should retain booking restrictions");}
-});
-
 
 test("management aliases are recognised as built-in workforce roles",()=>{
  for(const role of ["administrator","general_manager"])assert.ok(BUILT_IN_STAFF_ROLES.includes(role));
 });
 
 
-test("quote self-review override is limited to managers and above",()=>{
- for(const role of ["office_manager","manager","senior_manager","administrator","general_manager","website_development_specialist","ceo_founder","owner","website_developer"]){assert.equal(canOverrideQuoteSelfReview(role),true,role+" should be able to override quote self-review");}
- for(const role of ["trial_apprentice","apprentice","senior_apprentice","team_leader","supervisor","office_admin","office_supervisor","technician"]){assert.equal(canOverrideQuoteSelfReview(role),false,role+" must use a different senior reviewer");}
-});

@@ -1,6 +1,7 @@
 export const GLOBAL_ADMIN_ROLES = new Set([
   "ceo_founder",
   "website_development_specialist",
+  "senior_manager",
   // Legacy aliases retained so existing sessions/accounts never lose access.
   "owner",
   "website_developer",
@@ -26,20 +27,6 @@ export const BUILT_IN_STAFF_ROLES = [
   "ceo_founder",
 ];
 
-export function isManagerOrAbove(role) {
-  return new Set([
-    "office_manager",
-    "manager",
-    "senior_manager",
-    "administrator",
-    "general_manager",
-    "website_development_specialist",
-    "ceo_founder",
-    "owner",
-    "website_developer",
-  ]).has(String(role ?? "").trim().toLowerCase());
-}
-
 export function isGlobalAdministrator(role) {
   return GLOBAL_ADMIN_ROLES.has(String(role ?? "").trim().toLowerCase());
 }
@@ -59,6 +46,3 @@ export function isHireableCustomer(user) {
   );
 }
 
-export function canOverrideQuoteSelfReview(role) {
-  return isManagerOrAbove(role);
-}

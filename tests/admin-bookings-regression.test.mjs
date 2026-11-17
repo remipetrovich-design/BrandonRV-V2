@@ -87,13 +87,13 @@ test("Jobcard booking does not require an agreed finish time and manager-level r
  assert.doesNotMatch(editor,/Agreed finish|draft\?\.ends_at/);
  assert.doesNotMatch(workcard,/Agreed finish date and time|bookingEnd/);
  assert.doesNotMatch(calendarForm,/Appointment finish|\[end,setEnd\]/);
- assert.match(jobcardRoute,/isManagerOrAbove/);
- assert.match(workcardRoute,/isManagerOrAbove/);
- assert.match(calendarRoute,/isManagerOrAbove/);
- assert.match(calendarEditRoute,/isManagerOrAbove/);
+ for(const route of [jobcardRoute,workcardRoute,calendarRoute,calendarEditRoute]){
+  assert.match(route,/appointments\.override_scheduling_restrictions/);
+  assert.doesNotMatch(route,/isManagerOrAbove/);
+ }
  assert.match(calendarEditRoute,/update\.ends_at=endsAt\?\.toISOString\(\)\?\?null/);
  assert.match(calendarEditRoute,/update\.ends_at!==undefined\?update\.ends_at:null/);
- assert.match(roles,/isManagerOrAbove/);
+ assert.doesNotMatch(roles,/isManagerOrAbove/);
  assert.match(policy,/bypassRestrictions/);
  assert.match(policy,/const localParts/);
  for(const role of ["office_manager","manager","senior_manager","website_development_specialist","ceo_founder"]) assert.ok(roles.includes(role),"missing manager-level role "+role);

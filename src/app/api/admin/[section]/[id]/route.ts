@@ -2,7 +2,6 @@ import {currentUser,currentMembership,database,userHasPermission,jsonError,sameO
 import {sendEmail} from "@/lib/email";
 import {validateBookingWindow} from "@/lib/booking-rules";
 import {bookingWindowsConflict} from "@/lib/booking-window-policy.mjs";
-import {isManagerOrAbove} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
 const config:any={
  enquiries:{table:"enquiries",permission:"enquiries.manage",status:["new","reviewing","quoted","accepted","declined","converted","closed"],fields:["status","internal_notes"]},
@@ -47,7 +46,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{section:st
    const endValue=update.ends_at!==undefined?update.ends_at:null;
    const endsAt=endValue?new Date(String(endValue)):null;
    const location=String(update.location??appointment.location??"").trim();
-   const bypassRestrictions=isManagerOrAbove(user.user_role);
+   const bypassRestrictions=await userHasPermission(user.id,"appointments.override_scheduling_restrictions");
    if(!location||!Number.isFinite(startsAt.getTime())||(endsAt&&(!Number.isFinite(endsAt.getTime())||endsAt<=startsAt)))return jsonError("Set a valid booking start time and service location.");
    if(appointment.quote_id){
     const quoteResult=await db.from("quotes").select("id,quote_number,status,enquiry_id").eq("id",appointment.quote_id).eq("business_id",membership.business_id).maybeSingle();quote=quoteResult.data;

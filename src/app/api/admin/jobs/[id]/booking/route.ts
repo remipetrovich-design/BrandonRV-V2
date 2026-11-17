@@ -1,7 +1,6 @@
 import {authorizePermission,database,jsonError,sameOrigin,userHasPermission} from "@/lib/auth";
 import {validateBookingWindow} from "@/lib/booking-rules";
 import {bookingWindowsConflict} from "@/lib/booking-window-policy.mjs";
-import {isManagerOrAbove} from "@/lib/user-role-policy.mjs";
 export const runtime="nodejs";
 const idPattern=/^[0-9a-f-]{36}$/i;
 
@@ -15,7 +14,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   const startsAt=new Date(String(body.starts_at??""));
   const endsAt=body.ends_at?new Date(String(body.ends_at)):null;
   const location=String(body.location??"").trim().slice(0,200);
-  const bypassRestrictions=isManagerOrAbove(access.user?.user_role);
+  const bypassRestrictions=await userHasPermission(access.user!.id,"appointments.override_scheduling_restrictions");
   if(!Number.isFinite(startsAt.getTime())||(endsAt&&(!Number.isFinite(endsAt.getTime())||endsAt<=startsAt)))return jsonError("Enter a valid booking start time.");
   if(!bypassRestrictions&&startsAt.getTime()<=Date.now())return jsonError("The booking must start in the future.");
   if(location.length<3)return jsonError("Enter the agreed customer service location.");
