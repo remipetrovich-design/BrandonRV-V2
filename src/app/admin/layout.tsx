@@ -45,14 +45,14 @@ const navigation:AdminNavGroup[]=[
 export default async function AdminLayout({children}:{children:ReactNode}) {
  const user=await currentUser();if(!user)redirect("/portal/sign-in");
  const membership=await currentMembership(user.id);if(!membership)redirect("/portal");
- const permissionKeys=[...new Set([...navigation.flatMap(group=>group.items.map(item=>item.permission)),"jobs.complete","time.view","time.manage","time.clock","leave.view","leave.manage","payroll.view","payroll.manage","assets.view","assets.manage","onboarding.view","onboarding.manage","staff.manage"])];
+ const permissionKeys=[...new Set([...navigation.flatMap(group=>group.items.map(item=>item.permission)),"quotes.manage","quotes.approve","jobs.complete","time.view","time.manage","time.clock","leave.view","leave.manage","payroll.view","payroll.manage","assets.view","assets.manage","onboarding.view","onboarding.manage","staff.manage"])];
  const permitted=await userHasPermissions(user.id,permissionKeys);
  const workforcePermissions=["time.clock","time.view","time.manage","leave.view","leave.manage","payroll.view","payroll.manage","assets.view","assets.manage","onboarding.view","onboarding.manage","staff.manage","staff.view"];
  const canAccessWorkforce=workforcePermissions.some(permission=>permitted.has(permission));
  const canAccessStaff=permitted.has("staff.view")||permitted.has("staff.manage");
  const isOwnerOrDeveloper=isGlobalAdministrator(String(user.user_role??"").toLowerCase());
- const groups=navigation.map(group=>({...group,items:group.items.filter(item=>item.href==="/admin/deployment"?isOwnerOrDeveloper:item.href==="/admin/workforce"?canAccessWorkforce:item.href==="/admin/staff"?canAccessStaff:item.href==="/admin/my-workcards"?(permitted.has("jobs.view")||permitted.has("jobs.complete")):permitted.has(item.permission))})).filter(group=>group.items.length>0);
- const canSeeOverview=["enquiries.view","appointments.view","jobs.view","quotes.view","invoices.view","customers.view","vehicles.view"].some(permission=>permitted.has(permission));
+ const groups=navigation.map(group=>({...group,items:group.items.filter(item=>item.href==="/admin/deployment"?isOwnerOrDeveloper:item.href==="/admin/quotes"?(permitted.has("quotes.view")||permitted.has("quotes.manage")||permitted.has("quotes.approve")):item.href==="/admin/workforce"?canAccessWorkforce:item.href==="/admin/staff"?canAccessStaff:item.href==="/admin/my-workcards"?(permitted.has("jobs.view")||permitted.has("jobs.complete")):permitted.has(item.permission))})).filter(group=>group.items.length>0);
+ const canSeeOverview=["enquiries.view","appointments.view","jobs.view","quotes.view","quotes.manage","quotes.approve","invoices.view","customers.view","vehicles.view"].some(permission=>permitted.has(permission));
  const employeeTools=["jobs.complete","time.view","time.manage","time.clock","leave.view","payroll.view","assets.view","onboarding.view"].some(permission=>permitted.has(permission));
  if(!canSeeOverview&&!groups.length&&!employeeTools)redirect("/portal");
  return <AdminShell userName={user.full_name||user.email} role={membership.role} groups={groups}>{children}</AdminShell>;
