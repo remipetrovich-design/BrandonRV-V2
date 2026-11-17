@@ -1090,3 +1090,4 @@ CREATE UNIQUE INDEX IF NOT EXISTS appointments_one_active_quote_booking_uidx
 REVOKE ALL ON FUNCTION public.update_jobcard_booking(uuid,uuid,uuid,uuid,text,timestamptz,timestamptz,text,boolean) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.update_jobcard_booking(uuid,uuid,uuid,uuid,text,timestamptz,timestamptz,text,boolean) TO service_role;
 
+NOTIFY pgrst, 'reload schema';
