@@ -105,7 +105,7 @@ RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $
+AS $refresh_workcard_parts_readiness$
 DECLARE
   v_job public.jobs%ROWTYPE;
   v_has_outstanding boolean := false;
@@ -198,7 +198,7 @@ BEGIN
   RETURN jsonb_build_object('success',true,'status',v_next_status,'stage',v_next_stage,
     'partsOutstanding',v_has_outstanding,'stageUpdated',v_changed);
 END;
-$;
+$refresh_workcard_parts_readiness$;
 REVOKE ALL ON FUNCTION public.refresh_workcard_parts_readiness(uuid,uuid,uuid) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.refresh_workcard_parts_readiness(uuid,uuid,uuid) TO service_role;
 
@@ -818,7 +818,7 @@ RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $$
+AS $respond_to_completed_workcard$
 DECLARE
   v_job record;
   v_invoice record;
@@ -1005,7 +1005,7 @@ BEGIN
     'invoiceStatus',v_invoice_status,'invoiceNumber',v_invoice.invoice_number,
     'workcardReopened',p_decision='changes_requested');
 END;
-$;
+$respond_to_completed_workcard$;
 REVOKE ALL ON FUNCTION public.respond_to_completed_workcard(uuid,uuid,uuid,uuid,text,text,text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.respond_to_completed_workcard(uuid,uuid,uuid,uuid,text,text,text) TO service_role;
 
