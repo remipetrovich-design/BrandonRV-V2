@@ -21,7 +21,7 @@ test("changing User Role does not write employment status, start date or staff t
 test("employment updates change User Role only through the separately validated roleKey field",()=>{
   assert.doesNotMatch(staffApi,/body\.userRole/);
   assert.match(staffApi,/if\(body\.roleKey!==undefined\)/);
-  assert.match(staffApi,/roleKeys\.includes\(value\)&&!isGlobalAdministrator/);
+  assert.match(staffApi,/executiveRoleKeys\.includes\(value\)&&!canAssignExecutiveRoles/);\n  assert.match(staffApi,/roles\.assign_executive/);\n  assert.doesNotMatch(staffApi,/isGlobalAdministrator/);
   assert.match(staffApi,/updates\.user_role=value/);
 });
 
