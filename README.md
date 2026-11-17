@@ -24,6 +24,8 @@ The application is built with Next.js 16, React 19, TypeScript and Supabase.
 
 ## Account and database model
 
+See [Owner setup and access](./docs/OWNER-ACCESS-SETUP.md) for the first-owner flow, canonical identity model, staff onboarding, role permissions, session handling and recovery requirements.
+
 The \`public.users\` table is the single account identity table. Every person has one customer account, one login and \`primary_group = customer\`. The nullable \`user_role\` field defaults to \`NULL\`, which means customer-only access. Owner, Website Developer and other employee roles are assigned directly to the user account through the global user-role catalogue.
 
 Employment is an optional addon on the same user row. It stores employment type/status, job title, employee number, start/end dates, pay rate and frequency, payroll details, emergency contacts and employee notes. Hiring an existing customer activates these fields; it never creates another account. Terminating employment removes ordinary employee access but preserves the customer login and all customer data.
