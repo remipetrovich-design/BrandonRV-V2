@@ -61,6 +61,7 @@ BEGIN
     SELECT 1 FROM public.enquiries e
      WHERE e.id = v_quote.enquiry_id AND e.business_id = p_business_id
        AND e.request_type = 'quote_request' AND e.archived_at IS NULL
+       AND e.status IN ('new','reviewing','quoted')
   ) THEN
     RAISE EXCEPTION 'This quote is not attached to an active Quote Request Jobcard.' USING ERRCODE = 'P0001';
   END IF;
