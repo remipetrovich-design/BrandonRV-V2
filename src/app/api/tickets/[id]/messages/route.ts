@@ -53,7 +53,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
    if(insertError){await access.db.storage.from(bucket).remove(uploaded);await access.db.from("ticket_message_attachments").delete().eq("message_id",record.id);await access.db.from("customer_messages").delete().eq("id",record.id);return jsonError("Could not save attachment details. The message was rolled back.",500);}
   }
   await access.db.from("audit_events").insert({business_id:enquiry.business_id,actor_user_id:user?.id??null,action:isInternal?"ticket.internal_note_added":"ticket.message_sent",entity_type:"enquiry",entity_id:enquiry.id,details:{message_id:record.id,attachment_count:files.length}});
-  const [message]=await withAttachments(access.db,[record]);
-  return Response.json({message},{status:201});
+  const [messageRecord]=await withAttachments(access.db,[record]);
+  return Response.json({message:messageRecord},{status:201});
  }catch{return jsonError("Could not send your message.",500);}
 }
