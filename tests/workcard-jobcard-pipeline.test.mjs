@@ -25,7 +25,7 @@ test("Workcard execution and review advance the original Jobcard pipeline",async
  const migration=await read(migrationPath);
  assert.match(migration,/stage='work_in_progress'/);
  assert.match(migration,/stage='quality_check'/);
- assert.match(migration,/stage='ready_to_invoice'/);
+ assert.match(migration,/THEN 'ready_to_invoice'/);
  assert.match(migration,/stage='invoiced'/);
  assert.match(migration,/INSERT INTO public\.enquiry_stage_history/);
 });
