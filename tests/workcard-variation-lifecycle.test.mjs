@@ -13,8 +13,8 @@ test("guest quote portal securely supports standard quotes and Workcard variatio
  assert.match(route,/respond_to_guest_job_variation/);
  assert.match(route,/respond_to_guest_quote/);
  assert.match(ui,/q\.quote_kind==="variation"/);
- assert.match(ui,/variation approved/);
- assert.match(ui,/variation declined/);
+ assert.match(ui,/Variation approved/);
+ assert.match(ui,/Variation declined/);
  assert.match(route,/guestToken/);
  assert.doesNotMatch(route,/appointments/);
  assert.match(ui,/TicketConversation/);
