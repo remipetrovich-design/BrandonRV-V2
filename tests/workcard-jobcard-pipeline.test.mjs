@@ -82,7 +82,7 @@ test("booking updates are serialized and reject overlapping confirmed appointmen
  assert.match(migration,/p_bypass_conflicts boolean/);
  assert.match(migration,/pg_advisory_xact_lock/);
  assert.match(migration,/That time conflicts with another booking or its travel buffer/);
- const bookingMigration=await read("../supabase/migrations/20261112105152_workcard_booking_uniqueness.sql");
+ const bookingMigration=await read("../supabase/migrations/20261117190000_atomic_workcard_assignment_booking.sql");
  assert.match(bookingMigration,/appointments_one_open_booking_per_quote_uidx/);
  assert.match(migration,/workcard\.booking_'\|\|p_action/);
  assert.doesNotMatch(migration,/v_quote_ids/);
