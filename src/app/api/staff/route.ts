@@ -8,10 +8,10 @@ const employmentTypes=["casual","part_time","full_time"];
 const employmentStatuses=["active","leave","suspended","terminated"];
 const payFrequencies=["hourly","weekly","fortnightly","monthly","annually"];
 export async function GET(){
- const access=await authorizePermission("staff.view");if(access.response)return access.response;
+ let access=await authorizePermission("staff.view");const canViewStaff=!access.response;if(!canViewStaff){access=await authorizePermission("roles.manage");if(access.response)return access.response;}
  const db=database(),businessId=access.membership!.business_id;
  const [{data:employees,error},{data:roles,error:roleError}]=await Promise.all([
-  db.from("users").select("id,first_name,last_name,full_name,email,phone,status,user_role,employee_number,job_title,employment_type,employment_status,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes,custom_title,department,team_name,created_at").eq("business_id",businessId).not("user_role","is",null).neq("user_role","customer").order("full_name"),
+  canViewStaff?db.from("users").select("id,first_name,last_name,full_name,email,phone,status,user_role,employee_number,job_title,employment_type,employment_status,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes,custom_title,department,team_name,created_at").eq("business_id",businessId).not("user_role","is",null).neq("user_role","customer").order("full_name"):Promise.resolve({data:[],error:null}),
   db.from("user_roles").select("role_key,name,description,is_system").order("name")
  ]);
  if(error||roleError)return jsonError("Could not load the employee directory.",500);
@@ -26,7 +26,7 @@ export async function GET(){
  const grantsByUser=new Map<string,string[]>();for(const grant of grants??[]){const current=grantsByUser.get(grant.user_id)??[];current.push(grant.permission_key);grantsByUser.set(grant.user_id,current);}
  const directory=(employees??[]).filter(x=>customerByUser.has(x.id)).map(x=>({...x,customer_id:customerByUser.get(x.id),workforce_group:getWorkforceRankGroup(x.user_role),additional_permissions:grantsByUser.get(x.id)??[]}));
  const canAssignExecutiveRoles=await userHasPermission(access.user!.id,"roles.assign_executive");const assignablePermissions=await userHasPermissions(access.user!.id,(catalogue??[]).map(x=>x.permission_key));
- return Response.json({employees:directory,permissions:catalogue??[],assignablePermissions:[...assignablePermissions],canManageAccess:await userHasPermission(access.user!.id,"roles.manage"),canAssignExecutiveRoles,roles:(roles??[]).filter(x=>x.role_key!=="customer"&&(canAssignExecutiveRoles||!executiveRoleKeys.includes(x.role_key))).sort((a,b)=>{const ai=staffRoleKeys.indexOf(a.role_key),bi=staffRoleKeys.indexOf(b.role_key);return (ai<0?99:ai)-(bi<0?99:bi)||a.name.localeCompare(b.name);})});
+ return Response.json({employees:directory,canViewStaff,permissions:catalogue??[],assignablePermissions:[...assignablePermissions],canManageAccess:await userHasPermission(access.user!.id,"roles.manage"),canAssignExecutiveRoles,roles:(roles??[]).filter(x=>x.role_key!=="customer"&&(canAssignExecutiveRoles||!executiveRoleKeys.includes(x.role_key))).sort((a,b)=>{const ai=staffRoleKeys.indexOf(a.role_key),bi=staffRoleKeys.indexOf(b.role_key);return (ai<0?99:ai)-(bi<0?99:bi)||a.name.localeCompare(b.name);})});
 
 }
 export async function POST(){return jsonError("Staff access must be granted through a customer invitation.",410);}
