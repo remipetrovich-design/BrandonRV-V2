@@ -67,6 +67,14 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
+      - name: Pull Vercel Production project configuration for the V2 database connection
+        if: inputs.operation == 'scan_apply'
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Pull Vercel-integrated V2 Supabase Production environment
+        if: inputs.operation == 'scan_apply'
+        run: vercel env pull .env.production.local --yes --environment=production --token="$VERCEL_TOKEN"
+
       - name: Scan pending V2 migrations
         if: inputs.operation == 'scan_apply'
         run: node scripts/run-supabase-migrations.mjs preview
