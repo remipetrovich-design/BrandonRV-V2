@@ -4,7 +4,7 @@ import PublicSiteBuilder from "@/components/public-site-builder";
 import {getPublicBusiness,getPublishedSitePage,getPublishedServices,getPublishedServiceAreas,phoneHref} from "@/lib/public-site";
 
 export const dynamic="force-dynamic";
-export const metadata: Metadata = { title: "Request a quote", description: "Tell Brandon RV about your caravan or motorhome repair." };
+export const metadata: Metadata = { title: "Request a quote", description: "Tell Brandon RV about your caravan or motorhome interior or accessory request." };
 
 export default async function RequestQuotePage() {
   const [page,services,areas,business]=await Promise.all([getPublishedSitePage("request-quote"),getPublishedServices(),getPublishedServiceAreas(),getPublicBusiness()]);
