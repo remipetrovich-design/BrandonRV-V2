@@ -1,4 +1,4 @@
-import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
+import {authorizePermission,database,jsonError,sameOrigin,userHasPermissions} from "@/lib/auth";
 export const runtime="nodejs";
 const readKeys=(value:unknown):string[]=>Array.isArray(value)?[...new Set(value.map((x:unknown)=>String(x)))]:[];
 const roleKey=(name:string)=>name.trim().toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"");
@@ -7,14 +7,15 @@ export async function GET(){
  const [{data:roles,error},{data:catalogue}]=await Promise.all([db.from("user_roles").select("role_key,name,description,is_system").order("is_system",{ascending:false}).order("name"),db.from("permissions").select("permission_key,description").order("permission_key")]);
  if(error)return jsonError("Could not load user roles.",500);
  const keys=(roles??[]).map(x=>x.role_key);const {data:mappings}=keys.length?await db.from("user_role_permissions").select("role_key,permission_key").in("role_key",keys):{data:[]};
- return Response.json({groups:(roles??[]).map(role=>({id:role.role_key,name:role.name,description:role.description,is_system:role.is_system,permissions:(mappings??[]).filter(x=>x.role_key===role.role_key).map(x=>x.permission_key)})),permissions:catalogue??[]});
+ const assignablePermissions=await userHasPermissions(access.user!.id,(catalogue??[]).map(x=>x.permission_key));
+ return Response.json({groups:(roles??[]).map(role=>({id:role.role_key,name:role.name,description:role.description,is_system:role.is_system,permissions:(mappings??[]).filter(x=>x.role_key===role.role_key).map(x=>x.permission_key)})),permissions:catalogue??[],assignablePermissions:[...assignablePermissions]});
 }
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);const access=await authorizePermission("roles.manage");if(access.response)return access.response;
  try{const body=await request.json();const name=String(body.name??"").trim();const description=String(body.description??"").trim().slice(0,500);const keys=readKeys(body.permissions);const key=roleKey(name);
  if(name.length<3||name.length>50||!key)return jsonError("Use a role name between 3 and 50 characters.");
  if(["owner","website_developer","customer","ceo_founder","website_development_specialist","trial_apprentice","apprentice","senior_apprentice","team_leader","supervisor","office_admin","office_supervisor","office_manager","manager","senior_manager","administrator","general_manager"].includes(key))return jsonError("This role name is reserved.");
- const db=database();const {data:catalogue}=await db.from("permissions").select("permission_key");const allowed=new Set<string>((catalogue??[]).map(x=>String(x.permission_key)));if(keys.some(k=>!allowed.has(k)))return jsonError("One or more permissions are invalid.");
+ const db=database();const {data:catalogue}=await db.from("permissions").select("permission_key");const allowed=new Set<string>((catalogue??[]).map(x=>String(x.permission_key)));if(keys.some(k=>!allowed.has(k)))return jsonError("One or more permissions are invalid.");const grantable=await userHasPermissions(access.user!.id,keys);if(keys.some(key=>!grantable.has(key)))return jsonError("You cannot grant permissions that you do not hold.",403);
  const {data:role,error}=await db.from("user_roles").insert({role_key:key,name,description:description||null,is_system:false}).select("role_key,name,description,is_system").single();if(error||!role)return jsonError("Could not create user role.",500);
  if(keys.length){const {error:mapError}=await db.rpc("set_user_role_permissions",{p_role_key:key,p_permission_keys:keys});if(mapError){await db.from("user_roles").delete().eq("role_key",key);return jsonError("Could not save role permissions.",500);}}
  return Response.json({group:{id:role.role_key,name:role.name,description:role.description,is_system:role.is_system,permissions:keys}},{status:201});
