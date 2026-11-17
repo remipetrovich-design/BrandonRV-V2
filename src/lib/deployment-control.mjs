@@ -1,5 +1,4 @@
-export function isManualDeployAvailable({ enabledFlag, dispatchToken } = {}) {
-  const activated = String(enabledFlag ?? "").trim().toLowerCase() === "true";
+export function isManualDeployAvailable({ dispatchToken } = {}) {
   const configured = typeof dispatchToken === "string" && dispatchToken.trim().length > 0;
-  return { activated, configured, available: activated && configured };
+  return { configured, available: true };
 }

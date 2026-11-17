@@ -9,8 +9,9 @@ export async function GET(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const user=await currentUser();if(!user)return jsonError("Not signed in.",401);
  const access=await userHasPermissions(user.id,["developer.deploy","developer.migrations.manage"]);if(!access.size)return jsonError("Not authorised.",403);
- const token=process.env.GITHUB_ACTIONS_DISPATCH_TOKEN;if(!token)return jsonError("GitHub Actions status connection is not configured in this Production runtime.",503);
- const headers={Accept:"application/vnd.github+json",Authorization:"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28"},statusErrors:string[]=[];
+ const token=process.env.GITHUB_ACTIONS_DISPATCH_TOKEN?.trim();
+ const headers:Record<string,string>={Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"};if(token)headers.Authorization="Bearer "+token;
+ const statusErrors:string[]=[];
  const [commit,fullScanRun,deploymentRun,migrationRun,checkPayload]=await Promise.all([
   githubJson("https://api.github.com/repos/"+REPO+"/commits/main",headers).catch(e=>{statusErrors.push("Latest main commit: "+String(e));return null;}),
   latestWorkflowRun(headers,WORKFLOWS.fullScan).catch(e=>{statusErrors.push("Full Scan history: "+String(e));return null;}),
