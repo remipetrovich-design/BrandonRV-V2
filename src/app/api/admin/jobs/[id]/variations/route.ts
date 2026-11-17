@@ -58,3 +58,36 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   return Response.json({quote},{status:201});
  }catch{return jsonError("Could not create Workcard variation.",500);}
 }
+
+
+export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){
+ if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
+ const access=await authorizePermission("jobs.manage");if(access.response)return access.response;
+ try{
+  const {id}=await params,body=await request.json(),businessId=access.membership!.business_id;
+  const quoteId=String(body.quoteId??""),reason=String(body.reason??"").trim().slice(0,2000);
+  const raw=Array.isArray(body.items)?body.items:[];
+  const items=raw.map((x:any,i:number)=>({item_type:String(x.itemType??"parts"),description:String(x.description??"").trim(),quantity:Number(x.quantity??1),unit_price:Number(x.unitPrice??0),sort_order:i,service_id:x.serviceId?String(x.serviceId):null}));
+  const taxRate=Number(body.taxRate??0);
+  if(!/^[0-9a-f-]{36}$/i.test(id)||!/^[0-9a-f-]{36}$/i.test(quoteId))return jsonError("Invalid Workcard variation.");
+  if(reason.length<5||items.length<1||items.length>30||items.some((x:any)=>!["labour","parts"].includes(x.item_type)||x.description.length<3||x.description.length>500||!Number.isFinite(x.quantity)||x.quantity<=0||x.quantity>10000||!Number.isFinite(x.unit_price)||x.unit_price<0||x.unit_price>10000000))return jsonError("Enter a reason and between 1 and 30 valid variation lines.");
+  if(items.some((x:any)=>x.service_id&&!/^[0-9a-f-]{36}$/i.test(x.service_id)))return jsonError("Select a valid service preset or use a custom line.");
+  if(!Number.isFinite(taxRate)||taxRate<0||taxRate>100)return jsonError("Enter a valid GST rate.");
+  const db=database();
+  const {data:job}=await db.from("jobs").select("id,status,worker_signed_off_at,workcard_review_status").eq("id",id).eq("business_id",businessId).maybeSingle();
+  if(!job||job.worker_signed_off_at||!["pending","scheduled","in_progress","waiting_parts"].includes(job.status)||!["approved","legacy_approved"].includes(String(job.workcard_review_status??"legacy_approved")))return jsonError("This Workcard is no longer available for variation revisions.",409);
+  const {data:previous}=await db.from("quotes").select("id").eq("id",quoteId).eq("business_id",businessId).eq("job_id",id).eq("quote_kind","variation").eq("status","draft").eq("senior_approval_status","changes_requested").maybeSingle();
+  if(!previous)return jsonError("Only a variation returned for changes can be revised.",409);
+  const {data:settings}=await db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle();
+  const cfg=settings?.settings&&typeof settings.settings==="object"?settings.settings as Record<string,any>:{};
+  const pricing=cfg.pricing&&typeof cfg.pricing==="object"?cfg.pricing:{};
+  const gstStatus=String(pricing.gst_status??"not_configured"),gstRate=Number(pricing.gst_rate??10);
+  if(gstStatus!=="registered"&&taxRate>0)return jsonError("GST cannot be added until the business GST position is confirmed.");
+  if(gstStatus==="registered"&&Math.abs(taxRate-gstRate)>0.001)return jsonError("Use the configured GST rate from Business Settings.");
+  const serviceIds=items.map((x:any)=>x.service_id).filter(Boolean) as string[];
+  if(serviceIds.length){const {data:services,error:serviceError}=await db.from("services").select("id").eq("business_id",businessId).eq("is_active",true).in("id",serviceIds);if(serviceError||new Set((services??[]).map(x=>x.id)).size!==new Set(serviceIds).size)return jsonError("One or more selected service presets are unavailable for this business.");}
+  const {data:result,error}=await db.rpc("revise_job_variation_quote",{p_quote_id:quoteId,p_business_id:businessId,p_actor_user_id:access.user!.id,p_reason:reason,p_items:items,p_tax_rate:taxRate,p_notes:String(body.notes??"").trim().slice(0,3000)||null,p_terms:String(body.terms??"").trim().slice(0,3000)||null});
+  if(error){if(error.code==="P0001")return jsonError(error.message??"This variation can no longer be revised.",409);if(error.code==="22023")return jsonError(error.message??"Invalid variation revision.");return jsonError("Could not revise Workcard variation. No changes were made.",500);}
+  return Response.json(result);
+ }catch{return jsonError("Could not revise Workcard variation.",500);}
+}
