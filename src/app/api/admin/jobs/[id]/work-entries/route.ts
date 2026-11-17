@@ -90,6 +90,10 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   if(value.service_id){const {data:service}=await db.from("services").select("id,name,is_active").eq("id",value.service_id).eq("business_id",businessId).maybeSingle();if(!service||!service.is_active)return jsonError("Select an active service from this business.");}
   const {data:entry,error}=await db.from("job_work_entries").insert({...value,business_id:businessId,job_id:id,created_by:access.user!.id}).select("id,entry_type,description,quantity,quantity_required,quantity_used,unit_price,cost_unit_price,tax_rate,line_total,part_number,supplier_name,customer_visible,invoiceable,service_id").single();
   if(error||!entry){console.error("Workcard entry insert failed",error);return jsonError("Could not add Workcard entry.",500);}
+  if(entry.entry_type==="parts"){
+   const {error:readinessError}=await db.rpc("refresh_workcard_parts_readiness",{p_business_id:businessId,p_job_id:id,p_actor_user_id:access.user!.id});
+   if(readinessError){console.error("Workcard parts readiness reconciliation failed",readinessError);return jsonError("Workcard entry was saved, but parts readiness could not be reconciled. Refresh and retry.",500);}
+  }
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.entry_created",entity_type:"job_work_entry",entity_id:entry.id,details:{job_id:id,entry_type:entry.entry_type,description:entry.description,invoiceable:entry.invoiceable}});
   return Response.json({entry},{status:201});
  }catch(error){console.error("Workcard entry creation failed",error);return jsonError("Could not add Workcard entry.",500);}
@@ -117,6 +121,10 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(value.service_id){const {data:service}=await db.from("services").select("id").eq("id",value.service_id).eq("business_id",businessId).eq("is_active",true).maybeSingle();if(!service)return jsonError("Select an active service from this business.");}
   const {data:entry,error}=await db.from("job_work_entries").update(value).eq("id",entryId).eq("job_id",id).eq("business_id",businessId).select("id,entry_type,description,quantity,quantity_required,quantity_used,unit_price,cost_unit_price,tax_rate,line_total,part_number,supplier_name,customer_visible,invoiceable,service_id").maybeSingle();
   if(error||!entry){console.error("Workcard entry update failed",error);return jsonError("Could not update Workcard entry.",500);}
+  if(entry.entry_type==="parts"){
+   const {error:readinessError}=await db.rpc("refresh_workcard_parts_readiness",{p_business_id:businessId,p_job_id:id,p_actor_user_id:access.user!.id});
+   if(readinessError){console.error("Workcard parts readiness reconciliation failed",readinessError);return jsonError("Workcard entry was updated, but parts readiness could not be reconciled. Refresh and retry.",500);}
+  }
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"workcard.entry_updated",entity_type:"job_work_entry",entity_id:entryId,details:{job_id:id,invoiceable:entry.invoiceable}});
   return Response.json({entry});
  }catch(error){console.error("Workcard entry update failed",error);return jsonError("Could not update Workcard entry.",500);}
