@@ -51,7 +51,7 @@ BEGIN
     RAISE EXCEPTION 'Booking not found.' USING ERRCODE = 'P0002';
   END IF;
   IF v_appointment.enquiry_id IS DISTINCT FROM p_enquiry_id
-     AND NOT (v_appointment.quote_id = ANY(v_quote_ids)) THEN
+     AND (v_appointment.quote_id IS NULL OR NOT (v_appointment.quote_id = ANY(v_quote_ids))) THEN
     RAISE EXCEPTION 'This booking does not belong to the selected Jobcard.' USING ERRCODE = 'P0001';
   END IF;
   IF v_appointment.status NOT IN ('requested','confirmed','rescheduled') THEN
