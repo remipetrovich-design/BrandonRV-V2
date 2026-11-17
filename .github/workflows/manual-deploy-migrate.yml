@@ -87,6 +87,10 @@ jobs:
         if: inputs.operation == 'deploy'
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 
+      - name: Pull Vercel Production environment variables for the build
+        if: inputs.operation == 'deploy'
+        run: vercel env pull .env.production.local --yes --environment=production --token="$VERCEL_TOKEN"
+
       - name: Build the latest main commit
         if: inputs.operation == 'deploy'
         run: vercel build --prod --token="$VERCEL_TOKEN"
