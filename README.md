@@ -67,7 +67,7 @@ Set the required values in `.env.local` before using application features that c
 Available scripts:
 
 - `npm run dev` — start the local development server
-- `npm test` — run the Node unit tests for role policy, portal navigation, service approval and deployment configuration
+- `npm test` — run the Node unit tests for role policy, portal navigation, service approval, deployment configuration and email templates
 - `npm run typecheck` — run the TypeScript check
 - `npm run build` — create a production build
 - `npm run start` — start the production server
@@ -78,7 +78,7 @@ The root `.env.example` is the complete list of application runtime variables. S
 
 ## Transactional email and staff invitations
 
-V2 uses `NEXT_PUBLIC_APP_URL` for account verification, password reset and staff invitation links when configured. If it is blank, links use the current request origin. Set it to the V2 production URL when V2 is connected to Vercel; do not set it to the original Brandon RV production URL.
+V2 uses `NEXT_PUBLIC_APP_URL` for account verification, password reset and staff invitation links when configured. If it is blank, those auth links use the current request origin. Bundled email templates fall back to the V2 Vercel domain, not the old V1 domain. Set `NEXT_PUBLIC_APP_URL` to the V2 production URL; do not set it to the original Brandon RV production URL.
 
 Transactional mail is intended to use the existing OrbitFS Mail integration, but delivery is currently paused because `ORBITFS_MAIL_URL` and `BRANDONSRV_MAIL_API_KEY` are empty. Do not enable outbound mail until those existing integration values are configured and tested. `BRANDONRV_PUBLIC_EMAIL` must remain blank until the supplied address, domain and mailbox are verified. The email-template admin page is available under Admin → Business configuration → Email templates and requires `business.settings.manage`.
 
