@@ -4,7 +4,8 @@ type Permission={permission_key:string;description:string};
 type Role={id:string;name:string;description:string|null;is_system:boolean;permissions:string[]};
 const order=["ceo_founder","website_development_specialist","senior_manager","general_manager","administrator","manager","office_manager","office_supervisor","office_admin","supervisor","team_leader","senior_apprentice","apprentice","trial_apprentice","customer"];
 const sections:{title:string;description:string;prefixes?:string[];keys?:string[]}[]=[
- {title:"Approvals & overrides",description:"Independent review, scheduling restrictions and workflow exceptions.",keys:["quotes.approve_self_review","appointments.override_scheduling_restrictions"]},
+ {title:"Approvals & overrides",description:"Independent review, scheduling restrictions and management-only customer approval bypass.",keys:["quotes.approve_self_review","appointments.override_scheduling_restrictions","workflow.bypass_customer_approval"]},
+ {title:"Work preparation",description:"Prepare checklists, notes, parts requests and proposed schedules without committing spend.",keys:["jobs.prepare"]},
  {title:"Customers & intake",description:"Customer records, vehicles, enquiries and submitted documents.",prefixes:["customers.","vehicles.","enquiries.","documents."]},
  {title:"Quotes, bookings & Workcards",description:"Quote preparation, approvals, appointment management and job execution.",prefixes:["quotes.","appointments.","jobs."]},
  {title:"Finance & purchasing",description:"Invoices, payments, expenses, reports, suppliers and assets.",prefixes:["invoices.","payments.","expenses.","reports.","suppliers.","assets."]},
