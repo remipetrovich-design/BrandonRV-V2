@@ -6,7 +6,7 @@ const REPO="remipetrovich-design/BrandonRV-V2";
 const WORKFLOWS={scan_apply:"manual-scan-apply-migrations.yml",deploy:"manual-deploy-latest.yml"} as const;
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
- const body=await request.json().catch(()=>null),action=body?.action;
+ const body:{action?:string}|null=await request.json().catch(()=>null),action=body?.action;
  if(action!=="scan_apply"&&action!=="deploy")return jsonError("Choose a supported operation.",400);
  const access=await authorizePermission(action==="scan_apply"?"developer.migrations.manage":"developer.deploy");if(access.response)return access.response;
  const user=access.user!;
