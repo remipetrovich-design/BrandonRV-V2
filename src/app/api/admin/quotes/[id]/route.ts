@@ -22,10 +22,11 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   const {data:quote,error:loadError}=await db.from("quotes").select("id,status,quote_kind,subtotal,tax_amount,total,quote_items(description,quantity,unit_price,tax_rate,line_total,sort_order)").eq("id",id).eq("business_id",businessId).maybeSingle();
   if(loadError||!quote)return jsonError("Quote not found.",404);
   if(body.status==="sent"){
-   const {data:issued,error:issueError}=await db.rpc("issue_quote_for_jobcard",{p_quote_id:id,p_business_id:businessId,p_actor_user_id:access.user!.id});
+   const issueRpc=quote.quote_kind==="variation"?"issue_job_variation_quote":"issue_quote_for_jobcard";
+   const {data:issued,error:issueError}=await db.rpc(issueRpc,{p_quote_id:id,p_business_id:businessId,p_actor_user_id:access.user!.id});
    if(issueError){if(issueError.code==="P0001")return jsonError("This quote or Jobcard is no longer available for issue.",409);return jsonError("Could not issue quote. No changes were made.",500);}
    if(!issued?.success)return jsonError("Could not confirm quote issue. No changes were made.",500);
-   const {data:quoteRecord}=await db.from("quotes").select("quote_number,total,customer_id,user_id,enquiry_id").eq("id",id).eq("business_id",businessId).maybeSingle();
+   const {data:quoteRecord}=await db.from("quotes").select("quote_number,total,customer_id,user_id,enquiry_id,quote_kind").eq("id",id).eq("business_id",businessId).maybeSingle();
    let customer:any=null;
    if(quoteRecord?.user_id){const result=await db.from("users").select("full_name,email").eq("id",quoteRecord.user_id).maybeSingle();customer=result.data;}
    else if(quoteRecord?.customer_id){const result=await db.from("customers").select("full_name,email").eq("id",quoteRecord.customer_id).eq("business_id",businessId).maybeSingle();customer=result.data;}
@@ -38,7 +39,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
     const accessMarkup=guestQuote
      ?"<p>Use the secure Request Quote link and access code from your original confirmation email to view and respond to this quote.</p>"
      :'<p><a href="'+base+'/portal/quotes">View your quote</a></p>';
-    emailSent=await sendEmail({sender:"brandonrv",to:customer.email,subject:"Your Brandon RV quote "+quoteRecord.quote_number,html:`<p>Hi ${safeName},</p><p>Your Brandon RV quote ${quoteRecord.quote_number} is ready for review.</p><p>Quote total: <strong>${Number(quoteRecord.total).toFixed(2)} AUD</strong></p>${accessMarkup}<p>Work is not booked until Brandon RV confirms scheduling.</p>`});
+    emailSent=await sendEmail({sender:"brandonrv",to:customer.email,subject:(quoteRecord.quote_kind==="variation"?"Your Brandon RV additional work variation ":"Your Brandon RV quote ")+quoteRecord.quote_number,html:`<p>Hi ${safeName},</p><p>${quoteRecord.quote_kind==="variation"?"An additional work variation "+quoteRecord.quote_number+" for your existing Workcard is ready for review.":"Your Brandon RV quote "+quoteRecord.quote_number+" is ready for review."}</p><p>Quote total: <strong>${Number(quoteRecord.total).toFixed(2)} AUD</strong></p>${accessMarkup}<p>${quoteRecord.quote_kind==="variation"?"Approving this variation authorises only the listed additional work; your original accepted quote remains unchanged.":"Work is not booked until Brandon RV confirms scheduling."}</p>`});
    }
    return Response.json({success:true,emailSent});
   }
