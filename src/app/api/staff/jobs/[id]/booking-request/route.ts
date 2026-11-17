@@ -34,9 +34,11 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   }).select("id,status,preferred_start,preferred_end,location").single();
   if(error?.code==="23505")return jsonError("A booking request already exists for this quote. Open the existing appointment.",409);
   if(error||!appointment)return jsonError("Could not submit the booking request.",500);
-  const {error:linkError}=await db.from("jobs").update({appointment_id:appointment.id,updated_at:new Date().toISOString()}).eq("id",id).eq("business_id",businessId);
-  if(linkError){await db.from("appointments").delete().eq("id",appointment.id).eq("business_id",businessId);return jsonError("Booking request was rolled back because it could not be linked to the Workcard.",500);}
-  await db.from("audit_events").insert({business_id:businessId,actor_user_id:user.id,action:"workcard.booking_requested",entity_type:"job",entity_id:id,details:{appointment_id:appointment.id,quote_id:quote.id}});
-  return Response.json({success:true,appointment,message:"Booking request sent to management. The visit is not confirmed until the date, time and location are approved."},{status:201});
+  const {data:bookingResult,error:bookingError}=await db.rpc("update_jobcard_booking",{
+   p_business_id:businessId,p_actor_user_id:user.id,p_enquiry_id:enquiry.id,p_appointment_id:appointment.id,
+   p_action:"request",p_starts_at:start.toISOString(),p_ends_at:null,p_location:location
+  });
+  if(bookingError){await db.from("appointments").delete().eq("id",appointment.id).eq("business_id",businessId);const status=bookingError.code==="P0001"?409:bookingError.code==="P0002"?404:500;return jsonError(bookingError.message??"Booking request could not be linked to the Workcard.",status);}
+  return Response.json({success:true,appointment:bookingResult.appointment,message:"Booking request sent to management. The visit is not confirmed until the date, time and location are approved."},{status:201});
  }catch{return jsonError("Could not submit the booking request.",500);}
 }
