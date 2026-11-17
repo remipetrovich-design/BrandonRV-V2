@@ -17,6 +17,8 @@ test("generated SQL function definitions are properly terminated before privileg
  const migration=await read(migrationPath);
  const terminators=migration.match(/\$function\$;\s*REVOKE ALL ON FUNCTION/g)||[];
  assert.equal(terminators.length,8);
+ assert.match(migration,/AS \$refresh_workcard_parts_readiness\$[\\s\\S]*END;\\s*\$refresh_workcard_parts_readiness\$;/);
+ assert.match(migration,/AS \$respond_to_completed_workcard\$[\\s\\S]*END;\\s*\$respond_to_completed_workcard\$;/);
 });
 
 test("invoice issuer identity matches the application's public user model",async()=>{
