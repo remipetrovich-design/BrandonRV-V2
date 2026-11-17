@@ -13,7 +13,7 @@ async function context(jobId:string,userId:string,businessId:string){
  const canManage=await userHasPermission(userId,"jobs.manage");
  const canPrepare=await userHasPermission(userId,"jobs.prepare");
  let assigned=false;
- if(staff){const {data:assignment}=await db.from("job_assignments").select("status").eq("business_id",businessId).eq("job_id",jobId).eq("staff_id",staff.id).maybeSingle();assigned=["pending","accepted"].includes(String(assignment?.status));}
+ if(staff){const {data:assignment}=await db.from("job_assignments").select("status").eq("business_id",businessId).eq("job_id",jobId).eq("staff_id",staff.id).maybeSingle();assigned=["assigned","accepted"].includes(String(assignment?.status));}
  return {db,job,allowed:canManage||(canPrepare&&assigned)};
 }
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
