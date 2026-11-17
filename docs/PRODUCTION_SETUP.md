@@ -44,9 +44,9 @@ The existing OrbitFS Mail integration is send-only. Brandon RV resolves the send
 The manual workflow is `.github/workflows/manual-deploy-migrate.yml`.
 
 - It has only a `workflow_dispatch` trigger. It has no `push` trigger and ordinary Vercel Git deployments do not apply Supabase migrations.
-- The GitHub repository variable `BRANDON_RV_MANUAL_DEPLOY_ENABLED` must be `true`, and the caller must type `YES`.
-- The Vercel Production variable `BRANDON_RV_MANUAL_DEPLOY_ENABLED` is currently `false`. The migration helper also checks this Vercel-side gate, so a direct GitHub dispatch cannot apply migrations or deploy while it remains false.
-- The admin-panel dispatch route is restricted to Owner or Website Developer and requires the server-side `GITHUB_ACTIONS_DISPATCH_TOKEN`.
+- Deployment is manually dispatched from the admin control or the dedicated GitHub Actions workflow; the caller must type `YES`. The legacy `BRANDON_RV_MANUAL_DEPLOY_ENABLED` flag is not a deployment prerequisite.
+- The Vercel Production variable `BRANDON_RV_MANUAL_DEPLOY_ENABLED` is currently `false`; it does not disable the separate latest-main deployment workflow. Deployment remains gated by a successful Full Scan for the exact commit and the required Production GitHub environment.
+- The admin-panel dispatch route is restricted to Owner or Website Developer. `GITHUB_ACTIONS_DISPATCH_TOKEN` enables direct in-app dispatch; when it is absent, the control opens the matching GitHub Actions workflow so the operator can start it there.
 - GitHub Actions requires only `VERCEL_TOKEN`, `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` secrets for deployment. The Vercel Supabase integration supplies `POSTGRES_URL_NON_POOLING`; separate `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD` secrets are not required.
 - The workflow validates the Vercel project and Supabase project reference, previews the remote migration plan, builds the application before changing the database, applies migrations through the Vercel-integrated direct connection, and then deploys the verified build.
 - The GitHub `production` environment remains required.
