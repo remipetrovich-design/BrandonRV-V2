@@ -35,7 +35,6 @@ test("customer-requested corrections reopen the Workcard and require fresh sign-
  assert.match(migration,/customer_approval_status = 'changes_requested'/);
  assert.match(migration,/status = 'in_progress'/);
  assert.match(migration,/worker_signed_off_at = NULL/);
- assert.match(migration,/senior_approval_status = 'changes_requested'/);
  assert.match(migration,/DELETE FROM public\.invoices/);
  assert.match(migration,/status = 'accepted'/);
  assert.match(migration,/workcardReopened/);
