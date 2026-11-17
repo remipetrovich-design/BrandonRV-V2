@@ -44,6 +44,18 @@ BEGIN
     RAISE EXCEPTION 'This Jobcard is not available for quoting.' USING ERRCODE = 'P0001';
   END IF;
 
+  IF EXISTS (
+    SELECT 1 FROM public.quotes q
+     WHERE q.business_id = p_business_id
+       AND q.enquiry_id = v_enquiry.id
+       AND q.quote_kind = 'standard'
+       AND q.status = 'sent'
+       AND q.id <> v_quote.id
+       AND q.revision_number >= v_quote.revision_number
+  ) THEN
+    RAISE EXCEPTION 'A newer quote revision is already issued.' USING ERRCODE = 'P0001';
+  END IF;
+
   -- Keep the currently issued revision valid while a replacement is only a draft.
   -- Supersede earlier issued revisions atomically with issuing the new approved revision.
   UPDATE public.quotes
