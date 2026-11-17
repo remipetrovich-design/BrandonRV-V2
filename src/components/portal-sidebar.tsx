@@ -6,6 +6,7 @@ import {PORTAL_NAV_GROUPS,isPortalNavActive} from "@/lib/portal-navigation.mjs";
 
 const paths:Record<string,string>={
   home:"M3 10.5 12 3l9 7.5M5.5 9v11h13V9M9 20v-6h6v6",
+  home:"M3 10.5 12 3l9 7.5M5.5 9v11h13V9M9 20v-6h6v6",
   quote:"M5 3h14v18H5zM8 8h8M8 12h8M8 16h5",
   calendar:"M4 5h16v15H4zM8 3v4M16 3v4M4 10h16",
   vehicle:"M3 14l1.5-5h15L21 14v5h-3v-2H6v2H3zM5 9l2-4h10l2 4",
