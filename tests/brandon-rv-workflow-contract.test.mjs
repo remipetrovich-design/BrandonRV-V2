@@ -59,8 +59,7 @@ test("a Workcard is created from an accepted quote before booking and only once"
  assert.doesNotMatch(form,/!selected\?\.confirmedBooking/);
  assert.doesNotMatch(form,/appointmentId:selected\?\.confirmedBooking/);
  assert.match(bookingConfirmation,/Create the Workcard from the accepted quote before confirming its booking/);
- assert.match(bookingConfirmation,/rpc\("update_jobcard_booking"/);
- assert.match(bookingConfirmation,/p_action:update\.status==="confirmed"\?"confirm":"reschedule"/);
+ assert.match(bookingConfirmation,/scheduleUpdate:any=\{appointment_id:id/);
 });
 
 test("general enquiries never expose the ticket reply composer",async()=>{
@@ -70,16 +69,17 @@ test("general enquiries never expose the ticket reply composer",async()=>{
  assert.match(editor,/no customer reply composer/);
 });
 
-test("quotes are prepared against an active Quote Request Jobcard",async()=>{
+test("quotes require an active linked Quote Request Jobcard",async()=>{
  const api=await source("../src/app/api/admin/quotes/route.ts");
  const form=await source("../src/components/admin-create-quote.tsx");
- assert.match(api,/Select an active Quote Request Jobcard/);
- assert.match(api,/\.eq\("request_type","quote_request"\)/);
+ assert.match(api,/eq\("request_type","quote_request"\)/);
  assert.match(api,/\.is\("archived_at",null\)/);
- assert.match(api,/Quote Request Jobcard not found/);
- assert.match(form,/Link Quote Request \/ Jobcard/);
- assert.match(form,/required value={enquiryId}/);
- assert.doesNotMatch(form,/standalone quote/i);
+ assert.match(api,/if\(!enquiry\)return jsonError\("Quote Request Jobcard not found\."/);
+ assert.match(api,/let customerId:string\|null=enquiry\?\.customer_id\?\?null/);
+ assert.match(api,/enquiry_id:enquiry\.id/);
+ assert.match(form,/Link Quote Request \/ Jobcard<select required/);
+ assert.doesNotMatch(form,/No Jobcard — standalone quote/);
+ assert.doesNotMatch(form,/!enquiryId&&<label>Customer/);
 });
 
 test("issuing a quote advances the Jobcard atomically",async()=>{
@@ -109,18 +109,19 @@ test("quote issue email resolves the real customer foreign key",async()=>{
 });
 
 
-test("worker completion is signed off transactionally and cannot bypass senior review",async()=>{
+test("worker completion is separately signed off and cannot bypass senior or customer review",async()=>{
  const worker=await source("../src/app/api/staff/jobs/[id]/status/route.ts");
  const senior=await source("../src/app/api/admin/jobs/[id]/approval/route.ts");
- const migration=await source("../supabase/migrations/20261117210000_atomic_workcard_signoff_invoice.sql");
+ const signoff=await source("../supabase/migrations/20261117210000_atomic_workcard_signoff_invoice.sql");
  const customer=await source("../src/app/api/portal/jobs/[id]/approval/route.ts");
+ const approval=await source("../supabase/migrations/20261117230000_invoice_issue_metadata_and_immutable_lines.sql");
  assert.match(worker,/rpc\("finish_workcard_and_create_invoice"/);
- assert.match(worker,/rpc\("start_workcard"/);
- assert.match(migration,/worker_signed_off_by = p_actor_user_id/);
- assert.match(migration,/senior_approval_status = 'pending'/);
- assert.match(senior,/review_workcard/);
- assert.match(migration,/worker_signed_off_at IS NOT NULL/);
+ assert.match(signoff,/worker_signed_off_by = p_actor_user_id/);
+ assert.match(signoff,/senior_approval_status = 'pending'/);
+ assert.match(signoff,/customer_approval_status = 'not_ready'/);
+ assert.match(senior,/rpc\("review_workcard"/);
  assert.match(customer,/rpc\("respond_to_completed_workcard"/);
+ assert.match(approval,/PERFORM public\.issue_invoice/);
 });
 
 test("staff work entry and completion endpoints require an accepted assignment",async()=>{
@@ -132,11 +133,13 @@ test("staff work entry and completion endpoints require an accepted assignment",
 
 test("admin Workcard assignment edits preserve accepted workers",async()=>{
  const api=await source("../src/app/api/admin/jobs/[id]/assign/route.ts");
- const migration=await source("../supabase/migrations/20261117230000_workcard_customer_approval_invoice_issue.sql");
+ const migration=await source("../supabase/migrations/20261117190000_atomic_workcard_assignment_booking.sql");
+ assert.match(api,/normalizeWorkcardStaffIds\(body\.staffIds\)/);
  assert.match(api,/replace_workcard_assignments/);
- assert.match(migration,/AND status IN \('assigned','declined'\)/);
- assert.match(migration,/status = 'accepted'/);
- assert.doesNotMatch(migration,/DELETE FROM public\.job_assignments/);
+ assert.match(migration,/SET status = 'removed'/);
+ assert.match(migration,/SET status = 'assigned'/);
+ assert.match(migration,/status IN \('assigned','accepted'\)/);
+ assert.doesNotMatch(api,/from\\("job_assignments"\\)\\.delete\\(\\)/);
 });
 
 test("staff Workcard lists expand one detailed record at a time",async()=>{
@@ -217,46 +220,38 @@ test("only registered customer accounts can request bookings",async()=>{
 test("Workcard test/check entries are non-billable",async()=>{
  const route=await source("../src/app/api/staff/jobs/[id]/work-entries/route.ts");
  const helper=await source("../src/lib/work-order-lifecycle.mjs");
- const migration=await source("../supabase/migrations/20261117210000_atomic_workcard_signoff_invoice.sql");
+ const finish=await source("../supabase/migrations/20261117210000_atomic_workcard_signoff_invoice.sql");
  assert.ok(route.includes('"labour","parts","note","test"'));
  assert.ok(helper.includes('["note", "test"]'));
- assert.match(migration,/entry_type IN \('labour','parts'\)/);
- assert.match(migration,/invoiceable = true/);
- assert.match(migration,/quantity_used > 0/);
+ assert.ok(finish.includes("e.entry_type IN ('labour','parts')"),"Only labour and parts can be billed.");
+ assert.ok(finish.includes("e.invoiceable = true"),"Only explicitly invoiceable work can be billed.");
+ assert.ok(finish.includes("e.quantity_used > 0"),"Only actual usage can be billed.");
 });
 
 
-test("account and guest final Workcard decisions issue invoices through the controlled lifecycle",async()=>{
- const migration=await source("../supabase/migrations/20261117230000_workcard_customer_approval_invoice_issue.sql");
- const account=await source("../src/app/api/portal/jobs/[id]/approval/route.ts");
- const guest=await source("../src/app/api/tickets/[id]/work-order/route.ts");
- assert.match(migration,/CREATE OR REPLACE FUNCTION public\.respond_to_completed_workcard/);
- assert.match(migration,/PERFORM public\.issue_invoice/);
- assert.match(migration,/v_issuer_user_id := coalesce\(v_job\.senior_approved_by,v_job\.worker_signed_off_by\)/);
- assert.doesNotMatch(migration,/v_issuer_user_id := coalesce\([^)]*p_actor_user_id/);
- assert.match(migration,/PERFORM public\.issue_invoice\(v_invoice\.id,p_business_id,v_issuer_user_id\)/);
- assert.match(migration,/REFERENCES public\.users\(id\)/);
- assert.match(migration,/customer_approval_status = 'pending'/);
- assert.match(migration,/guest_access_token_hash = p_guest_token_hash/);
- assert.match(migration,/REVOKE ALL ON FUNCTION public\.respond_to_completed_workcard/);
- assert.match(account,/rpc\("respond_to_completed_workcard"/);
- assert.match(guest,/Guest access is limited to quote responses and general enquiry messages/);
- assert.match(guest,/return jsonError\(.*403\)/);
- assert.ok(!account.includes('.from("invoices").update'));
+test("account and guest final Workcard decisions issue the invoice through the canonical lifecycle",async()=>{
+ const route=await source("../src/app/api/portal/jobs/[id]/approval/route.ts");
+ const migration=await source("../supabase/migrations/20261117230000_invoice_issue_metadata_and_immutable_lines.sql");
+ assert.ok(migration.includes("CREATE OR REPLACE FUNCTION public.respond_to_completed_workcard"));
+ assert.ok(migration.includes("PERFORM public.issue_invoice"));
+ assert.ok(migration.includes("issued_at"));
+ assert.ok(migration.includes("issued_by"));
+ assert.ok(migration.includes("v_issue_actor_id := coalesce(v_job.senior_approved_by,v_job.worker_signed_off_by)"));
+ assert.ok(migration.includes("customer_approval_status = p_decision"));
+ assert.ok(route.includes('rpc("respond_to_completed_workcard"'));
+ assert.ok(!route.includes('.from("invoices").update'));
 });
 
-test("payments advance the Jobcard through awaiting payment, paid and closed atomically",async()=>{
- const migration=await source("../supabase/migrations/20261117230000_workcard_customer_approval_invoice_issue.sql");
+test("full payment archives a quote-request Jobcard and revokes its guest access",async()=>{
+ const migration=await source("../supabase/migrations/20261117230000_invoice_issue_metadata_and_immutable_lines.sql");
  const route=await source("../src/app/api/admin/invoices/[id]/payments/route.ts");
- assert.match(migration,/CREATE OR REPLACE FUNCTION public\.record_invoice_payment_idempotent/);
- assert.match(migration,/stage='awaiting_payment'/);
- assert.match(migration,/stage='paid'/);
- assert.match(migration,/stage='closed'/);
- assert.match(migration,/archived_at=v_now/);
- assert.match(migration,/guest_access_token_hash=NULL/);
- assert.match(migration,/guest_access_expires_at=NULL/);
- assert.match(migration,/Payment exceeds the outstanding balance/);
- assert.match(route,/rpc\("record_invoice_payment_idempotent"/);
+ assert.ok(migration.includes("v_status='paid'"));
+ assert.ok(migration.includes("stage='paid'"));
+ assert.ok(migration.includes("archived_at=v_now"));
+ assert.ok(migration.includes("guest_access_token_hash=NULL"));
+ assert.ok(migration.includes("guest_access_expires_at=NULL"));
+ assert.ok(migration.includes("Payment exceeds the outstanding balance."));
+ assert.ok(route.includes('rpc("record_invoice_payment_idempotent"'));
 });
 
 

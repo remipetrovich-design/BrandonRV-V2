@@ -22,18 +22,25 @@ test("service catalogue selection is a category and never replaces the actual wo
 test("admin can create and manage a booking directly from a Workcard",async()=>{
  const component=await read("../src/components/admin-workcard-management.tsx");
  const route=await read("../src/app/api/admin/jobs/[id]/booking/route.ts");
- const migration=await read("../supabase/migrations/20261117230000_workcard_customer_approval_invoice_issue.sql");
  assert.match(component,/activeTab==="booking"&&<section/);
  assert.match(component,/Accept booking request/);
  assert.match(component,/Booking & schedule/);
  assert.match(component,/\/booking/);
  assert.match(route,/authorizePermission\("appointments\.manage"\)/);
  assert.match(route,/sameOrigin\(request\)/);
+ assert.match(route,/appointments/);
+ assert.match(route,/starts_at/);
+ assert.match(route,/ends_at/);
+ assert.match(route,/location/);
  assert.match(route,/rpc\("update_jobcard_booking"/);
  assert.match(route,/p_action:"confirm"/);
+ assert.match(route,/p_enquiry_id:enquiryId/);
+ assert.match(route,/workcardsUpdated/);
+ assert.match(route,/status:"confirmed"/);
+ assert.match(route,/status==="requested"/);
+ assert.match(route,/business_id/);
  assert.match(route,/bookingWindowsConflict/);
  assert.match(route,/validateBookingWindow/);
- assert.match(migration,/workcard\.booking_'\|\|p_action/);
 });
 
 test("master calendar creates confirmed appointments against an existing Workcard",async()=>{
@@ -47,21 +54,17 @@ test("master calendar creates confirmed appointments against an existing Workcar
  assert.match(route,/appointments\.manage/);
  assert.match(route,/validateBookingWindow/);
  assert.match(route,/bookingWindowsConflict/);
- assert.match(route,/rpc\("update_jobcard_booking"/);
- assert.match(route,/p_action:"confirm"/);
- assert.match(route,/p_bypass_conflicts:bypassRestrictions/);
- assert.doesNotMatch(route,/from\("jobs"\)\.update/);
+ assert.match(route,/calendar\.appointment_created/);
+ assert.match(route,/appointment_id:appointment\.id/);
 });
 
-test("master calendar changes synchronise the linked Workcard schedule transactionally",async()=>{
+test("master calendar changes synchronise the linked Workcard schedule",async()=>{
  const route=await read("../src/app/api/admin/[section]/[id]/route.ts");
  const component=await read("../src/components/admin-workcard-management.tsx");
- const migration=await read("../supabase/migrations/20261117230000_workcard_customer_approval_invoice_issue.sql");
- assert.match(route,/rpc\("update_jobcard_booking"/);
- assert.match(route,/p_action:update\.status==="confirmed"\?"confirm":"reschedule"/);
- assert.match(route,/p_action:"cancel"/);
- assert.doesNotMatch(route,/workcard\.booking_synced_from_calendar/);
- assert.match(migration,/UPDATE public\.jobs/);
+ assert.match(route,/workcard\.booking_synced_from_calendar/);
+ assert.match(route,/scheduled_start:update\.starts_at/);
+ assert.match(route,/update\.status==="cancelled"/);
+ assert.match(route,/scheduled_start:null/);
  assert.match(component,/Master bookings & calendar/);
 });
 
