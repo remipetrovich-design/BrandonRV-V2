@@ -1,3 +1,4 @@
+import { checkAlisLicense } from '../.alis/proxy-license.js';
 import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
 import {firstInstallDecision,requiresFirstOwnerSetup} from "@/lib/first-install.mjs";
@@ -11,6 +12,8 @@ function unavailableResponse(pathname:string){
 }
 
 export async function proxy(request:NextRequest){
+ const alisResponse = await checkAlisLicense(request);
+ if (alisResponse) return alisResponse;
  const pathname=request.nextUrl.pathname;
  if(pathname===BOOTSTRAP_PATH||pathname.startsWith("/_next/")||/\.[^/]+$/.test(pathname))return NextResponse.next();
 
