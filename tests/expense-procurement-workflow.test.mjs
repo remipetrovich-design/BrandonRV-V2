@@ -4,7 +4,7 @@ import {readFile} from "node:fs/promises";
 const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 
 test("expenses can be recorded against the same supplier order and Workcard",async()=>{
- const migration=await read("../supabase/migrations/20261117140000_finance_expense_procurement_link.sql");
+ const migration=await read("../supabase/migrations/20261116205028_20261117140000_finance_expense_procurement_link.sql");
  const route=await read("../src/app/api/admin/expenses/route.ts");
  const page=await read("../src/app/admin/expenses/page.tsx");
  const component=await read("../src/components/admin-expenses.tsx");
@@ -23,7 +23,7 @@ test("expenses can be recorded against the same supplier order and Workcard",asy
 });
 
 test("expense approval is separate from recording and is business-scoped",async()=>{
- const migration=await read("../supabase/migrations/20261117140000_finance_expense_procurement_link.sql");
+ const migration=await read("../supabase/migrations/20261116205028_20261117140000_finance_expense_procurement_link.sql");
  assert.match(migration,/p_business_id uuid[\s\S]*p_expense_id uuid[\s\S]*p_approved boolean/);
  assert.ok(migration.includes("WHERE id = p_expense_id AND business_id = p_business_id"));
  assert.ok(migration.includes("approved_by = CASE WHEN p_approved THEN p_actor_user_id ELSE NULL END"));
