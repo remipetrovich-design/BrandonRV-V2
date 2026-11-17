@@ -26,8 +26,8 @@ test("payment, invoice balance and Jobcard closeout share one transaction",async
  assert.match(migration,/UPDATE public\.invoices/);
  assert.match(migration,/stage='awaiting_payment'/);
  assert.match(migration,/stage='paid'/);
- assert.match(migration,/archived_at = v_now/);
- assert.match(migration,/guest_access_token_hash = NULL/);
+ assert.match(migration,/archived_at=v_now/);
+ assert.match(migration,/guest_access_token_hash=NULL/);
  assert.match(migration,/INSERT INTO public\.audit_events/);
 });
 
