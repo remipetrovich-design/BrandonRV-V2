@@ -30,6 +30,18 @@ test("Workcard execution and review advance the original Jobcard pipeline",async
  assert.match(migration,/INSERT INTO public\.enquiry_stage_history/);
 });
 
+test("customer-requested corrections reopen the Workcard and require fresh sign-off",async()=>{
+ const migration=await read(migrationPath);
+ assert.match(migration,/customer_approval_status = 'changes_requested'/);
+ assert.match(migration,/status = 'in_progress'/);
+ assert.match(migration,/worker_signed_off_at = NULL/);
+ assert.match(migration,/senior_approval_status = 'changes_requested'/);
+ assert.match(migration,/DELETE FROM public\.invoices/);
+ assert.match(migration,/status = 'accepted'/);
+ assert.match(migration,/workcardReopened/);
+ assert.match(migration,/Customer requested corrections; the Workcard was reopened for rework/);
+});
+
 test("invoice payments record awaiting-payment, paid and closed stages atomically",async()=>{
  const migration=await read(migrationPath);
  const route=await read("../src/app/api/admin/invoices/[id]/payments/route.ts");
