@@ -1,5 +1,5 @@
 "use client";
-import {useCallback,useEffect,useState} from "react";
+import {useCallback,useEffect,useRef,useState} from "react";
 
 type Run={id:number;name:string;status:string;conclusion:string|null;url:string;createdAt:string;headSha?:string};
 type Check={name:string;status:string;conclusion:string|null;url:string};
@@ -8,12 +8,11 @@ type ConsoleJob={id:number;name:string;status:string;conclusion:string|null;star
 type ConsoleData={runId:number;jobs:ConsoleJob[];updatedAt:string;error?:string};
 type Props={configured:boolean};
 const WORKFLOWS={full_scan:"manual-full-scan.yml",scan_apply:"manual-scan-apply-migrations.yml",deploy:"manual-deploy-latest.yml"} as const;
-const CONSOLES=[{key:"full_scan",title:"Validation / job console",runKey:"fullScanRun"},{key:"scan_apply",title:"Supabase migration console",runKey:"migrationRun"},{key:"deploy",title:"Vercel deployment console",runKey:"deploymentRun"}] as const;
 const ACTIVE=new Set(["queued","in_progress","waiting","requested","pending"]);
 export default function AdminManualDeploy({configured}:Props){
- const [busy,setBusy]=useState("");const [refreshing,setRefreshing]=useState(false);const [snapshot,setSnapshot]=useState<Snapshot|null>(null);const [message,setMessage]=useState("");const [error,setError]=useState("");const [consoles,setConsoles]=useState<Record<string,ConsoleData>>({});
+ const [busy,setBusy]=useState("");const [refreshing,setRefreshing]=useState(false);const [snapshot,setSnapshot]=useState<Snapshot|null>(null);const [message,setMessage]=useState("");const [error,setError]=useState("");const [consoles,setConsoles]=useState<Record<string,ConsoleData>>({});const refreshingRef=useRef(false);
  const loadConsole=useCallback(async(operation:string,run:Run)=>{try{const r=await fetch("/api/admin/deployment/logs?operation="+operation+"&runId="+run.id,{cache:"no-store"});const b=await r.json();if(!r.ok)throw Error(b.error||"Console could not be loaded.");setConsoles(old=>({...old,[operation]:b}));}catch(e){setConsoles(old=>({...old,[operation]:{runId:run.id,jobs:[],updatedAt:new Date().toISOString(),error:e instanceof Error?e.message:"Console could not be loaded."}}));}},[]);
- const refresh=useCallback(async()=>{if(refreshing)return;setRefreshing(true);setError("");try{const r=await fetch("/api/admin/deployment/status",{cache:"no-store"});const b=await r.json();if(!r.ok)throw Error(b.error||"Status refresh failed.");setSnapshot(b);const runs=[["full_scan",b.fullScanRun],["scan_apply",b.migrationRun],["deploy",b.deploymentRun]] as const;await Promise.all(runs.filter((x):x is readonly [string,Run]=>Boolean(x[1])).map(([key,run])=>loadConsole(key,run)));}catch(e){setError(e instanceof Error?e.message:"Status refresh failed.");}finally{setRefreshing(false);}},[refreshing,loadConsole]);
+ const refresh=useCallback(async()=>{if(refreshingRef.current)return;refreshingRef.current=true;setRefreshing(true);setError("");try{const r=await fetch("/api/admin/deployment/status",{cache:"no-store"});const b=await r.json();if(!r.ok)throw Error(b.error||"Status refresh failed.");setSnapshot(b);const runs=[["full_scan",b.fullScanRun],["scan_apply",b.migrationRun],["deploy",b.deploymentRun]] as const;const pending=runs.filter(([key,run])=>{if(!run)return false;const current=consoles[key];if(!current||current.runId!==run.id||ACTIVE.has(run.status))return true;return run.status==="completed"&&current.jobs.some(job=>!job.log||job.log.startsWith("Job log is not available")||job.log.startsWith("GitHub has not published"));});await Promise.all(pending.map(([key,run])=>loadConsole(key,run!)));}catch(e){setError(e instanceof Error?e.message:"Status refresh failed.");}finally{refreshingRef.current=false;setRefreshing(false);}},[loadConsole,consoles]);
  useEffect(()=>{if(!snapshot)return;const runs=[snapshot.fullScanRun,snapshot.migrationRun,snapshot.deploymentRun].filter(Boolean) as Run[];if(!runs.some(run=>ACTIVE.has(run.status)))return;const timer=window.setInterval(()=>{void refresh();},3000);return()=>window.clearInterval(timer);},[snapshot,refresh]);
  async function dispatch(action:keyof typeof WORKFLOWS){
   if(busy)return;

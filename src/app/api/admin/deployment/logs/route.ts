@@ -7,7 +7,8 @@ export async function GET(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const user=await currentUser();if(!user)return jsonError("Not signed in.",401);
  const url=new URL(request.url),operation=url.searchParams.get("operation")||"",runId=Number(url.searchParams.get("runId"));
- if(typeof operation!=="string"||!(operation in WORKFLOWS)||!Number.isSafeInteger(runId)||runId<=0)return jsonError("Choose a valid operation and workflow run.",400);
+ if(typeof operation!=="string"||!Object.hasOwn(WORKFLOWS,operation)||!Number.isSafeInteger(runId)||runId<=0)return jsonError("Choose a valid operation and workflow run.",400);
+ const workflow=WORKFLOWS[operation as keyof typeof WORKFLOWS];
  const permission=operation==="scan_apply"?"developer.migrations.manage":"developer.deploy";
  const access=await userHasPermissions(user.id,[permission]);if(!access.size)return jsonError("Not authorised.",403);
  const token=process.env.GITHUB_ACTIONS_DISPATCH_TOKEN?.trim();if(!token)return jsonError("GitHub Actions log access is not configured.",503);
@@ -16,7 +17,7 @@ export async function GET(request:Request){
   const runResponse=await fetch("https://api.github.com/repos/"+REPO+"/actions/runs/"+runId,{headers,cache:"no-store"});
   if(!runResponse.ok)return jsonError("GitHub could not load this workflow run ("+runResponse.status+").",502);
   const run=await runResponse.json();
-  if(run.path!==".github/workflows/"+WORKFLOWS[operation])return jsonError("The requested run does not belong to this operation.",403);
+  if(run.path!==".github/workflows/"+workflow)return jsonError("The requested run does not belong to this operation.",403);
   const jobsResponse=await fetch("https://api.github.com/repos/"+REPO+"/actions/runs/"+runId+"/jobs?per_page=100&filter=latest",{headers,cache:"no-store"});
   if(!jobsResponse.ok)return jsonError("GitHub could not load workflow jobs ("+jobsResponse.status+").",502);
   const jobsPayload=await jobsResponse.json();
