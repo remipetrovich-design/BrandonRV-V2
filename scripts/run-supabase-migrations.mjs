@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
-import { spawnSync } from "node:child_process";
 import { loadEnvConfig } from "@next/env";
 import { resolveManualDeployTarget } from "../src/lib/manual-deploy-target.mjs";
+import { runCommand } from "../src/lib/stream-command.mjs";
 
 const mode = process.argv[2];
 if (!["preview", "apply"].includes(mode)) {
@@ -20,21 +20,14 @@ if (projectRef !== "lciylmfpcefdpsouoqvm") {
 }
 const databaseUrl = resolveManualDeployTarget(process.env, projectRef);
 
-function run(args) {
-  const result = spawnSync("supabase", args, {
-    encoding: "utf8",
-    env: process.env,
-    maxBuffer: 10 * 1024 * 1024,
-  });
-  const output = `${result.stdout ?? ""}${result.stderr ?? ""}`.replaceAll(databaseUrl, "[redacted database URL]");
-  if (output) process.stdout.write(output);
-  if (result.error) throw result.error;
-  if (result.status !== 0) process.exit(result.status ?? 1);
+async function run(args) {
+  const status = await runCommand("supabase", args, {env:process.env,redact:[databaseUrl]});
+  if (status !== 0) process.exit(status);
 }
 
 if (mode === "preview") {
-  run(["migration", "list", `--remote=${databaseUrl}`]);
-  run(["db", "push", `--remote=${databaseUrl}`, "--dry-run"]);
+  await run(["migration", "list", `--remote=${databaseUrl}`]);
+  await run(["db", "push", `--remote=${databaseUrl}`, "--dry-run"]);
 } else {
-  run(["db", "push", `--remote=${databaseUrl}`, "--yes"]);
+  await run(["db", "push", `--remote=${databaseUrl}`, "--yes"]);
 }
