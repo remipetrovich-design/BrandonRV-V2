@@ -41,9 +41,14 @@ const navigation:AdminNavGroup[]=[
  ]}
 ];
 export default async function AdminLayout({children}:{children:ReactNode}) {
- const user=await currentUser();if(!user)redirect("/portal/sign-in");
+ const sessionStartedAt=Date.now();
+ const user=await currentUser();
+ console.info("[staff-portal-perf] stage=session elapsed_ms="+(Date.now()-sessionStartedAt));
+ if(!user)redirect("/portal/sign-in");
  const permissionKeys=[...new Set([...navigation.flatMap(group=>group.items.map(item=>item.permission)),"quotes.manage","quotes.approve","jobs.complete","time.view","time.manage","time.clock","leave.view","leave.manage","payroll.view","payroll.manage","assets.view","assets.manage","onboarding.view","onboarding.manage","staff.manage","developer.deploy","developer.migrations.manage"])];
+ const accessStartedAt=Date.now();
  const [membership,permitted]=await Promise.all([currentMembership(user.id),userHasPermissions(user.id,permissionKeys)]);
+ console.info("[staff-portal-perf] stage=membership-permissions elapsed_ms="+(Date.now()-accessStartedAt));
  if(!membership)redirect("/portal");
  const workforcePermissions=["time.clock","time.view","time.manage","leave.view","leave.manage","payroll.view","payroll.manage","assets.view","assets.manage","onboarding.view","onboarding.manage","staff.manage","staff.view"];
  const canAccessWorkforce=workforcePermissions.some(permission=>permitted.has(permission));
