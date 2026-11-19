@@ -1,6 +1,5 @@
 "use client";
 import {useEffect,useState} from "react";
-import Link from "next/link";
 import {useRouter} from "next/navigation";
 import AdminJobTools from "@/components/admin-job-tools";
 import WorkcardPreparation from "@/components/workcard-preparation";
@@ -30,7 +29,7 @@ function WorkcardReadOnly({job,entries}:{job:Job;entries:Entry[]}) {
   <section><h3>Parts and work recorded</h3>{entries.filter(entry=>entry.customer_visible).length?entries.filter(entry=>entry.customer_visible).map(entry=><article className="brv-quote-line" key={entry.id}><strong>{entry.description}</strong><span>{entry.entry_type.replaceAll("_"," ")} · Required {entry.quantity_required} · Used {entry.quantity_used}</span></article>):<p className="panel-footnote">No customer-visible work entries recorded yet.</p>}</section>
  </section>;
 }
-export default function AdminWorkcardManagement({jobId,showBookingTab=true,canManage=true,canManageBookings=true,canAssign=false}:{jobId:string;showBookingTab?:boolean;canManage?:boolean;canManageBookings?:boolean;canAssign?:boolean}){
+export default function AdminWorkcardManagement({jobId,canManage=true,canAssign=false}:{jobId:string;showBookingTab?:boolean;canManage?:boolean;canManageBookings?:boolean;canAssign?:boolean}){
  const [job,setJob]=useState<Job|null>(null),[services,setServices]=useState<Service[]>([]),[entries,setEntries]=useState<Entry[]>([]),[permissions,setPermissions]=useState<WorkcardPermissions>({canManage:true,canViewCosts:true,canViewSales:true,canViewSuppliers:true,canManageCosts:true,canManageSales:true,canManageSuppliers:true});
  const [title,setTitle]=useState(""),[scope,setScope]=useState(""),[notes,setNotes]=useState(""),[internalNotes,setInternalNotes]=useState(""),[status,setStatus]=useState("pending"),[priority,setPriority]=useState("normal"),[start,setStart]=useState(""),[estimatedHours,setEstimatedHours]=useState("");
  const [activeTab,setActiveTab]=useState("customer"),[draft,setDraft]=useState(blank()),[editingId,setEditingId]=useState<string|null>(null),[confirmDeleteEntryId,setConfirmDeleteEntryId]=useState<string|null>(null),[confirmDeleteWorkcard,setConfirmDeleteWorkcard]=useState(false),[busy,setBusy]=useState(false),[loading,setLoading]=useState(false),[notice,setNotice]=useState("");
