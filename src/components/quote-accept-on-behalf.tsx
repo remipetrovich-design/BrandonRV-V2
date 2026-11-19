@@ -1,0 +1,8 @@
+"use client";
+import {useState} from "react";
+export default function QuoteAcceptOnBehalf({quoteId}:{quoteId:string}){
+ const [reason,setReason]=useState(""),[notice,setNotice]=useState(""),[busy,setBusy]=useState(false),[done,setDone]=useState(false);
+ async function submit(){setBusy(true);setNotice("");try{const r=await fetch("/api/admin/quotes/"+quoteId+"/accept-on-behalf",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({reason})}),d=await r.json();if(!r.ok)throw new Error(d.error??"Could not record acceptance.");setDone(true);setNotice("Acceptance recorded. The quote is now accepted and the Workcard can proceed to booking.");}catch(e){setNotice(e instanceof Error?e.message:"Could not record acceptance.");}finally{setBusy(false);}}
+ if(done)return <p className="inline-notice" role="status">{notice}</p>;
+ return <details className="brv-admin-quote-tools"><summary>Record customer acceptance (staff)</summary><div className="brv-admin-quote-tools-content"><p className="panel-footnote">Use only when the customer has directly confirmed acceptance (for example, by phone). This records acceptance as a staff action; it does not impersonate the customer's portal account.</p><label>How did the customer confirm?<textarea rows={3} maxLength={1000} value={reason} onChange={e=>setReason(e.target.value)} placeholder="Phone call, date/time, and confirmation details…"/></label><button className="button button-primary" type="button" disabled={busy||reason.trim().length<5} onClick={()=>void submit()}>{busy?"Recording…":"Record acceptance on customer's behalf"}</button>{notice&&<p className="inline-notice" role="status">{notice}</p>}</div></details>;
+}
