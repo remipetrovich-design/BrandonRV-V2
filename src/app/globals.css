@@ -1085,3 +1085,18 @@ button:disabled,.button:disabled,[aria-disabled="true"] { cursor:not-allowed; }
 
 
 /* Customer portal navigation — fixed desktop sidebar and compact, content-sized links. */
+
+
+/* Staff Portal must not inherit the customer portal's two-column shell grid.
+   Keep this final, high-specificity rule in the global stylesheet so it wins
+   regardless of nested layout stylesheet ordering. */
+.brv-admin-frame .brv-admin-main > .brv-admin-content .portal-shell {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0;
+  max-width: none !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto !important;
+  gap: 0 !important;
+  margin: 0 !important;
+}
