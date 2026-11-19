@@ -44,7 +44,22 @@ export default function StaffWorkOrders(){
    const r=await fetch(url,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
    const d=await r.json();
    if(!r.ok){setNotice(d.error??"Could not update Workcard.");return false;}
-   setNotice("Workcard updated.");await load();return true;
+   const jobId=url.match(/\/api\/staff\/jobs\/([^/]+)/)?.[1];
+   if(jobId){
+    setOrders(current=>current.map(job=>{
+     if(job.id!==jobId)return job;
+     let next={...job};
+     if(url.endsWith("/accept"))next.assignment_status=d.status??"accepted";
+     if(url.endsWith("/status")&&d.status)next.status=d.status;
+     if(url.endsWith("/booking-request")&&d.appointment)next.booking={...(job.booking??{}),...d.appointment};
+     if(url.endsWith("/work-entries")&&d.entry){
+      const exists=job.entries.some(entry=>entry.id===d.entry.id);
+      next.entries=exists?job.entries.map(entry=>entry.id===d.entry.id?{...entry,...d.entry}:entry):[d.entry,...job.entries];
+     }
+     return next;
+    }));
+   }
+   setNotice("Workcard updated.");return true;
   }catch{setNotice("Could not update Workcard.");return false;}
   finally{setBusy(false);}
  }
