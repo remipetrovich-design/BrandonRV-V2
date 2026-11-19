@@ -19,7 +19,7 @@ async function readUserCount(db:ReturnType<typeof createClient>):Promise<number>
  userCountPending=(async()=>{
   const {count,error}=await db.from("users").select("id",{count:"exact",head:true});
   if(error||count===null)throw error??new Error("User count could not be verified.");
-  userCountCache={count,checkedAt:Date.now()};
+  userCountCache=count>0?{count,checkedAt:Date.now()}:null;
   return count;
  })();
  try{return await userCountPending;}finally{userCountPending=null;}
