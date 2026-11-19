@@ -64,3 +64,11 @@ test("admin Workcard deletion locks and removes only untouched records with its 
     "TO service_role"
   ]) assert.ok(migration.includes(token), "Atomic Workcard deletion is missing: " + token);
 });
+
+test("Jobcard booking RPC retains the original eight-argument signature without bypassing conflicts", async () => {
+  const migration = await read("../supabase/migrations/20261119150000_jobcard_booking_rpc_compatibility.sql");
+  assert.match(migration, /CREATE OR REPLACE FUNCTION public\.update_jobcard_booking\([\s\S]*?p_location text\s*\)/);
+  assert.match(migration, /p_location,\s*false\s*\)/);
+  assert.match(migration, /REVOKE ALL ON FUNCTION public\.update_jobcard_booking\(uuid,uuid,uuid,uuid,text,timestamptz,timestamptz,text\)/);
+  assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.update_jobcard_booking\(uuid,uuid,uuid,uuid,text,timestamptz,timestamptz,text\) TO service_role/);
+});
