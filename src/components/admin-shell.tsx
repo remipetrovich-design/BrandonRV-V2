@@ -12,20 +12,20 @@ function NavIcon({name}:{name:string}){return <svg className="brv-nav-svg" viewB
 export default function AdminShell({children,userName,role,groups}:{children:ReactNode;userName:string;role:string;groups:AdminNavGroup[]}) {
  const pathname=usePathname()??"/admin";const [menuOpen,setMenuOpen]=useState(false);const items=groups.flatMap(group=>group.items);
  const current=items.find(item=>pathname===item.href||(item.href!=="/admin"&&pathname.startsWith(item.href+"/")));
- const title=pathname==="/admin"?"Overview":current?.label??"Business workspace";const active=(href:string)=>pathname===href||(href!=="/admin"&&pathname.startsWith(href+"/"));
+ const title=pathname==="/admin"?"Overview":current?.label??"Staff Portal";const active=(href:string)=>pathname===href||(href!=="/admin"&&pathname.startsWith(href+"/"));
  const initials=userName.split(/\s+/).filter(Boolean).slice(0,2).map(part=>part[0]?.toUpperCase()).join("")||"BR";
  useEffect(()=>{setMenuOpen(false);},[pathname]);
  useEffect(()=>{if(!menuOpen)return;const closeOnEscape=(event:KeyboardEvent)=>{if(event.key==="Escape")setMenuOpen(false);};window.addEventListener("keydown",closeOnEscape);return()=>window.removeEventListener("keydown",closeOnEscape);},[menuOpen]);
- return <div className="brv-admin-frame"><aside id="brv-admin-navigation" className={"brv-admin-sidebar"+(menuOpen?" is-open":"")} aria-label="Main navigation">
-  <Link href="/admin" className="brv-admin-brand" onClick={()=>setMenuOpen(false)}><img src="/brv-mark.webp" alt=""/><span><strong>BRANDON <em>RV</em></strong><small>BUSINESS WORKSPACE</small></span></Link>
-  <nav className="brv-admin-nav" aria-label="Business workspace"><Link href="/admin" className={"brv-admin-overview"+(pathname==="/admin"?" active":"")} aria-current={pathname==="/admin"?"page":undefined} onClick={()=>setMenuOpen(false)}><NavIcon name="home"/><span>Overview</span></Link>
+ return <div className="brv-admin-frame"><aside id="brv-admin-navigation" className={"brv-admin-sidebar"+(menuOpen?" is-open":"")} aria-label="Staff Portal navigation">
+  <Link href="/admin" className="brv-admin-brand" onClick={()=>setMenuOpen(false)}><img src="/brv-mark.webp" alt=""/><span><strong>BRANDON <em>RV</em></strong><small>STAFF PORTAL</small></span></Link>
+  <nav className="brv-admin-nav" aria-label="Staff Portal"><Link href="/admin" className={"brv-admin-overview"+(pathname==="/admin"?" active":"")} aria-current={pathname==="/admin"?"page":undefined} onClick={()=>setMenuOpen(false)}><NavIcon name="home"/><span>Overview</span></Link>
    {groups.map(group=><section className="brv-admin-nav-group" key={group.title}><h2>{group.title}</h2>{group.items.map(item=><Link key={item.href} href={item.href} className={"brv-admin-nav-link"+(active(item.href)?" active":"")} aria-current={active(item.href)?"page":undefined} onClick={()=>setMenuOpen(false)}><NavIcon name={item.icon}/><span>{item.label}</span></Link>)}</section>)}
   </nav>
   <div className="brv-admin-sidebar-footer"><div className="brv-admin-user"><span className="brv-admin-avatar">{initials}</span><span><strong>{userName}</strong><small>{role.replaceAll("_"," ")}</small></span></div><SignOutButton/></div>
  </aside>
 
  {menuOpen&&<button type="button" className="brv-admin-backdrop" aria-label="Close navigation menu" onClick={()=>setMenuOpen(false)}/>}
- <div className="brv-admin-main"><header className="brv-admin-topbar"><div className="brv-admin-topbar-left"><button type="button" className="brv-admin-menu-toggle" aria-label={menuOpen?"Close navigation menu":"Open navigation menu"} aria-expanded={menuOpen} aria-controls="brv-admin-navigation" onClick={()=>setMenuOpen(open=>!open)}><span/><span/><span/></button><div className="brv-admin-breadcrumb"><span>Workspace</span><b>/</b><strong>{title}</strong></div></div>
+ <div className="brv-admin-main"><header className="brv-admin-topbar"><div className="brv-admin-topbar-left"><button type="button" className="brv-admin-menu-toggle" aria-label={menuOpen?"Close navigation menu":"Open navigation menu"} aria-expanded={menuOpen} aria-controls="brv-admin-navigation" onClick={()=>setMenuOpen(open=>!open)}><span/><span/><span/></button><div className="brv-admin-breadcrumb"><span>Staff Portal</span><b>/</b><strong>{title}</strong></div></div>
   <div className="brv-admin-topbar-actions"><Link href="/" target="_blank">View website <span aria-hidden="true">↗</span></Link><Link href="/portal">Customer account <span aria-hidden="true">↗</span></Link></div>
  </header><div className="brv-admin-content">{children}</div></div></div>;
 }

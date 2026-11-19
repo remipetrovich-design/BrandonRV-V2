@@ -22,9 +22,15 @@ export const normalizeEmail=(value:string)=>value.trim().toLowerCase();
 export function sameOrigin(request:Request){const origin=request.headers.get("origin");if(!origin)return request.headers.get("sec-fetch-site")!=="cross-site";try{return new URL(origin).origin===new URL(request.url).origin;}catch{return false;}}
 const readCurrentUser=cache(async()=>{
  const jar=await cookies();const token=jar.get(SESSION_COOKIE)?.value;if(!token)return null;
- const db=database();const {data:session}=await db.from("user_sessions").select("id,user_id,expires_at").eq("token_hash",digest(token)).gt("expires_at",new Date().toISOString()).maybeSingle();if(!session)return null;
- const {data:user}=await db.from("users").select("id,email,full_name,first_name,last_name,date_of_birth,phone,account_type,status,email_verified_at,force_password_change,primary_group,business_id,user_role,employee_number,job_title,employment_type,employment_status,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes").eq("id",session.user_id).eq("status","active").maybeSingle();
- if(!user)return null;return user;
+ const db=database();
+ // Resolve the validated session and its owning application user in one
+ // PostgREST request. The previous two sequential requests put every
+ // authenticated Staff Portal page and API behind an avoidable network hop.
+ const {data:session}=await db.from("user_sessions").select("id,user_id,expires_at,user:users!user_sessions_user_id_fkey(id,email,full_name,first_name,last_name,date_of_birth,phone,account_type,status,email_verified_at,force_password_change,primary_group,business_id,user_role,employee_number,job_title,employment_type,employment_status,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes)").eq("token_hash",digest(token)).gt("expires_at",new Date().toISOString()).maybeSingle();
+ const relatedUser=session?.user;
+ const user=Array.isArray(relatedUser)?relatedUser[0]:relatedUser;
+ if(!user||user.status!=="active")return null;
+ return user;
 });
 export async function currentUser(){return readCurrentUser();}
 export async function createSession(userId:string,request?:Request){const db=database();const token=newToken();const expiresAt=new Date(Date.now()+SESSION_DAYS*86400000).toISOString();const agent=request?.headers.get("user-agent")?.slice(0,500)??null;const ip=request?.headers.get("x-forwarded-for")?.split(",")[0]?.trim()??"";const ipHash=ip?digest(ip):null;const {error}=await db.from("user_sessions").insert({user_id:userId,token_hash:digest(token),expires_at:expiresAt,user_agent:agent,ip_hash:ipHash});if(error)throw error;const jar=await cookies();jar.set(SESSION_COOKIE,token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"lax",path:"/",expires:new Date(expiresAt)});}
@@ -52,7 +58,10 @@ export async function userHasPermissions(userId:string,permissions:string[]){
 export async function userHasPermission(userId:string,permission:string){return (await userHasPermissions(userId,[permission])).has(permission);}
 export async function authorizePermission(permission:string){
  const user=await currentUser();if(!user)return {user:null,membership:null,response:jsonError("Not signed in.",401)};
- const membership=await currentMembership(user.id);if(!membership||!(await userHasPermission(user.id,permission)))return {user,membership,response:jsonError("You do not have permission to perform this action.",403)};
+ // Membership and effective permissions are independent reads once the
+ // current user is known. Resolve them together instead of serially.
+ const [membership,permissions]=await Promise.all([currentMembership(user.id),readEffectivePermissions(user.id)]);
+ if(!membership||!permissions.has(permission))return {user,membership,response:jsonError("You do not have permission to perform this action.",403)};
  return {user,membership,response:null};
 }
 export async function destroySession(){const jar=await cookies();const token=jar.get(SESSION_COOKIE)?.value;if(token){const db=database();await db.from("user_sessions").delete().eq("token_hash",digest(token));}jar.delete(SESSION_COOKIE);}

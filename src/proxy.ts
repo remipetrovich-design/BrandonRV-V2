@@ -6,6 +6,25 @@ import {firstInstallDecision,requiresFirstOwnerSetup} from "@/lib/first-install.
 const SETUP_PATH="/setup";
 const BOOTSTRAP_PATH="/api/auth/bootstrap-owner";
 
+// The first-owner guard is an installation bootstrap check, not a per-page
+// authorization check. Cache the count briefly per warm function instance so
+// ordinary Staff Portal navigation does not query the users table every time.
+const USER_COUNT_CACHE_MS=3000;
+let userCountCache:{count:number;checkedAt:number}|null=null;
+let userCountPending:Promise<number>|null=null;
+
+async function readUserCount(db:any):Promise<number>{
+ if(userCountCache&&Date.now()-userCountCache.checkedAt<USER_COUNT_CACHE_MS)return userCountCache.count;
+ if(userCountPending)return userCountPending;
+ userCountPending=(async()=>{
+  const {count,error}=await db.from("users").select("id",{count:"exact",head:true});
+  if(error||count===null)throw error??new Error("User count could not be verified.");
+  userCountCache=count>0?{count,checkedAt:Date.now()}:null;
+  return count;
+ })();
+ try{return await userCountPending;}finally{userCountPending=null;}
+}
+
 function unavailableResponse(pathname:string){
  if(pathname.startsWith("/api/"))return NextResponse.json({error:"V2 database service is unavailable. Check the server configuration."},{status:503,headers:{"Cache-Control":"no-store"}});
  return new NextResponse("V2 is temporarily unavailable because the database service could not be verified.",{status:503,headers:{"Cache-Control":"no-store"}});
@@ -27,8 +46,7 @@ export async function proxy(request:NextRequest){
 
  try{
   const db=createClient(supabaseUrl,serverKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
-  const {count,error}=await db.from("users").select("id",{count:"exact",head:true});
-  if(error||count===null)throw error??new Error("User count could not be verified.");
+  const count=await readUserCount(db);
   const needsFirstOwner=requiresFirstOwnerSetup(count);
   const decision=firstInstallDecision(count,pathname);
   if(decision==="unavailable")return unavailableResponse(pathname);
