@@ -8,8 +8,44 @@
   --admin-radius: 8px;
   color: #172f46;
 }
-.brv-admin-frame .brv-admin-sidebar { width: 236px; }
-.brv-admin-frame .brv-admin-main { min-width: 0; }
+/* Desktop-first shared portal frame: keep the navigation rail and content
+   column in sync so every Staff Portal route receives the full remaining width. */
+.brv-admin-frame {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+  align-items: stretch;
+}
+.brv-admin-frame .brv-admin-sidebar {
+  width: 260px;
+  min-width: 260px;
+  flex: 0 0 260px;
+}
+.brv-admin-frame .brv-admin-main {
+  display: flex;
+  width: calc(100% - 260px);
+  min-width: 0;
+  min-height: 100vh;
+  flex: 1 1 0%;
+  flex-direction: column;
+}
+.brv-admin-frame .brv-admin-content {
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+  box-sizing: border-box;
+}
+.brv-admin-frame .brv-admin-content > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.brv-admin-frame .brv-admin-content .portal-shell {
+  width: 100%;
+  min-width: 0;
+  max-width: none !important;
+  box-sizing: border-box;
+}
 .brv-admin-frame .brv-admin-topbar { min-height: 54px; padding-inline: 20px; }
 .brv-admin-frame .brv-admin-content { padding: 20px clamp(18px, 2vw, 28px) 32px; }
 .brv-admin-frame .portal-page { min-height: 0; background: transparent; }
