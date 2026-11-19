@@ -32,6 +32,11 @@ test("Staff Portal records timing for licensing, bootstrap and shared authentica
 
 test("Generic Staff Portal sections lazy-load action components instead of bundling every workflow",async()=>{
  const page=await read("../src/app/admin/[section]/page.tsx");
+ const enquiries=await read("../src/components/admin-enquiries-manager.tsx");
+ const quotes=await read("../src/app/admin/quotes/page.tsx");
+ assert.match(page,/<Link prefetch=\{false\}/);
+ assert.match(enquiries,/<Link prefetch=\{false\}/);
+ assert.match(quotes,/<Link prefetch=\{false\}/);
  assert.match(page,/import dynamic from "next\/dynamic"/);
  assert.match(page,/dynamic\(\(\)=>import\("@\/components\/admin-record-actions"\)\)/);
  assert.match(page,/dynamic\(\(\)=>import\("@\/components\/admin-website-editor"\)\)/);
