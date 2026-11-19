@@ -1,24 +1,25 @@
 import Link from "next/link";
 import {notFound,redirect} from "next/navigation";
 import {currentUser,currentMembership,database,userHasPermission} from "@/lib/auth";
-import AdminRecordActions from "@/components/admin-record-actions";
-import AdminJobTools from "@/components/admin-job-tools";
-import AdminQuoteManagement from "@/components/admin-quote-management";
-import AdminCreateQuote from "@/components/admin-create-quote";
-import AdminCreateJob from "@/components/admin-create-job";
-import AdminQuoteTools from "@/components/admin-quote-tools";
-import AdminCreateInvoice from "@/components/admin-create-invoice";
-import AdminInvoicePayment from "@/components/admin-invoice-payment";
-import AdminInvoiceIssue from "@/components/admin-invoice-issue";
-import AdminInvoiceExport from "@/components/admin-invoice-export";
-import AdminWebsiteEditor from "@/components/admin-website-editor";
-import AdminCustomerResetLink from "@/components/admin-customer-reset-link";
-import AdminCustomerEmailVerification from "@/components/admin-customer-email-verification";
-import AdminCreateCustomer from "@/components/admin-create-customer";
-import AdminCreateSupplier from "@/components/admin-create-supplier";
-import AdminSupplierActions from "@/components/admin-supplier-actions";
-import AdminCreateAppointment from "@/components/admin-create-appointment";
-import AdminAccessDenied from "@/components/admin-access-denied";
+import dynamic from "next/dynamic";
+const AdminRecordActions=dynamic(()=>import("@/components/admin-record-actions"));
+const AdminJobTools=dynamic(()=>import("@/components/admin-job-tools"));
+const AdminQuoteManagement=dynamic(()=>import("@/components/admin-quote-management"));
+const AdminCreateQuote=dynamic(()=>import("@/components/admin-create-quote"));
+const AdminCreateJob=dynamic(()=>import("@/components/admin-create-job"));
+const AdminQuoteTools=dynamic(()=>import("@/components/admin-quote-tools"));
+const AdminCreateInvoice=dynamic(()=>import("@/components/admin-create-invoice"));
+const AdminInvoicePayment=dynamic(()=>import("@/components/admin-invoice-payment"));
+const AdminInvoiceIssue=dynamic(()=>import("@/components/admin-invoice-issue"));
+const AdminInvoiceExport=dynamic(()=>import("@/components/admin-invoice-export"));
+const AdminWebsiteEditor=dynamic(()=>import("@/components/admin-website-editor"));
+const AdminCustomerResetLink=dynamic(()=>import("@/components/admin-customer-reset-link"));
+const AdminCustomerEmailVerification=dynamic(()=>import("@/components/admin-customer-email-verification"));
+const AdminCreateCustomer=dynamic(()=>import("@/components/admin-create-customer"));
+const AdminCreateSupplier=dynamic(()=>import("@/components/admin-create-supplier"));
+const AdminSupplierActions=dynamic(()=>import("@/components/admin-supplier-actions"));
+const AdminCreateAppointment=dynamic(()=>import("@/components/admin-create-appointment"));
+const AdminAccessDenied=dynamic(()=>import("@/components/admin-access-denied"));
 export const dynamic="force-dynamic";
 const sections:any={
  enquiries:{title:"All enquiries",permission:"enquiries.view",table:"enquiries",columns:"id,request_number,request_type,contact_name,email,phone,requested_service,status,location,created_at",fields:["request_number","request_type","contact_name","email","phone","requested_service","status","location","created_at"]},
@@ -63,12 +64,19 @@ export default async function AdminSectionPage({params,searchParams}:{params:Pro
   let query=db.from(config.table).select(config.columns).eq("business_id",membership.business_id).order("created_at",{ascending:false}).limit(100);
   if(config.requestType)query=query.eq("request_type",config.requestType);
   if(section==="customers")query=query.eq("primary_group","customer");
-  const {data,error}=await query;
+  const sectionDataStartedAt=Date.now();
+  const [recordResult,workcardResult]=await Promise.all([
+   query,
+   section==="appointments"
+    ?db.from("jobs").select("id,job_number,title,status,appointment_id,quote_id,customers:users!jobs_customer_id_users_fkey(full_name),guest_name").eq("business_id",membership.business_id).order("created_at",{ascending:false}).limit(200)
+    :Promise.resolve({data:[]})
+  ]);
+  console.info("[staff-portal-perf] stage=section-data section="+section+" elapsed_ms="+(Date.now()-sectionDataStartedAt));
+  const {data,error}=recordResult;
   if(error)throw new Error("Could not load "+section+" records.");rows=data??[];
   if(section==="customers")rows=rows.map(x=>({...x,user_id:x.id,staff_account:x}));
   if(section==="appointments"){
-   const {data:workcards}=await db.from("jobs").select("id,job_number,title,status,appointment_id,quote_id,customers:users!jobs_customer_id_users_fkey(full_name),guest_name").eq("business_id",membership.business_id).order("created_at",{ascending:false}).limit(200);
-   const list=workcards??[];
+   const list=workcardResult.data??[];
    rows=rows.map((appointment:any)=>({...appointment,linkedWorkcard:list.find((job:any)=>job.appointment_id===appointment.id||(appointment.quote_id&&job.quote_id===appointment.quote_id))??null}));
    calendarWorkcards=list.map((job:any)=>({id:job.id,job_number:job.job_number,title:job.title,status:job.status,appointment_id:rows.find((appointment:any)=>(appointment.id===job.appointment_id||(job.quote_id&&appointment.quote_id===job.quote_id))&&["requested","confirmed","rescheduled"].includes(appointment.status))?.id??null,customer_name:job.customers?.full_name??job.guest_name??null}));
   }
