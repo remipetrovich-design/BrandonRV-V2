@@ -57,7 +57,7 @@ const nextAction:Record<string,string>={
 export default function AdminEnquiryEditor({enquiryId,requestType,canManageEnquiries=true,canManageQuotes=false,canApproveQuotes=false,canManageJobs=false,canManageBookings=false,canViewBookings=false,canAssignJobs=false}:{enquiryId:string;requestType:string;canManageEnquiries?:boolean;canManageQuotes?:boolean;canApproveQuotes?:boolean;canManageJobs?:boolean;canManageBookings?:boolean;canViewBookings?:boolean;canAssignJobs?:boolean}){
  const [record,setRecord]=useState<RecordData|null>(null),[customer,setCustomer]=useState<LinkedCustomer|null>(null),[vehicle,setVehicle]=useState<Vehicle|null>(null);
  const [staff,setStaff]=useState<Staff[]>([]),[assigned,setAssigned]=useState<string[]>([]),[history,setHistory]=useState<any[]>([]),[attachments,setAttachments]=useState<any[]>([]);
- const [quotes,setQuotes]=useState<Quote[]>([]),[workcard,setWorkcard]=useState<any>(null),[bookings,setBookings]=useState<any[]>([]),[bookingEdits,setBookingEdits]=useState<Record<string,{starts_at:string;location:string}>>({});
+ const [quotes,setQuotes]=useState<Quote[]>([]),[workcard,setWorkcard]=useState<any>(null),[bookings,setBookings]=useState<any[]>([]),[bookingEdits,setBookingEdits]=useState<Record<string,{starts_at:string;location:string}>>({}),[newBooking,setNewBooking]=useState({starts_at:"",ends_at:"",location:""});
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(""),[stageNote,setStageNote]=useState(""),[quotePanelOpen,setQuotePanelOpen]=useState(false),[confirmCancelId,setConfirmCancelId]=useState<string|null>(null),[confirmCloseStage,setConfirmCloseStage]=useState<string|null>(null),[selectedTab,setSelectedTab]=useState<"customer"|"request"|"conversation"|"attachments"|"activity"|"quote"|"workcard"|"booking">("customer");
  function handleTabKeyDown(event:KeyboardEvent<HTMLDivElement>){
   const tabIds=["customer","request","conversation","attachments","activity",...(isQuoteRequest?[...(canManageQuotes?["quote"]:[]),...(canManageJobs&&canManageQuotes?["workcard"]:[]),...(canViewBookings?["booking"]:[])]:[])];
@@ -90,6 +90,16 @@ export default function AdminEnquiryEditor({enquiryId,requestType,canManageEnqui
   if(!a.ok){setNotice("Jobcard changes saved, but staff assignments failed: "+(ad.error??"Unknown error"));await load();return;}
   setNotice("Jobcard details and assignments saved.");setStageNote("");await load();
  }catch{setNotice("Could not save Jobcard changes.");}finally{setBusy(false);}}
+ async function createBooking(e:FormEvent<HTMLFormElement>){
+  e.preventDefault();
+  if(!newBooking.starts_at||!newBooking.location.trim()){setNotice("Enter the booking date, time and customer service location.");return;}
+  setBusy(true);setNotice("");
+  try{
+   const r=await fetch("/api/admin/enquiries/"+enquiryId+"/booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({starts_at:new Date(newBooking.starts_at).toISOString(),ends_at:newBooking.ends_at?new Date(newBooking.ends_at).toISOString():null,location:newBooking.location})});
+   const d=await r.json();if(!r.ok){setNotice(d.error??"Could not create booking.");return;}
+   setNewBooking({starts_at:"",ends_at:"",location:""});setNotice("Booking created and linked to the Jobcard and Workcard.");await load();
+  }catch{setNotice("Could not create booking.");}finally{setBusy(false);}
+ }
  async function updateBooking(appointmentId:string,action:"confirm"|"reschedule"|"cancel"){
   const draft=bookingEdits[appointmentId];
   if(action==="cancel"&&confirmCancelId!==appointmentId){setConfirmCancelId(appointmentId);return;}
@@ -196,10 +206,16 @@ export default function AdminEnquiryEditor({enquiryId,requestType,canManageEnqui
    {!acceptedQuote&&<p className="panel-footnote">A Workcard becomes available after the customer accepts a quote.</p>}
   </section>}
   {isQuoteRequest&&canViewBookings&&<section id="brv-panel-booking" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-booking" hidden={selectedTab!=="booking"}>
-   <div className="portal-panel-heading"><div><span className="panel-kicker">BOOKING</span><h2>Booking requests &amp; appointments</h2><p>Manage each customer request here. Confirmations and changes synchronise to the linked Workcard.</p></div><a className="button button-secondary" href="/admin/appointments">Open bookings calendar →</a></div>
+   <div className="portal-panel-heading"><div><span className="panel-kicker">BOOKING</span><h2>Jobcard bookings</h2><p>Create and manage the customer booking here. Confirmed booking details synchronise to the linked Workcard.</p></div><a className="button button-secondary" href="/admin/appointments">Open bookings calendar →</a></div>
+   {canManageBookings&&<form className="brv-workcard-entry-form" onSubmit={createBooking}>
+    <h3>Create a booking for this Jobcard</h3><p>Set the agreed customer booking here. The confirmed details will appear on the linked Workcard.</p>
+    <div className="form-grid"><label>Booking date and start time<input type="datetime-local" required value={newBooking.starts_at} onChange={e=>setNewBooking(v=>({...v,starts_at:e.target.value}))}/></label><label>Booking finish (optional)<input type="datetime-local" value={newBooking.ends_at} min={newBooking.starts_at||undefined} onChange={e=>setNewBooking(v=>({...v,ends_at:e.target.value}))}/></label></div>
+    <label>Customer service location<input required minLength={3} maxLength={200} value={newBooking.location} onChange={e=>setNewBooking(v=>({...v,location:e.target.value}))} placeholder="Where the RV will be serviced"/></label>
+    <button className="button button-primary" type="submit" disabled={busy}>{busy?"Saving…":"Create booking"}</button>
+   </form>}
    {bookings.length?bookings.map(b=><article className="brv-ticket-quote booking-action" key={b.id}><div><strong>{pretty(b.status)} · {b.workcard?.job_number??"Workcard not created yet"}</strong><span>Customer preferred: {b.preferred_start?new Date(b.preferred_start).toLocaleString("en-AU"):"Not supplied"}</span><span>Confirmed: {b.starts_at?new Date(b.starts_at).toLocaleString("en-AU"):"Not confirmed"}</span><span>Location: {b.location??"Not supplied"}</span><span>Customer notes: {b.customer_notes??"None"}</span>{b.workcard&&<a className="text-link" href={"/admin/jobs/"+b.workcard.id}>Open linked Workcard →</a>}{!canManageBookings&&<p className="panel-footnote">View only. Booking changes require appointment management permission.</p>}
     {canManageBookings&&["requested","confirmed","rescheduled"].includes(b.status)&&<div className="brv-workcard-entry-form"><h3>{b.status==="requested"?"Confirm customer booking": "Change confirmed booking"}</h3><div className="form-grid"><label>Booking date and start time<input type="datetime-local" value={bookingEdits[b.id]?.starts_at??""} onChange={e=>setBookingEdits(v=>({...v,[b.id]:{...v[b.id],starts_at:e.target.value}}))}/></label></div><label>Service location<input value={bookingEdits[b.id]?.location??""} onChange={e=>setBookingEdits(v=>({...v,[b.id]:{...v[b.id],location:e.target.value}}))} maxLength={200}/></label><div className="brv-ticket-action-buttons">{b.status!=="confirmed"&&<button type="button" className="button button-primary" disabled={busy} onClick={()=>void updateBooking(b.id,"confirm")}>Confirm booking</button>}<button type="button" className="button button-secondary" disabled={busy} onClick={()=>void updateBooking(b.id,"reschedule")}>Reschedule booking</button>{confirmCancelId===b.id?<><button type="button" className="button brv-action-danger" disabled={busy} onClick={()=>void updateBooking(b.id,"cancel")}>Confirm cancellation</button><button type="button" className="button button-secondary" disabled={busy} onClick={()=>setConfirmCancelId(null)}>Keep booking</button></>:<button type="button" className="button button-secondary" disabled={busy} onClick={()=>void updateBooking(b.id,"cancel")}>Cancel booking</button>}</div></div>}
-   </div></article>):<p className="panel-footnote">No booking requests or appointments are linked to this Jobcard yet.</p>}
+   </div></article>):<p className="panel-footnote">No bookings are linked to this Jobcard yet.</p>}
   </section>}
   {notice&&<p className="inline-notice" role="status">{notice}</p>}
  </div>;
