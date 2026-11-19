@@ -1100,3 +1100,15 @@ button:disabled,.button:disabled,[aria-disabled="true"] { cursor:not-allowed; }
   gap: 0 !important;
   margin: 0 !important;
 }
+
+/* Reusable central Mail Configuration panel */
+.mail-configuration-panel{display:grid;gap:1rem;padding:1.25rem;border:1px solid var(--line,rgba(255,255,255,.14));border-radius:1rem;background:var(--panel,rgba(255,255,255,.04))}
+.mail-configuration-panel header,.mail-configuration-panel footer{display:grid;gap:.4rem}
+.mail-configuration-panel h2,.mail-configuration-panel h3,.mail-configuration-panel h4,.mail-configuration-panel p{margin:0}
+.mail-configuration-eyebrow{font-size:.72rem;font-weight:700;letter-spacing:.12em}
+.mail-configuration-status{display:grid;gap:.25rem;padding:1rem;border:1px solid var(--line,rgba(255,255,255,.14));border-radius:.75rem}
+.mail-configuration-panel ul{display:grid;gap:.5rem;margin:0;padding-left:1.25rem}
+.mail-configuration-templates,.mail-configuration-form{display:grid;gap:.75rem;padding-top:1rem;border-top:1px solid var(--line,rgba(255,255,255,.14))}
+.mail-configuration-form label{display:grid;gap:.35rem}
+.mail-configuration-form input,.mail-configuration-form select,.mail-configuration-form textarea{width:100%;padding:.7rem;border:1px solid var(--line,rgba(255,255,255,.2));border-radius:.5rem;background:transparent;color:inherit}
+.mail-configuration-form button,.mail-configuration-panel li form button{justify-self:start;padding:.55rem .85rem;border:1px solid var(--line,rgba(255,255,255,.2));border-radius:.5rem;background:transparent;color:inherit;cursor:pointer}
