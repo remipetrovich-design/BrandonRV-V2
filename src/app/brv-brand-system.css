@@ -235,3 +235,29 @@ a { text-underline-offset:3px; }
 .portal-nav-link > span { display: block; min-width: 0; width: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; text-align: left; }
 .portal-sidebar-help { display: flex; flex-direction: column; gap: 7px; margin-top: 20px; padding: 14px; border: 1px solid #d8e6f4; border-radius: 10px; background: #f1f6fc; }
 .portal-signout { width: 100%; margin-top: 12px; }
+
+
+/* Customer Jobcard: desktop section navigation and focused page states */
+.brv-jobcard-tabs{display:flex;align-items:center;gap:4px;overflow-x:auto;margin:18px 0 22px;padding:5px;border:1px solid var(--brv-border);border-radius:9px;background:#fff}
+.brv-jobcard-tabs a{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 15px;border-radius:6px;color:#52647a;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap}
+.brv-jobcard-tabs a:hover{background:var(--brv-blue-light);color:var(--brv-blue)}
+.brv-jobcard-tabs a[aria-current=page]{background:var(--brv-navy);color:#fff}
+.brv-jobcard-overview{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;margin:0 0 20px;overflow:hidden;border:1px solid var(--brv-border);border-radius:9px;background:var(--brv-border)}
+.brv-jobcard-overview>div{display:grid;gap:5px;padding:13px 15px;background:#fff}
+.brv-jobcard-overview small{color:var(--brv-muted);font-size:11px}
+.brv-jobcard-overview strong{color:var(--brv-navy);font-size:14px}
+.brv-jobcard-document[data-jobcard-tab=overview] [data-jobcard-section]{display:none}
+.brv-jobcard-document[data-jobcard-tab=request] [data-jobcard-section]:not([data-jobcard-section=request]),
+.brv-jobcard-document[data-jobcard-tab=quotes] [data-jobcard-section]:not([data-jobcard-section=quotes]),
+.brv-jobcard-document[data-jobcard-tab=work-progress] [data-jobcard-section]:not([data-jobcard-section=work-progress]),
+.brv-jobcard-document[data-jobcard-tab=messages] [data-jobcard-section]:not([data-jobcard-section=messages]){display:none}
+.brv-jobcard-document[data-jobcard-tab=overview] .brv-jobcard-overview{margin-bottom:28px}
+.brv-ticket-conversation .activity-list{display:grid;gap:12px}
+.brv-ticket-conversation .activity-item{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;padding:14px;border:1px solid #e7edf4;border-radius:8px;background:#fff}
+.brv-ticket-conversation .activity-copy{display:grid;gap:8px;min-width:0}
+.brv-ticket-conversation .activity-copy span{white-space:pre-wrap;overflow-wrap:anywhere}
+.brv-ticket-conversation .activity-item[data-internal=true]{border-color:#e8d4a8;background:#fffaf0}
+.brv-ticket-conversation textarea{min-height:112px;resize:vertical}
+.brv-ticket-conversation .brv-message-composer-meta{display:flex;justify-content:space-between;gap:12px;color:var(--brv-muted);font-size:12px}
+@media(min-width:981px){.brv-jobcard-tabs{overflow:visible}}
+@media(max-width:760px){.brv-jobcard-overview{grid-template-columns:repeat(2,minmax(0,1fr))}.brv-ticket-conversation .activity-item{grid-template-columns:1fr;gap:6px}}
