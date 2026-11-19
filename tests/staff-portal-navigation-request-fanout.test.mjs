@@ -29,3 +29,23 @@ test("Staff Portal records timing for licensing, bootstrap and shared authentica
  assert.match(layout,/stage=session/);
  assert.match(layout,/stage=membership-permissions/);
 });
+
+test("Generic Staff Portal sections lazy-load action components instead of bundling every workflow",async()=>{
+ const page=await read("../src/app/admin/[section]/page.tsx");
+ assert.match(page,/import dynamic from "next\/dynamic"/);
+ assert.match(page,/dynamic\(\(\)=>import\("@\/components\/admin-record-actions"\)\)/);
+ assert.match(page,/dynamic\(\(\)=>import\("@\/components\/admin-website-editor"\)\)/);
+ assert.doesNotMatch(page,/^import Admin(?:RecordActions|JobTools|QuoteManagement|CreateQuote|CreateJob|QuoteTools|CreateInvoice|InvoicePayment|InvoiceIssue|InvoiceExport|WebsiteEditor|CustomerResetLink|CustomerEmailVerification|CreateCustomer|CreateSupplier|SupplierActions|CreateAppointment|AccessDenied) from/m);
+});
+
+test("Appointments and their linked Workcards load concurrently",async()=>{
+ const page=await read("../src/app/admin/[section]/page.tsx");
+ assert.match(page,/const \[recordResult,workcardResult\]=await Promise\.all\(/);
+ assert.match(page,/section==="appointments"/);
+});
+
+test("Quote register resolves linked enquiry details in one query",async()=>{
+ const page=await read("../src/app/admin/quotes/page.tsx");
+ assert.match(page,/enquiries!quotes_enquiry_id_fkey\(id,request_number,contact_name,requested_service\)/);
+ assert.doesNotMatch(page,/enquiryIds=.*new Set/);
+});
