@@ -54,7 +54,7 @@ const nextAction:Record<string,string>={
  closed:"The Jobcard is closed."
 };
 
-export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,canManageQuotes=false,canApproveQuotes=false,canManageJobs=false,canManageBookings=false,canViewBookings=false,canAssignJobs=false}:{enquiryId:string;canManageEnquiries?:boolean;canManageQuotes?:boolean;canApproveQuotes?:boolean;canManageJobs?:boolean;canManageBookings?:boolean;canViewBookings?:boolean;canAssignJobs?:boolean}){
+export default function AdminEnquiryEditor({enquiryId,requestType,canManageEnquiries=true,canManageQuotes=false,canApproveQuotes=false,canManageJobs=false,canManageBookings=false,canViewBookings=false,canAssignJobs=false}:{enquiryId:string;requestType:string;canManageEnquiries?:boolean;canManageQuotes?:boolean;canApproveQuotes?:boolean;canManageJobs?:boolean;canManageBookings?:boolean;canViewBookings?:boolean;canAssignJobs?:boolean}){
  const [record,setRecord]=useState<RecordData|null>(null),[customer,setCustomer]=useState<LinkedCustomer|null>(null),[vehicle,setVehicle]=useState<Vehicle|null>(null);
  const [staff,setStaff]=useState<Staff[]>([]),[assigned,setAssigned]=useState<string[]>([]),[history,setHistory]=useState<any[]>([]),[attachments,setAttachments]=useState<any[]>([]);
  const [quotes,setQuotes]=useState<Quote[]>([]),[workcard,setWorkcard]=useState<any>(null),[bookings,setBookings]=useState<any[]>([]),[bookingEdits,setBookingEdits]=useState<Record<string,{starts_at:string;location:string}>>({});
@@ -68,16 +68,21 @@ export default function AdminEnquiryEditor({enquiryId,canManageEnquiries=true,ca
  }
  async function load(){
   try{
-   const requests:[Promise<Response>,Promise<Response|null>]=[fetch("/api/admin/enquiries/"+enquiryId,{cache:"no-store"}),canManageQuotes?fetch("/api/admin/quotes",{cache:"no-store"}):Promise.resolve(null)];
-   const [r,qr]=await Promise.all(requests),d=await r.json();
+   const requests:[Promise<Response>,Promise<Response|null>,Promise<Response|null>]=[
+    fetch("/api/admin/enquiries/"+enquiryId,{cache:"no-store"}),
+    requestType==="quote_request"&&canManageQuotes?fetch("/api/admin/quotes",{cache:"no-store"}):Promise.resolve(null),
+    requestType==="quote_request"&&canViewBookings?fetch("/api/admin/enquiries/"+enquiryId+"/booking",{cache:"no-store"}):Promise.resolve(null)
+   ];
+   const [r,qr,br]=await Promise.all(requests);
+   const [d,qd,bd]=await Promise.all([r.json(),qr?qr.json():Promise.resolve(null),br?br.json():Promise.resolve(null)]);
    if(!r.ok){setNotice(d.error??"Could not load Jobcard.");return;}
    setRecord(d.enquiry);setCustomer(d.customer??null);setVehicle(d.vehicle??null);setStaff(d.staff??[]);
-   if(d.enquiry?.request_type==="quote_request"&&canViewBookings){const br=await fetch("/api/admin/enquiries/"+enquiryId+"/booking",{cache:"no-store"});const bd=await br.json();if(br.ok){const rows=bd.bookings??[];setBookings(rows);setBookingEdits(Object.fromEntries(rows.map((b:any)=>[b.id,{starts_at:localDateTime(b.starts_at??b.preferred_start),location:b.location??""}])));}else setNotice(bd.error??"Could not load booking requests.");}
+   if(br){if(br.ok){const rows=bd.bookings??[];setBookings(rows);setBookingEdits(Object.fromEntries(rows.map((b:any)=>[b.id,{starts_at:localDateTime(b.starts_at??b.preferred_start),location:b.location??""}])));}else setNotice(bd.error??"Could not load booking requests.");}
    setAssigned((d.assignments??[]).map((x:any)=>x.staff_id));setHistory(d.history??[]);setAttachments(d.attachments??[]);
-   if(qr){const qd=await qr.json();if(qr.ok){const ticketQuotes=(qd.quotes??[]).filter((q:Quote)=>q.enquiry_id===enquiryId&&(q.quote_kind??"standard")==="standard");setQuotes(ticketQuotes);const accepted=ticketQuotes.find((q:Quote)=>q.status==="accepted");if(accepted&&canManageJobs){const wr=await fetch("/api/admin/jobs?quoteId="+encodeURIComponent(accepted.id),{cache:"no-store"});const wd=await wr.json();if(wr.ok)setWorkcard(wd.existingWorkcard??null);}}}
+   if(qr&&qr.ok){const ticketQuotes=(qd?.quotes??[]).filter((q:Quote)=>q.enquiry_id===enquiryId&&(q.quote_kind??"standard")==="standard");setQuotes(ticketQuotes);const accepted=ticketQuotes.find((q:Quote)=>q.status==="accepted");if(accepted&&canManageJobs){const wr=await fetch("/api/admin/jobs?quoteId="+encodeURIComponent(accepted.id),{cache:"no-store"});const wd=await wr.json();if(wr.ok)setWorkcard(wd.existingWorkcard??null);}}
   }catch{setNotice("Could not load Jobcard details.");}
  }
- useEffect(()=>{void load();},[enquiryId]);
+ useEffect(()=>{void load();},[enquiryId,requestType]);
  async function save(e:FormEvent<HTMLFormElement>){e.preventDefault();if(!record)return;setBusy(true);setNotice("");try{
   const r=await fetch("/api/admin/enquiries/"+enquiryId,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({...record,stage_note:stageNote})}),d=await r.json();
   if(!r.ok){setNotice(d.error??"Could not save Jobcard changes.");return;}

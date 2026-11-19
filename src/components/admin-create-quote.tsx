@@ -38,7 +38,7 @@ export default function AdminCreateQuote({initialEnquiryId="",onCreated}:{initia
    const d=await r.json();if(!r.ok){setNotice(d.error??"Could not create quote.");return;}
    setNotice("Draft quote "+d.quote.quote_number+" created with "+items.length+" line(s). Senior review is required before issue.");
    setItems([{id:1,description:"",quantity:"1",unitPrice:"",serviceId:"",itemType:"labour"}]);setNextLineId(2);setNotes("");setTerms("");setExpiryDate("");setSupersedesQuoteId("");
-   const refreshed=await fetch("/api/admin/quotes",{cache:"no-store"});const refreshedData=await refreshed.json();if(refreshed.ok){setPriorQuotes(refreshedData.quotes??[]);setEnquiries(refreshedData.enquiries??[]);}
+   setPriorQuotes(current=>[{...d.quote,status:"draft",quote_kind:"standard",senior_approval_status:"pending"},...current.filter(q=>q.id!==d.quote.id)]);
    onCreated?.();
   }catch{setNotice("Could not create quote.");}
   finally{setBusy(false);}
