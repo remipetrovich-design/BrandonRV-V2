@@ -31,19 +31,27 @@ function PortalIcon({name}:{name:string}) {
 
 export default function PortalSidebar() {
   const pathname=usePathname();
+  const groups=[
+    {title:"OVERVIEW",items:links.filter(link=>link.href==="/portal")},
+    {title:"SERVICE",items:links.filter(link=>["/portal/jobcards","/portal/enquiries","/portal/quotes","/portal/bookings"].includes(link.href))},
+    {title:"MY ACCOUNT",items:links.filter(link=>["/portal/vehicles","/portal/documents","/portal/invoices","/portal/profile"].includes(link.href))}
+  ];
   return (
     <aside className="portal-sidebar">
-      <div className="portal-sidebar-heading">YOUR ACCOUNT</div>
+      <div className="portal-sidebar-heading">CUSTOMER MENU</div>
       <nav aria-label="Customer portal">
-        {links.map(link=>{
-          const active=link.href==="/portal"?pathname===link.href:pathname===link.href||pathname.startsWith(link.href+"/");
-          return <Link className={active?"portal-nav-link active":"portal-nav-link"} href={link.href} key={link.href} aria-current={active?"page":undefined}>
-            <PortalIcon name={link.icon}/><span>{link.label}</span>
-          </Link>;
-        })}
+        {groups.map(group=><section className="portal-nav-group" key={group.title}>
+          <h2>{group.title}</h2>
+          {group.items.map(link=>{
+            const active=link.href==="/portal"?pathname===link.href:pathname===link.href||pathname.startsWith(link.href+"/");
+            return <Link className={active?"portal-nav-link active":"portal-nav-link"} href={link.href} key={link.href} aria-current={active?"page":undefined}>
+              <PortalIcon name={link.icon}/><span>{link.label}</span>
+            </Link>;
+          })}
+        </section>)}
       </nav>
       <div className="portal-sidebar-help">
-        <span>NEED A HAND?</span>
+        <span>NEED HELP?</span>
         <strong>Talk to Brandon RV</strong>
         <a href="tel:+61407189087">0407 189 087</a>
       </div>
