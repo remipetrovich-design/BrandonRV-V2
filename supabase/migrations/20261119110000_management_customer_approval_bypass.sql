@@ -87,7 +87,7 @@ AS $$
 DECLARE
  v_invoice record;v_payment record;v_amount_paid numeric(12,2);v_balance numeric(12,2);
  v_status text;v_job record;v_enquiry record;v_enquiry_id uuid;
- v_now timestamptz:=clock_timestamp();v_archived boolean:=false;
+ v_now timestamptz:=clock_timestamp();v_archived boolean:=false;v_bypassed boolean:=false;
 BEGIN
  IF p_amount IS NULL OR p_amount<=0 OR p_amount>10000000 THEN
   RAISE EXCEPTION 'Enter a valid payment amount.' USING ERRCODE='22023';
