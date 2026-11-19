@@ -641,10 +641,14 @@ h1 em, h2 em { color: var(--green); font-weight: 400; }
 /* Customer workspace: readable records, clear actions and a consistent form rhythm. */
 .brv-admin-content .admin-customers-list{margin-top:16px}
 .brv-admin-content .admin-customers-list .admin-customer-records{display:grid;gap:10px;border:0}
-.brv-admin-content .admin-customers-list .admin-customer-records .activity-item{display:grid;grid-template-columns:minmax(105px,.22fr) minmax(0,1fr) auto;align-items:center;gap:16px;min-width:0;padding:16px;border:1px solid var(--brv-admin-border);border-radius:5px;background:#fff}
-.brv-admin-content .admin-customers-list .activity-date{font-size:9px;white-space:nowrap}
-.brv-admin-content .admin-customers-list .activity-copy{min-width:0;gap:7px}
-.brv-admin-content .admin-customers-list .activity-copy>span{line-height:1.55;overflow-wrap:anywhere}
+.brv-admin-content .admin-customers-list .admin-customer-records .activity-item{display:grid;grid-template-columns:minmax(130px,170px) minmax(0,1fr) minmax(190px,230px);align-items:center;gap:16px;min-width:0;padding:16px;border:1px solid var(--brv-admin-border);border-radius:5px;background:#fff}
+.brv-admin-content .admin-customers-list .admin-customer-records .activity-item>*{min-width:0}
+.brv-admin-content .admin-customers-list .activity-date{font-size:10px;white-space:nowrap}
+.brv-admin-content .admin-customers-list .activity-copy{min-width:0;width:100%;gap:7px;overflow-wrap:anywhere}
+.brv-admin-content .admin-customers-list .activity-copy>span{display:block;line-height:1.55;overflow-wrap:anywhere}
+.brv-admin-content .admin-customers-list .record-actions{display:flex;min-width:0;width:100%;flex-wrap:wrap;align-items:center;gap:8px}
+.brv-admin-content .admin-customers-list .record-actions select{flex:1 1 120px;min-width:0;max-width:100%}
+.brv-admin-content .admin-customers-list .record-actions .button{flex:0 0 auto}
 .brv-admin-content .admin-customers-list .admin-customer-link{gap:7px}
 .brv-admin-content .admin-customers-list .admin-customer-link strong{font-size:13px}
 .brv-admin-content .admin-customers-list .admin-customer-profile-action{width:max-content;max-width:100%;padding:6px 9px;border:1px solid #dce6dd;border-radius:4px;font-size:9px}
