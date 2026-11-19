@@ -7,9 +7,9 @@ import StaffTimeClock from "@/components/staff-time-clock";
 export const dynamic="force-dynamic";
 export default async function AdminDashboard() {
  const user=await currentUser();if(!user)redirect("/portal/sign-in");
- const membership=await currentMembership(user.id);if(!membership)redirect("/portal");
+ const [membership,allowed]=await Promise.all([currentMembership(user.id),userHasPermissions(user.id,["enquiries.view","appointments.view","jobs.view","quotes.view","invoices.view","reports.view","suppliers.view","business.settings.manage","website.manage","settings.manage"])]);if(!membership)redirect("/portal");
  const keys=["enquiries.view","appointments.view","jobs.view","quotes.view","invoices.view","reports.view","suppliers.view","business.settings.manage","website.manage","settings.manage"];
- const allowed=await userHasPermissions(user.id,keys);
+
  const db=database();const businessId=membership.business_id;
  const [snapshot,staffProfile]=await Promise.all([
   getAdminDashboardSnapshot(businessId),
@@ -42,7 +42,7 @@ export default async function AdminDashboard() {
  ].filter(item=>allowed.has(item.permission));
  const prelaunch=business?.status==="prelaunch";
  return <main className="portal-page brv-admin-dashboard"><div className="shell portal-shell" style={{display:"block",maxWidth:1320}}>
-  <div className="portal-welcome brv-admin-welcome"><div><p className="eyebrow"><span className="eyebrow-line"/> BUSINESS WORKSPACE</p><h1>Business <em>overview.</em></h1><p>{business?.name??"Brandon RV"} · {[business?.city,business?.region].filter(Boolean).join(", ")||"Tamworth NSW"}</p></div><span className={"brv-admin-status"+(prelaunch?" prelaunch":"")}>{business?.status??"Business workspace"}</span></div>
+  <div className="portal-welcome brv-admin-welcome"><div><p className="eyebrow"><span className="eyebrow-line"/> STAFF PORTAL</p><h1>Staff Portal <em>overview.</em></h1><p>{business?.name??"Brandon RV"} · {[business?.city,business?.region].filter(Boolean).join(", ")||"Tamworth NSW"}</p></div><span className={"brv-admin-status"+(prelaunch?" prelaunch":"")}>{business?.status??"Staff Portal"}</span></div>
   {prelaunch&&<section className="brv-admin-launch-notice"><span>PRE-LAUNCH</span><div><strong>Business setup is still in progress.</strong><p>Confirm the business details, approved service menu, service area and website content before publishing or accepting live work.</p></div>{setupLinks.length>0&&<Link href={setupLinks[0].href}>Continue setup →</Link>}</section>}
   {stats.length>0&&<><div className="brv-admin-section-heading"><div><span>LIVE WORKSPACE</span><h2>Operational snapshot</h2></div><small>Live counts from the Brandon RV business database</small></div><div className="portal-stat-grid brv-admin-stat-grid">{stats.map(stat=><Link className="brv-admin-stat" href={stat.href} key={stat.label}><span>{stat.label}</span><strong>{stat.value??"—"}</strong><small>{stat.detail}</small><b>Open →</b></Link>)}</div></>}
   {quickLinks.length>0&&<><div className="brv-admin-section-heading"><div><span>DAILY OPERATIONS</span><h2>Get work moving</h2></div></div><div className="portal-shortcuts brv-admin-quicklinks">{quickLinks.map(item=><Link href={item.href} key={item.href}><strong>{item.label}</strong><small>{item.detail}</small><span aria-hidden="true">→</span></Link>)}</div></>}
