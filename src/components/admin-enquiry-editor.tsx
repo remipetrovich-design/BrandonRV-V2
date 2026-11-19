@@ -60,7 +60,7 @@ export default function AdminEnquiryEditor({enquiryId,requestType,canManageEnqui
  const [quotes,setQuotes]=useState<Quote[]>([]),[workcard,setWorkcard]=useState<any>(null),[bookings,setBookings]=useState<any[]>([]),[bookingEdits,setBookingEdits]=useState<Record<string,{starts_at:string;location:string}>>({}),[newBooking,setNewBooking]=useState({starts_at:"",ends_at:"",location:""});
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(""),[stageNote,setStageNote]=useState(""),[quotePanelOpen,setQuotePanelOpen]=useState(false),[confirmCancelId,setConfirmCancelId]=useState<string|null>(null),[confirmCloseStage,setConfirmCloseStage]=useState<string|null>(null),[selectedTab,setSelectedTab]=useState<"customer"|"request"|"conversation"|"attachments"|"activity"|"quote"|"workcard"|"booking">("customer");
  function handleTabKeyDown(event:KeyboardEvent<HTMLDivElement>){
-  const tabIds=["customer","request","conversation","attachments","activity",...(isQuoteRequest?[...(canManageQuotes?["quote"]:[]),...(canManageJobs&&canManageQuotes?["workcard"]:[]),...(canViewBookings?["booking"]:[])]:[])];
+  const tabIds=["customer","request","conversation","attachments","activity",...(isQuoteRequest?[...(canManageQuotes?["quote"]:[]),...(canManageJobs&&canManageQuotes?["workcard"]:[]),...((canViewBookings||canManageBookings)?["booking"]:[])]:[])];
   const current=tabIds.indexOf(selectedTab),key=event.key;
   const next=key==="ArrowRight"?tabIds[(current+1)%tabIds.length]:key==="ArrowLeft"?tabIds[(current-1+tabIds.length)%tabIds.length]:key==="Home"?tabIds[0]:key==="End"?tabIds[tabIds.length-1]:null;
   if(!next)return;
@@ -71,7 +71,7 @@ export default function AdminEnquiryEditor({enquiryId,requestType,canManageEnqui
    const requests:[Promise<Response>,Promise<Response|null>,Promise<Response|null>]=[
     fetch("/api/admin/enquiries/"+enquiryId,{cache:"no-store"}),
     requestType==="quote_request"&&canManageQuotes?fetch("/api/admin/quotes",{cache:"no-store"}):Promise.resolve(null),
-    requestType==="quote_request"&&canViewBookings?fetch("/api/admin/enquiries/"+enquiryId+"/booking",{cache:"no-store"}):Promise.resolve(null)
+    requestType==="quote_request"&&(canViewBookings||canManageBookings)?fetch("/api/admin/enquiries/"+enquiryId+"/booking",{cache:"no-store"}):Promise.resolve(null)
    ];
    const [r,qr,br]=await Promise.all(requests);
    const [d,qd,bd]=await Promise.all([r.json(),qr?qr.json():Promise.resolve(null),br?br.json():Promise.resolve(null)]);
@@ -137,7 +137,7 @@ export default function AdminEnquiryEditor({enquiryId,requestType,canManageEnqui
    <button id="brv-tab-activity" type="button" role="tab" aria-selected={selectedTab==="activity"} aria-controls="brv-panel-activity" tabIndex={selectedTab==="activity"?0:-1} onClick={()=>setSelectedTab("activity")}>Activity <span>{history.length}</span></button>
    {isQuoteRequest&&canManageQuotes&&<button id="brv-tab-quote" type="button" role="tab" aria-selected={selectedTab==="quote"} aria-controls="brv-panel-quote" tabIndex={selectedTab==="quote"?0:-1} onClick={()=>setSelectedTab("quote")}>Quote <span>{quotes.length}</span></button>}
    {isQuoteRequest&&canManageJobs&&canManageQuotes&&<button id="brv-tab-workcard" type="button" role="tab" aria-selected={selectedTab==="workcard"} aria-controls="brv-panel-workcard" tabIndex={selectedTab==="workcard"?0:-1} onClick={()=>setSelectedTab("workcard")}>Workcard</button>}
-   {isQuoteRequest&&canViewBookings&&<button id="brv-tab-booking" type="button" role="tab" aria-selected={selectedTab==="booking"} aria-controls="brv-panel-booking" tabIndex={selectedTab==="booking"?0:-1} onClick={()=>setSelectedTab("booking")}>Booking <span>{bookings.filter(b=>["requested","confirmed","rescheduled"].includes(b.status)).length}</span></button>}
+   {isQuoteRequest&&(canViewBookings||canManageBookings)&&<button id="brv-tab-booking" type="button" role="tab" aria-selected={selectedTab==="booking"} aria-controls="brv-panel-booking" tabIndex={selectedTab==="booking"?0:-1} onClick={()=>setSelectedTab("booking")}>Booking <span>{bookings.filter(b=>["requested","confirmed","rescheduled"].includes(b.status)).length}</span></button>}
   </div>
 
   <section id="brv-panel-customer" className="portal-panel brv-ticket-tab-panel" role="tabpanel" aria-labelledby="brv-tab-customer" hidden={selectedTab!=="customer"}>
