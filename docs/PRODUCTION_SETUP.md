@@ -35,9 +35,9 @@ The Vercel project is connected to the dedicated V2 Supabase integration. The in
 
 ### Email delivery
 
-The existing OrbitFS Mail integration is send-only. Brandon RV resolves the sender address from the Mail System sender directory; do not duplicate sender addresses in Vercel variables or substitute a separate mail provider.
+The existing Mail System integration is send-only. Brandon RV resolves the sender address from the Mail System sender directory; do not duplicate sender addresses in Vercel variables or substitute a separate mail provider.
 
-`ORBITFS_MAIL_URL` and `BRANDONSRV_MAIL_API_KEY` are present as application configuration points but are currently empty. Outbound customer and staff email is therefore not ready. Do not enable email-dependent customer workflows until the existing Mail integration is configured and tested. Do not invent or substitute a new mail provider key.
+`MAIL_SYSTEM_URL` and `MAIL_SYSTEM_API_KEY` are present as application configuration points but are currently empty. Outbound customer and staff email is therefore not ready. Do not enable email-dependent customer workflows until the existing Mail integration is configured and tested. Do not invent or substitute a new mail provider key.
 
 ## Manual production deployment and migrations
 

@@ -82,9 +82,9 @@ The root `.env.example` is the complete list of application runtime variables. S
 
 V2 uses `NEXT_PUBLIC_APP_URL` for account verification, password reset and staff invitation links when configured. If it is blank, those auth links use the current request origin. Bundled email templates fall back to the V2 Vercel domain, not the old V1 domain. Set `NEXT_PUBLIC_APP_URL` to the V2 production URL; do not set it to the original Brandon RV production URL.
 
-Transactional mail is intended to use the existing OrbitFS Mail integration, but delivery is currently paused because `ORBITFS_MAIL_URL` and `BRANDONSRV_MAIL_API_KEY` are empty. Do not enable outbound mail until those existing integration values are configured and tested. `BRANDONRV_PUBLIC_EMAIL` must remain blank until the supplied address, domain and mailbox are verified. The email-template admin page is available under Admin → Business configuration → Email templates and requires `business.settings.manage`.
+Transactional mail is intended to use the existing Mail System integration, but delivery is currently paused because `MAIL_SYSTEM_URL` and `MAIL_SYSTEM_API_KEY` are empty. Do not enable outbound mail until those existing integration values are configured and tested. `BRANDONRV_PUBLIC_EMAIL` must remain blank until the supplied address, domain and mailbox are verified. The Mail Configuration page is available under Admin → Business configuration → Mail Configuration; email templates remain under Admin → Business configuration → Email templates and requires `business.settings.manage`.
 
-Administrators can create, edit and delete custom templates, attach templates to registered application events/functions, enable or disable eligible templates, and select a sender mailbox from the live sender assignments returned by OrbitFS Mail. Sender mailbox IDs are checked against the current Mail System directory before sending. Required account-security templates cannot be disabled, moved to another event or deleted.
+Administrators can create, edit and delete custom templates, attach templates to registered application events/functions, enable or disable eligible templates, and select a sender mailbox from the live sender assignments returned by Mail System. Sender mailbox IDs are checked against the current Mail System directory before sending. Required account-security templates cannot be disabled, moved to another event or deleted.
 
 The shared email renderer applies Brandon RV branding to automated and manually-triggered template emails: branded header with the business logo and tagline, message content, and footer with logo, website and phone, plus an optional verified public email address, privacy/sensitive-information handling notice and copyright. Messages sent from a `noreply` mailbox display an additional notice at the top stating that the mailbox is unmonitored and replies or messages sent to it will not be read. The current shared logo asset is `public/brv-mark.webp`.
 
@@ -105,7 +105,7 @@ The Business Configuration area is the control centre for the public business we
 - **Service areas:** manage area names, descriptions, radius, suburbs, postcodes, travel fees and publication status.
 - **Settings:** manage the public business profile and general operating preferences from one consolidated page.
 - **Email templates:** remains a separate tool for managing automated and customer email content.
-- **Integrations:** shows the status of existing connected services, including the OrbitFS Mail System, without exposing credentials.
+- **Integrations:** shows the status of existing connected services, including the Mail System, without exposing credentials.
 
 Service and area changes are stored against the Brandon RV business and flow to the public service pages and customer-facing service selection where applicable. Draft or unpublished entries remain hidden from the public website. Existing customer, job, quote, appointment, invoice and account records are retained.
 
