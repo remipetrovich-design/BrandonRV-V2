@@ -72,3 +72,16 @@ test("Jobcard booking RPC retains the original eight-argument signature without 
   assert.match(migration, /REVOKE ALL ON FUNCTION public\.update_jobcard_booking\(uuid,uuid,uuid,uuid,text,timestamptz,timestamptz,text\)/);
   assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.update_jobcard_booking\(uuid,uuid,uuid,uuid,text,timestamptz,timestamptz,text\) TO service_role/);
 });
+
+
+test("canonical Jobcard booking RPC executes its transaction directly without recursive overload calls", async () => {
+  const migration = await read("../supabase/migrations/20261119160000_fix_jobcard_booking_rpc_recursion.sql");
+  assert.match(migration, /CREATE OR REPLACE FUNCTION public\.update_jobcard_booking\([\s\S]*?p_bypass_conflicts boolean\)/);
+  assert.ok(migration.includes("UPDATE public.appointments"));
+  assert.ok(migration.includes("UPDATE public.jobs"));
+  assert.ok(migration.includes("INSERT INTO public.enquiry_stage_history"));
+  assert.ok(migration.includes("INSERT INTO public.audit_events"));
+  assert.ok(migration.includes("user_has_effective_permission"));
+  assert.doesNotMatch(migration, /RETURN public\.update_jobcard_booking\(/);
+  assert.doesNotMatch(migration, /SELECT public\.update_jobcard_booking\(/);
+});
