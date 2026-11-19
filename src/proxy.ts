@@ -13,7 +13,7 @@ const USER_COUNT_CACHE_MS=3000;
 let userCountCache:{count:number;checkedAt:number}|null=null;
 let userCountPending:Promise<number>|null=null;
 
-async function readUserCount(db:ReturnType<typeof createClient>):Promise<number>{
+async function readUserCount(db:any):Promise<number>{
  if(userCountCache&&Date.now()-userCountCache.checkedAt<USER_COUNT_CACHE_MS)return userCountCache.count;
  if(userCountPending)return userCountPending;
  userCountPending=(async()=>{
