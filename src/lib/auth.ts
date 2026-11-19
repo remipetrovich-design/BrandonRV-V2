@@ -27,7 +27,8 @@ const readCurrentUser=cache(async()=>{
  // PostgREST request. The previous two sequential requests put every
  // authenticated Staff Portal page and API behind an avoidable network hop.
  const {data:session}=await db.from("user_sessions").select("id,user_id,expires_at,user:users!user_sessions_user_id_fkey(id,email,full_name,first_name,last_name,date_of_birth,phone,account_type,status,email_verified_at,force_password_change,primary_group,business_id,user_role,employee_number,job_title,employment_type,employment_status,start_date,end_date,pay_rate,pay_frequency,payroll_reference,payroll_notes,emergency_contact_name,emergency_contact_phone,employee_internal_notes)").eq("token_hash",digest(token)).gt("expires_at",new Date().toISOString()).maybeSingle();
- const user=session?.user;
+ const relatedUser=session?.user;
+ const user=Array.isArray(relatedUser)?relatedUser[0]:relatedUser;
  if(!user||user.status!=="active")return null;
  return user;
 });
