@@ -1,40 +1,34 @@
 "use client";
-import {usePathname,useRouter} from "next/navigation";
+import {useRouter} from "next/navigation";
 import {ReactNode,useEffect,useState} from "react";
 
 const publicPages=["/portal/sign-in","/portal/register","/portal/verify-email","/portal/forgot-password","/portal/reset-password","/portal/accept-staff-invitation"];
 
 export default function PortalAuthGuard({children}:{children:ReactNode}){
- const pathname=usePathname();
  const router=useRouter();
- const isPublic=publicPages.includes(pathname);
- const [readyPath,setReadyPath]=useState("");
  const [verified,setVerified]=useState(false);
+ const [ready,setReady]=useState(false);
 
  useEffect(()=>{
-  if(verified){
-   setReadyPath(pathname);
-   return;
-  }
+  if(verified||ready)return;
   let active=true;
   fetch("/api/auth/me",{cache:"no-store"}).then(async response=>{
    if(!active)return;
-   if(response.ok){
-    setVerified(true);
-    setReadyPath(pathname);
-   }else if(isPublic){
-    setReadyPath(pathname);
-   }else{
-    router.replace("/portal/sign-in");
-   }
+   if(response.ok){setVerified(true);setReady(true);return;}
+   const path=window.location.pathname;
+   if(publicPages.includes(path)){setReady(true);return;}
+   router.replace("/portal/sign-in");
   }).catch(()=>{
    if(!active)return;
-   if(isPublic)setReadyPath(pathname);
+   if(publicPages.includes(window.location.pathname))setReady(true);
    else router.replace("/portal/sign-in");
   });
   return()=>{active=false;};
- },[isPublic,pathname,router,verified]);
+ },[ready,router,verified]);
 
- if(readyPath!==pathname)return <div className="auth-wrap" role="status">Checking your account…</div>;
- return <>{children}</>;
+ // Once verified, keep the portal shell mounted across route changes. Each
+ // server page still authorizes its own data and mutations; this is only a
+ // client-side loading gate, never an access-control boundary.
+ if(verified||ready)return <>{children}</>;
+ return <div className="auth-wrap" role="status">Checking your account…</div>;
 }
