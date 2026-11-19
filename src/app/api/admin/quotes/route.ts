@@ -6,8 +6,8 @@ export async function GET(){
  const access=await authorizePermission("quotes.manage");if(access.response)return access.response;
  const db=database(),businessId=access.membership!.business_id;
  const [{data:enquiries,error:enquiryError},{data:quotes,error:quoteError},{data:businessSettings},{data:services,error:serviceError}]=await Promise.all([
-  db.from("enquiries").select("id,request_number,request_type,contact_name,email,requested_service,user_id,customer_id").eq("business_id",businessId).eq("request_type","quote_request").is("archived_at",null).in("status",["new","reviewing","quoted"]).order("created_at",{ascending:false}),
-  db.from("quotes").select("id,quote_number,enquiry_id,customer_id,revision_number,status,senior_approval_status,quote_kind,job_id,total,created_at").eq("business_id",businessId).order("created_at",{ascending:false}),
+  db.from("enquiries").select("id,request_number,request_type,contact_name,email,requested_service,user_id,customer_id").eq("business_id",businessId).eq("request_type","quote_request").is("archived_at",null).in("status",["new","reviewing","quoted"]) .order("created_at",{ascending:false}).limit(200),
+  db.from("quotes").select("id,quote_number,enquiry_id,customer_id,revision_number,status,senior_approval_status,quote_kind,job_id,total,created_at") .eq("business_id",businessId).order("created_at",{ascending:false}).limit(200),
   db.from("business_settings").select("settings").eq("business_id",businessId).maybeSingle(),
   db.from("services").select("id,name,category,description,price_from,approval_status").eq("business_id",businessId).eq("is_active",true).eq("approval_status","approved_for_launch").order("sort_order").order("name"),
  ]);
