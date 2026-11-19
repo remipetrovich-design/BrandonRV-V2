@@ -35,5 +35,5 @@ test("ticket attachments respect the parent message visibility",async()=>{
  assert.match(api,/ticket_message_attachments/);
  assert.match(api,/files\.length>5/);
  assert.match(ui,/Attach images or documents/);
- assert.match(ui,/Internal note \(only visible to staff\)/);
+ assert.match(ui,/Internal note — staff only/);
 });

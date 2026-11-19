@@ -13,18 +13,23 @@ export default async function JobcardDetailPage({params,searchParams,tab:tabProp
  const {id}=await params;const db=database();
  const {data:jobcard,error}=await db.from("enquiries").select("id,request_number,request_type,contact_name,email,phone,location,vehicle_description,vehicle_id,requested_service,description,preferred_contact,status,stage,created_at,updated_at").eq("id",id).eq("user_id",user.id).eq("request_type","quote_request").maybeSingle();
  if(error||!jobcard)notFound();
+ const requestedTab=tabProp??"overview";
+ const activeTab=["overview","request","quotes","work-progress","messages"].includes(requestedTab)?requestedTab:"overview";
+ const needsQuoteData=activeTab==="overview"||activeTab==="quotes"||activeTab==="work-progress";
+ const needsBookingData=activeTab==="overview"||activeTab==="work-progress";
+ const needsRequestFiles=activeTab==="request";
  const [{data:quotes,error:quoteError},{data:appointments,error:appointmentError},{data:attachments,error:attachmentError}]=await Promise.all([
-  db.from("quotes").select("id,quote_number,revision_number,status,customer_approval_bypassed_at,customer_approval_bypass_reason,quote_kind,variation_reason,job_id,issue_date,expiry_date,subtotal,tax_amount,total,notes,terms,quote_items(id,description,quantity,unit_price,line_total,item_type)").eq("enquiry_id",id).eq("user_id",user.id).order("revision_number",{ascending:false}),
-  db.from("appointments").select("id,status,preferred_start,preferred_end,starts_at,ends_at,location,customer_notes,quote_id,vehicle_id,created_at").eq("enquiry_id",id).eq("user_id",user.id).order("created_at",{ascending:false}),
-  db.from("enquiry_attachments").select("id,file_name,mime_type,size_bytes,storage_path,created_at").eq("enquiry_id",id).order("created_at",{ascending:false})
+  needsQuoteData?db.from("quotes").select("id,quote_number,revision_number,status,customer_approval_bypassed_at,customer_approval_bypass_reason,quote_kind,variation_reason,job_id,issue_date,expiry_date,subtotal,tax_amount,total,notes,terms,quote_items(id,description,quantity,unit_price,line_total,item_type)").eq("enquiry_id",id).eq("user_id",user.id).order("revision_number",{ascending:false}):Promise.resolve({data:[],error:null}),
+  needsBookingData?db.from("appointments").select("id,status,preferred_start,preferred_end,starts_at,ends_at,location,customer_notes,quote_id,vehicle_id,created_at").eq("enquiry_id",id).eq("user_id",user.id).order("created_at",{ascending:false}):Promise.resolve({data:[],error:null}),
+  needsRequestFiles?db.from("enquiry_attachments").select("id,file_name,mime_type,size_bytes,storage_path,created_at").eq("enquiry_id",id).order("created_at",{ascending:false}):Promise.resolve({data:[],error:null})
  ]);
  if(quoteError||appointmentError||attachmentError)throw new Error("Could not load the complete Jobcard.");
  const appointmentIds=(appointments??[]).map(x=>x.id);
  const quoteIds=(quotes??[]).map(x=>x.id);
  const jobSelect="id,job_number,title,status,work_summary,customer_approval_status,customer_approval_bypassed_at,customer_approval_bypass_reason,senior_approval_status,senior_approval_note,worker_signed_off_at,completed_at,scheduled_start,appointment_id,quote_id,customer_visible_notes";
  const [quoteLinkedJobs,appointmentLinkedJobs,vehicleResult]=await Promise.all([
-  quoteIds.length?db.from("jobs").select(jobSelect).eq("user_id",user.id).in("quote_id",quoteIds).order("created_at",{ascending:false}):Promise.resolve({data:[]}),
-  appointmentIds.length?db.from("jobs").select(jobSelect).eq("user_id",user.id).in("appointment_id",appointmentIds).order("created_at",{ascending:false}):Promise.resolve({data:[]}),
+  activeTab==="work-progress"&&quoteIds.length?db.from("jobs").select(jobSelect).eq("user_id",user.id).in("quote_id",quoteIds).order("created_at",{ascending:false}):Promise.resolve({data:[]}),
+  activeTab==="work-progress"&&appointmentIds.length?db.from("jobs").select(jobSelect).eq("user_id",user.id).in("appointment_id",appointmentIds).order("created_at",{ascending:false}):Promise.resolve({data:[]}),
   jobcard.vehicle_id?db.from("vehicles").select("make,model,year,vehicle_type,registration,vin").eq("id",jobcard.vehicle_id).eq("customer_id",user.id).maybeSingle():Promise.resolve({data:null})
  ]);
  const jobsById=new Map<string,any>();
@@ -33,27 +38,26 @@ export default async function JobcardDetailPage({params,searchParams,tab:tabProp
  const vehicle=vehicleResult.data;
  const jobIds=jobs.map(x=>x.id);
  const [{data:entries},{data:invoices},{data:appointmentVehicle},{data:workPhotos}]=await Promise.all([
-  jobIds.length?db.from("job_work_entries").select("id,job_id,entry_type,description,quantity,line_total,customer_visible").in("job_id",jobIds).eq("customer_visible",true).order("occurred_at"):Promise.resolve({data:[]}),
-  jobIds.length?db.from("invoices").select("id,job_id,invoice_number,subtotal,tax_amount,total,status,issue_date,due_date,amount_paid,payments(id,amount,method,reference,paid_at,status,payment_type),invoice_refunds(id,payment_id,amount,method,reason,status,created_at),invoice_credits(id,credit_number,amount,reason,status,created_at),invoice_items(id,description,quantity,unit_price,line_total)").in("job_id",jobIds).order("created_at",{ascending:false}):Promise.resolve({data:[]}),
-  !jobcard.vehicle_id&&appointmentIds.length?db.from("vehicles").select("make,model,year,vehicle_type,registration,vin").eq("customer_id",user.id).eq("id",(appointments??[]).find(x=>x.vehicle_id)?.vehicle_id??"00000000-0000-0000-0000-000000000000").maybeSingle():Promise.resolve({data:null}),
-  jobIds.length?db.from("job_attachments").select("id,job_id,file_name,mime_type,storage_path").in("job_id",jobIds).eq("customer_visible",true).order("created_at",{ascending:false}):Promise.resolve({data:[]})
+  activeTab==="work-progress"&&jobIds.length?db.from("job_work_entries").select("id,job_id,entry_type,description,quantity,line_total,customer_visible").in("job_id",jobIds).eq("customer_visible",true).order("occurred_at"):Promise.resolve({data:[]}),
+  activeTab==="work-progress"&&jobIds.length?db.from("invoices").select("id,job_id,invoice_number,subtotal,tax_amount,total,status,issue_date,due_date,amount_paid,payments(id,amount,method,reference,paid_at,status,payment_type),invoice_refunds(id,payment_id,amount,method,reason,status,created_at),invoice_credits(id,credit_number,amount,reason,status,created_at),invoice_items(id,description,quantity,unit_price,line_total)").in("job_id",jobIds).order("created_at",{ascending:false}):Promise.resolve({data:[]}),
+  activeTab==="work-progress"&&!jobcard.vehicle_id&&appointmentIds.length?db.from("vehicles").select("make,model,year,vehicle_type,registration,vin").eq("customer_id",user.id).eq("id",(appointments??[]).find(x=>x.vehicle_id)?.vehicle_id??"00000000-0000-0000-0000-000000000000").maybeSingle():Promise.resolve({data:null}),
+  activeTab==="work-progress"&&jobIds.length?db.from("job_attachments").select("id,job_id,file_name,mime_type,storage_path").in("job_id",jobIds).eq("customer_visible",true).order("created_at",{ascending:false}):Promise.resolve({data:[]})
  ]);
- const signedAttachments=await Promise.all((attachments??[]).map(async file=>{const {data}=await db.storage.from("brandon-rv-private").createSignedUrl(file.storage_path,300);return {...file,url:data?.signedUrl??null};}));
+ const signedAttachments=needsRequestFiles?await Promise.all((attachments??[]).map(async file=>{const {data}=await db.storage.from("brandon-rv-private").createSignedUrl(file.storage_path,300);return {...file,url:data?.signedUrl??null};})):[];
  const quoteRows=quotes??[],bookingRows=appointments??[],jobRows=jobs;
  const invoiceByJob=new Map((invoices??[]).map(x=>[x.job_id,x]));
  const entriesByJob=new Map<string,any[]>();
  for(const entry of entries??[]){const rows=entriesByJob.get(entry.job_id)??[];rows.push(entry);entriesByJob.set(entry.job_id,rows);}
  const photosByJob=new Map<string,any[]>();
- for(const file of workPhotos??[]){const {data:signed}=await db.storage.from("brandon-rv-private").createSignedUrl(file.storage_path,300);const rows=photosByJob.get(file.job_id)??[];rows.push({...file,url:signed?.signedUrl??null});photosByJob.set(file.job_id,rows);}
+ const signedWorkPhotos=await Promise.all((workPhotos??[]).map(async file=>{const {data}=await db.storage.from("brandon-rv-private").createSignedUrl(file.storage_path,300);return {...file,url:data?.signedUrl??null};}));
+ for(const file of signedWorkPhotos){const rows=photosByJob.get(file.job_id)??[];rows.push(file);photosByJob.set(file.job_id,rows);}
  const selectedVehicle=vehicle??appointmentVehicle;
  const notice=(await searchParams)?.notice;
- const requestedTab=tabProp??"overview";
- const activeTab=["overview","request","quotes","work-progress","messages"].includes(requestedTab)?requestedTab:"overview";
  return <div className="brv-jobcard-document" data-jobcard-tab={activeTab}>
   <div className="brv-jobcard-top-actions"><Link href="/portal/jobcards">← All Jobcards</Link><PrintDocumentButton/></div>
   <header className="brv-jobcard-header"><div><span className="panel-kicker">CUSTOMER JOBCARD · {jobcard.request_number}</span><h1>{jobcard.requested_service||"RV service request"}</h1><p>{selectedVehicle?[selectedVehicle.year,selectedVehicle.make,selectedVehicle.model].filter(Boolean).join(" "):jobcard.vehicle_description||"Vehicle details to be confirmed"}{selectedVehicle?.registration?" · "+selectedVehicle.registration:""}</p></div><span className="status-pill">{pretty(jobcard.stage||jobcard.status)}</span></header>
   <nav className="brv-jobcard-tabs" aria-label="Jobcard sections"><Link aria-current={activeTab==="overview"?"page":undefined} href={"/portal/jobcards/"+id}>Overview</Link><Link aria-current={activeTab==="request"?"page":undefined} href={"/portal/jobcards/"+id+"/request"}>Request</Link><Link aria-current={activeTab==="quotes"?"page":undefined} href={"/portal/jobcards/"+id+"/quotes"}>Quotes</Link><Link aria-current={activeTab==="work-progress"?"page":undefined} href={"/portal/jobcards/"+id+"/work-progress"}>Booking & Workcard</Link><Link aria-current={activeTab==="messages"?"page":undefined} href={"/portal/jobcards/"+id+"/messages"}>Messages</Link></nav>
-  <div className="brv-jobcard-overview"><div><small>Jobcard reference</small><strong>{jobcard.request_number}</strong></div><div><small>Current stage</small><strong>{pretty(jobcard.stage||jobcard.status)}</strong></div><div><small>Quotes</small><strong>{quoteRows.length}</strong></div><div><small>Bookings</small><strong>{bookingRows.length}</strong></div><div><small>Workcards</small><strong>{jobRows.length}</strong></div></div>
+  {activeTab==="overview"&&<div className="brv-jobcard-overview"><div><small>Jobcard reference</small><strong>{jobcard.request_number}</strong></div><div><small>Current stage</small><strong>{pretty(jobcard.stage||jobcard.status)}</strong></div><div><small>Quotes</small><strong>{quoteRows.length}</strong></div><div><small>Bookings</small><strong>{bookingRows.length}</strong></div><div><small>Workcards</small><strong>{jobRows.length}</strong></div></div>}
   {notice&&<p className="inline-notice" role="status">{notice==="accepted"?"Quote accepted. Your next step is to request a booking.":notice==="declined"?"Quote declined. This Jobcard has been closed and archived.":notice==="variation_accepted"?"Additional work approved and added to your Workcard.":notice==="variation_declined"?"Variation declined. Your original Jobcard and accepted quote remain active.":"Jobcard updated."}</p>}
   <section data-jobcard-section="request" className="brv-jobcard-section"><div className="brv-jobcard-section-heading"><span>01</span><div><h2>Request details</h2><p>Original information supplied with your quote request.</p></div></div>
    <div className="brv-jobcard-facts"><div><small>Jobcard reference</small><strong>{jobcard.request_number}</strong></div><div><small>Submitted</small><strong>{new Date(jobcard.created_at).toLocaleString("en-AU")}</strong></div><div><small>Vehicle</small><strong>{selectedVehicle?[selectedVehicle.year,selectedVehicle.make,selectedVehicle.model].filter(Boolean).join(" "):jobcard.vehicle_description||"To be confirmed"}</strong></div><div><small>Registration</small><strong>{selectedVehicle?.registration||"Not supplied"}</strong></div><div><small>Location</small><strong>{jobcard.location||"To be confirmed"}</strong></div><div><small>Preferred contact</small><strong>{pretty(jobcard.preferred_contact||"email")}</strong></div></div>

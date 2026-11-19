@@ -42,9 +42,9 @@ const navigation:AdminNavGroup[]=[
 ];
 export default async function AdminLayout({children}:{children:ReactNode}) {
  const user=await currentUser();if(!user)redirect("/portal/sign-in");
- const membership=await currentMembership(user.id);if(!membership)redirect("/portal");
  const permissionKeys=[...new Set([...navigation.flatMap(group=>group.items.map(item=>item.permission)),"quotes.manage","quotes.approve","jobs.complete","time.view","time.manage","time.clock","leave.view","leave.manage","payroll.view","payroll.manage","assets.view","assets.manage","onboarding.view","onboarding.manage","staff.manage","developer.deploy","developer.migrations.manage"])];
- const permitted=await userHasPermissions(user.id,permissionKeys);
+ const [membership,permitted]=await Promise.all([currentMembership(user.id),userHasPermissions(user.id,permissionKeys)]);
+ if(!membership)redirect("/portal");
  const workforcePermissions=["time.clock","time.view","time.manage","leave.view","leave.manage","payroll.view","payroll.manage","assets.view","assets.manage","onboarding.view","onboarding.manage","staff.manage","staff.view"];
  const canAccessWorkforce=workforcePermissions.some(permission=>permitted.has(permission));
  const canAccessStaff=permitted.has("staff.view")||permitted.has("staff.manage")||permitted.has("roles.manage");
