@@ -15,16 +15,18 @@ export async function GET(){
  ]);
  if(jobError||entryError)return jsonError("Could not load Workcard details.",500);
  const appointmentIds=[...new Set((jobs??[]).map(x=>x.appointment_id).filter(Boolean))];
- const {data:appointments}=appointmentIds.length?await db.from("appointments").select("id,status,starts_at,ends_at,preferred_start,location,customer_notes,vehicle_id,vehicles(make,model,year,vehicle_type,registration,vin)").eq("business_id",membership.business_id).in("id",appointmentIds):{data:[]};
- const appointmentById=new Map((appointments??[]).map(x=>[x.id,{...x,vehicles:firstRelation(x.vehicles)}]));
  const enquiryIds=[...new Set((jobs??[]).map(x=>firstRelation(firstRelation(x.quotes)?.enquiries)?.id).filter(Boolean))];
- const {data:jobcardFiles,error:jobcardFilesError}=enquiryIds.length?await db.from("enquiry_attachments").select("id,enquiry_id,file_name,mime_type,storage_path,created_at").in("enquiry_id",enquiryIds).order("created_at",{ascending:false}):{data:[],error:null};
+ const appointmentQuery=appointmentIds.length?db.from("appointments").select("id,status,starts_at,ends_at,preferred_start,location,customer_notes,vehicle_id,vehicles(make,model,year,vehicle_type,registration,vin)").eq("business_id",membership.business_id).in("id",appointmentIds):Promise.resolve({data:[]});
+ const attachmentQuery=enquiryIds.length?db.from("enquiry_attachments").select("id,enquiry_id,file_name,mime_type,storage_path,created_at").in("enquiry_id",enquiryIds).order("created_at",{ascending:false}):Promise.resolve({data:[],error:null});
+ const [{data:appointments},{data:jobcardFiles,error:jobcardFilesError}]=await Promise.all([appointmentQuery,attachmentQuery]);
  if(jobcardFilesError)return jsonError("Could not load original Jobcard attachments.",500);
- const filesByEnquiry=new Map<string,any[]>();
- for(const file of jobcardFiles??[]){
+ const appointmentById=new Map((appointments??[]).map(x=>[x.id,{...x,vehicles:firstRelation(x.vehicles)}]));
+ const signedFiles=await Promise.all((jobcardFiles??[]).map(async file=>{
   const {data:signed}=await db.storage.from("brandon-rv-private").createSignedUrl(file.storage_path,300);
-  const group=filesByEnquiry.get(file.enquiry_id)??[];group.push({...file,url:signed?.signedUrl??null});filesByEnquiry.set(file.enquiry_id,group);
- }
+  return {...file,url:signed?.signedUrl??null};
+ }));
+ const filesByEnquiry=new Map<string,any[]>();
+ for(const file of signedFiles){const group=filesByEnquiry.get(file.enquiry_id)??[];group.push(file);filesByEnquiry.set(file.enquiry_id,group);}
  const jobById=new Map((jobs??[]).map(x=>{
   const quote=firstRelation(x.quotes);
   const enquiry=firstRelation(quote?.enquiries);
