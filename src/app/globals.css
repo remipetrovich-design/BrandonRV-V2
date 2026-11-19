@@ -368,23 +368,9 @@ h1 em, h2 em { color: var(--green); font-weight: 400; }
 @media (max-width: 850px) {
   .enquiry-layout { grid-template-columns: 1fr; gap: 35px; }
   .enquiry-aside { position: static; }
-  .portal-shell { grid-template-columns: 190px minmax(0,1fr); gap: 24px; }
   .portal-shortcuts { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
-  .portal-topbar-inner { min-height: 72px; }
-  .portal-topbar-right { gap: 10px; }
-  .portal-topbar-right > span { display: none; }
-  .portal-shell { display: flex; flex-direction: column; gap: 15px; padding-top: 20px; padding-bottom: 40px; }
-  .portal-sidebar { min-height: auto; padding: 0; }
-  .portal-sidebar-heading, .portal-sidebar-help, .portal-signout { display: none; }
-  .portal-sidebar nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 0; }
-  .portal-nav-link { justify-content: center; gap: 6px; padding: 11px 5px; font-size: 9px; }
-  .portal-nav-link > span { display: none; }
-  .portal-welcome { align-items: flex-start; flex-direction: column; }
-  .portal-welcome h1, .portal-page-heading h1 { font-size: 38px; }
-  .portal-stat-grid { grid-template-columns: 1fr; gap: 8px; }
-  .portal-stat-grid article { min-height: 95px; }
   .portal-panel { padding: 17px; }
   .appointment-details { grid-template-columns: 1fr 1fr; }
   .activity-item { grid-template-columns: 1fr auto; gap: 8px; }
