@@ -9,7 +9,7 @@ const BOOTSTRAP_PATH="/api/auth/bootstrap-owner";
 // The first-owner guard is an installation bootstrap check, not a per-page
 // authorization check. Cache the count briefly per warm function instance so
 // ordinary Staff Portal navigation does not query the users table every time.
-const USER_COUNT_CACHE_MS=3000;
+const USER_COUNT_CACHE_MS=60000;
 let userCountCache:{count:number;checkedAt:number}|null=null;
 let userCountPending:Promise<number>|null=null;
 
@@ -31,9 +31,12 @@ function unavailableResponse(pathname:string){
 }
 
 export async function proxy(request:NextRequest){
- const alisResponse = await checkAlisLicense(request);
- if (alisResponse) return alisResponse;
  const pathname=request.nextUrl.pathname;
+ const isStaffPortal=pathname==="/admin"||pathname.startsWith("/admin/");
+ const licenseStartedAt=Date.now();
+ const alisResponse = await checkAlisLicense(request);
+ if(isStaffPortal)console.info("[staff-portal-perf] stage=license path="+pathname+" elapsed_ms="+(Date.now()-licenseStartedAt));
+ if (alisResponse) return alisResponse;
  if(pathname===BOOTSTRAP_PATH||pathname.startsWith("/_next/")||/\.[^/]+$/.test(pathname))return NextResponse.next();
 
  const supabaseUrl=(process.env.SUPABASE_URL||process.env.NEXT_PUBLIC_SUPABASE_URL||"").trim();
@@ -46,7 +49,9 @@ export async function proxy(request:NextRequest){
 
  try{
   const db=createClient(supabaseUrl,serverKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  const bootstrapStartedAt=Date.now();
   const count=await readUserCount(db);
+  if(isStaffPortal)console.info("[staff-portal-perf] stage=first-install path="+pathname+" elapsed_ms="+(Date.now()-bootstrapStartedAt));
   const needsFirstOwner=requiresFirstOwnerSetup(count);
   const decision=firstInstallDecision(count,pathname);
   if(decision==="unavailable")return unavailableResponse(pathname);

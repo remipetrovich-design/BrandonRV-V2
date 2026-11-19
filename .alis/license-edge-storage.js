@@ -1,4 +1,4 @@
-const RECORD_CACHE_MS = 5000;
+const RECORD_CACHE_MS = 60000;
 let cachedRecord = null;
 let cachedAt = 0;
 let pendingRead = null;
