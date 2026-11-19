@@ -8,8 +8,6 @@ export const dynamic="force-dynamic";
 export default async function AdminDashboard() {
  const user=await currentUser();if(!user)redirect("/portal/sign-in");
  const [membership,allowed]=await Promise.all([currentMembership(user.id),userHasPermissions(user.id,["enquiries.view","appointments.view","jobs.view","quotes.view","invoices.view","reports.view","suppliers.view","business.settings.manage","website.manage","settings.manage"])]);if(!membership)redirect("/portal");
- const keys=["enquiries.view","appointments.view","jobs.view","quotes.view","invoices.view","reports.view","suppliers.view","business.settings.manage","website.manage","settings.manage"];
-
  const db=database();const businessId=membership.business_id;
  const [snapshot,staffProfile]=await Promise.all([
   getAdminDashboardSnapshot(businessId),
@@ -47,6 +45,6 @@ export default async function AdminDashboard() {
   {stats.length>0&&<><div className="brv-admin-section-heading"><div><span>LIVE WORKSPACE</span><h2>Operational snapshot</h2></div><small>Live counts from the Brandon RV business database</small></div><div className="portal-stat-grid brv-admin-stat-grid">{stats.map(stat=><Link className="brv-admin-stat" href={stat.href} key={stat.label}><span>{stat.label}</span><strong>{stat.value??"—"}</strong><small>{stat.detail}</small><b>Open →</b></Link>)}</div></>}
   {quickLinks.length>0&&<><div className="brv-admin-section-heading"><div><span>DAILY OPERATIONS</span><h2>Get work moving</h2></div></div><div className="portal-shortcuts brv-admin-quicklinks">{quickLinks.map(item=><Link href={item.href} key={item.href}><strong>{item.label}</strong><small>{item.detail}</small><span aria-hidden="true">→</span></Link>)}</div></>}
   {staffProfile.data&&<section className="portal-panel"><div className="portal-panel-heading"><div><span className="panel-kicker">MY WORK</span><h2>Employee tools</h2><p>Your assigned Workcards have their own page. Your tasks and time clock remain available here.</p></div></div><StaffTasks/><StaffTimeClock/></section>}
-  {setupLinks.length>0&&<section className="portal-panel brv-admin-setup-panel"><div className="portal-panel-heading"><div><span className="panel-kicker">BUSINESS CONFIGURATION</span><h2>Manage the customer-facing business</h2><p>Keep the website, services and business details connected to the same records used by the business workspace.</p></div></div><div className="brv-admin-setup-links">{setupLinks.map(item=><Link href={item.href} key={item.href}>{item.label}<span>→</span></Link>)}</div></section>}
+  {setupLinks.length>0&&<section className="portal-panel brv-admin-setup-panel"><div className="portal-panel-heading"><div><span className="panel-kicker">BUSINESS CONFIGURATION</span><h2>Manage the customer-facing business</h2><p>Keep the website, services and business details connected to the same records used by the Staff Portal.</p></div></div><div className="brv-admin-setup-links">{setupLinks.map(item=><Link href={item.href} key={item.href}>{item.label}<span>→</span></Link>)}</div></section>}
  </div></main>;
 }
