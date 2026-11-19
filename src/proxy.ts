@@ -9,7 +9,7 @@ const BOOTSTRAP_PATH="/api/auth/bootstrap-owner";
 // The first-owner guard is an installation bootstrap check, not a per-page
 // authorization check. Cache the count briefly per warm function instance so
 // ordinary Staff Portal navigation does not query the users table every time.
-const USER_COUNT_CACHE_MS=3000;
+const USER_COUNT_CACHE_MS=60000;
 let userCountCache:{count:number;checkedAt:number}|null=null;
 let userCountPending:Promise<number>|null=null;
 
