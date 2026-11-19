@@ -15,6 +15,6 @@ export default async function AdminEnquiryDetail({params}:{params:Promise<{id:st
  if(!item)notFound();
  return <main className="portal-page"><div className="shell portal-shell" style={{display:"block",maxWidth:1500}}>
   <div className="portal-page-heading"><p className="eyebrow"><span className="eyebrow-line"/> CUSTOMER WORKSPACE</p><h1>{item.request_number}</h1><p>{item.request_type.replaceAll("_"," ")} · {item.contact_name} · {item.email}</p><Link href="/admin/enquiries" className="text-link">← Back to all enquiries</Link></div>
-  <AdminEnquiryEditor enquiryId={item.id} canManageEnquiries={canManageEnquiries} canManageQuotes={canManageQuotes} canApproveQuotes={canApproveQuotes} canManageJobs={canManageJobs} canManageBookings={canManageBookings} canViewBookings={canViewBookings||canManageBookings} canAssignJobs={canAssignJobs}/>
+  <AdminEnquiryEditor enquiryId={item.id} requestType={item.request_type} canManageEnquiries={canManageEnquiries} canManageQuotes={canManageQuotes} canApproveQuotes={canApproveQuotes} canManageJobs={canManageJobs} canManageBookings={canManageBookings} canViewBookings={canViewBookings||canManageBookings} canAssignJobs={canAssignJobs}/>
  </div></main>;
 }
