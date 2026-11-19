@@ -5,12 +5,14 @@ import {readFile} from "node:fs/promises";
 const sidebar=await readFile(new URL("../src/components/portal-sidebar.tsx",import.meta.url),"utf8");
 const css=await readFile(new URL("../src/app/globals.css",import.meta.url),"utf8");
 
-test("customer portal navigation follows the simple V1 vertical menu",()=>{
+test("customer portal navigation groups overview, service records and account tools",()=>{
  assert.match(sidebar,/const links=\[/);
- assert.match(sidebar,/links\.map\(link/);
+ assert.match(sidebar,/title:"OVERVIEW"/);
+ assert.match(sidebar,/title:"SERVICE"/);
+ assert.match(sidebar,/title:"MY ACCOUNT"/);
+ assert.match(sidebar,/group\.items\.map\(link/);
  assert.match(sidebar,/href:"\/portal",label:"Overview"/);
  assert.match(sidebar,/href:"\/portal\/jobcards",label:"My Jobcards"/);
- assert.doesNotMatch(sidebar,/PORTAL_NAV_GROUPS|portal-nav-group/);
 });
 
 test("customer portal menu keeps the link labels visible",()=>{
