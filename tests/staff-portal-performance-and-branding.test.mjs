@@ -27,3 +27,17 @@ test("Staff Portal replaces legacy workspace names in shared navigation and cust
  assert.doesNotMatch(shell,/BUSINESS WORKSPACE|Business workspace/);
  assert.doesNotMatch(portal,/Business workspace/);
 });
+
+test("ALIS proxy reuses persisted validation metadata across cold serverless instances",async()=>{
+ const storage=await read("../.alis/license-edge-storage.js");
+ const proxy=await read("../.alis/proxy-license.js");
+ assert.match(storage,/createAlisLicenseCacheStorage/);
+ assert.match(storage,/validation_metadata/);
+ assert.match(proxy,/storage:createAlisLicenseCacheStorage/);
+});
+
+test("first-install user count is briefly cached instead of queried on every protected navigation",async()=>{
+ const proxy=await read("../src/proxy.ts");
+ assert.match(proxy,/USER_COUNT_CACHE_MS/);
+ assert.match(proxy,/readUserCount/);
+});
