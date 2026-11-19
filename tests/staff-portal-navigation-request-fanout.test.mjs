@@ -37,9 +37,9 @@ test("Generic Staff Portal sections lazy-load action components instead of bundl
  assert.match(page,/<Link prefetch=\{false\}/);
  assert.match(enquiries,/<Link prefetch=\{false\}/);
  assert.match(quotes,/<Link prefetch=\{false\}/);
- assert.match(page,/import dynamic from "next\/dynamic"/);
- assert.match(page,/dynamic\(\(\)=>import\("@\/components\/admin-record-actions"\)\)/);
- assert.match(page,/dynamic\(\(\)=>import\("@\/components\/admin-website-editor"\)\)/);
+ assert.match(page,/import nextDynamic from "next\/dynamic"/);
+ assert.match(page,/nextDynamic\(\(\)=>import\("@\/components\/admin-record-actions"\)\)/);
+ assert.match(page,/nextDynamic\(\(\)=>import\("@\/components\/admin-website-editor"\)\)/);
  assert.doesNotMatch(page,/^import Admin(?:RecordActions|JobTools|QuoteManagement|CreateQuote|CreateJob|QuoteTools|CreateInvoice|InvoicePayment|InvoiceIssue|InvoiceExport|WebsiteEditor|CustomerResetLink|CustomerEmailVerification|CreateCustomer|CreateSupplier|SupplierActions|CreateAppointment|AccessDenied) from/m);
 });
 
