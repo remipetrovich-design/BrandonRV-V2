@@ -9,8 +9,8 @@ const registrationRoute = await readFile(new URL("../src/app/api/auth/register/r
 const passwordRoute = await readFile(new URL("../src/app/api/auth/forgot-password/route.ts", import.meta.url), "utf8");
 
 test("Brandon RV resolves assigned sender addresses from the existing External System", () => {
-  assert.match(emailClient, /ORBITFS_MAIL_URL/);
-  assert.match(emailClient, /BRANDONSRV_MAIL_API_KEY/);
+  assert.match(emailClient, /MAIL_SYSTEM_URL/);
+  assert.match(emailClient, /MAIL_SYSTEM_API_KEY/);
   assert.match(emailClient, /\/api\/mail\/senders/);
   assert.match(emailClient, /from_address:\s*fromAddress/);
   assert.match(emailClient, /item\.address\.split\("@"\)\[0\]===input\.sender/);
@@ -27,8 +27,8 @@ test("Brandon RV resolves assigned sender addresses from the existing External S
 });
 
 test("Brandon RV documents the central mail integration without duplicating sender addresses", () => {
-  assert.match(envExample, /ORBITFS_MAIL_URL=/);
-  assert.match(envExample, /BRANDONSRV_MAIL_API_KEY=/);
+  assert.match(envExample, /MAIL_SYSTEM_URL=/);
+  assert.match(envExample, /MAIL_SYSTEM_API_KEY=/);
   assert.doesNotMatch(envExample, /BRANDON_RV_MAIL_FROM=/);
   assert.doesNotMatch(envExample, /RESEND_API_KEY=/);
   assert.match(productionSetup, /External systems/);
