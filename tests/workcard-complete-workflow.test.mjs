@@ -37,6 +37,22 @@ test("Jobcard owns booking creation, confirmation, rescheduling and cancellation
  assert.match(migration,/workcard\.booking_'\|\|p_action/);
 });
 
+test("staff create bookings directly from the Jobcard and Workcard remains display-only",async()=>{
+ const editor=await read("../src/components/admin-enquiry-editor.tsx");
+ const route=await read("../src/app/api/admin/enquiries/[id]/booking/route.ts");
+ const workcard=await read("../src/components/admin-workcard-management.tsx");
+ assert.match(editor,/Create a booking for this Jobcard/);
+ assert.match(editor,/createBooking\(e:FormEvent<HTMLFormElement>\)/);
+ assert.match(editor,/Booking date and start time/);
+ assert.match(editor,/Customer service location/);
+ assert.match(route,/export async function POST/);
+ assert.match(route,/authorizePermission\("appointments\.manage"\)/);
+ assert.match(route,/from\("appointments"\)\.insert/);
+ assert.match(route,/rpc\("update_jobcard_booking"/);
+ assert.match(route,/bookingWindowsConflict/);
+ assert.doesNotMatch(workcard,/createBooking|BOOKING MANAGEMENT|activeTab==="booking"/);
+});
+
 test("master calendar creates confirmed appointments against an existing Workcard",async()=>{
  const page=await read("../src/app/admin/[section]/page.tsx");
  const component=await read("../src/components/admin-create-appointment.tsx");

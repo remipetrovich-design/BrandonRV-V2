@@ -34,7 +34,7 @@ test("enquiry detail only loads quote and booking registers for quote requests a
  const editor=await read("src/components/admin-enquiry-editor.tsx");
  assert.match(page,/requestType=\{item\.request_type\}/);
  assert.match(editor,/requestType==="quote_request"&&canManageQuotes\?fetch\("\/api\/admin\/quotes"/);
- assert.match(editor,/requestType==="quote_request"&&canViewBookings\?fetch\("/);
+ assert.match(editor,/requestType==="quote_request"&&\(canViewBookings\|\|canManageBookings\)\?fetch\("/);
  assert.match(editor,/const \[r,qr,br\]=await Promise\.all\(requests\)/);
  assert.match(editor,/Promise\.all\(\[r\.json\(\),qr\?qr\.json\(\):Promise\.resolve\(null\),br\?br\.json\(\):Promise\.resolve\(null\)\]\)/);
 });
