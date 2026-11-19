@@ -33,7 +33,7 @@ test("ALIS proxy reuses persisted validation metadata across cold serverless ins
  const proxy=await read("../.alis/proxy-license.js");
  assert.match(storage,/createAlisLicenseCacheStorage/);
  assert.match(storage,/validation_metadata/);
- assert.match(proxy,/storage:\\s*createAlisLicenseCacheStorage/);
+ assert.match(proxy,/storage:\s*createAlisLicenseCacheStorage/);
 });
 
 test("first-install user count is briefly cached instead of queried on every protected navigation",async()=>{
