@@ -8,8 +8,8 @@ type EmailInput = {sender:EmailSender;senderMailboxId?:string|null;to:string;sub
 type SenderResponse = {sender?:unknown;senders?:Array<{id?:unknown;address?:unknown}>};
 
 function mailConfig() {
-  const baseUrl=process.env.ORBITFS_MAIL_URL?.trim().replace(/\/+$/,"");
-  const apiKey=process.env.BRANDONSRV_MAIL_API_KEY?.trim();
+  const baseUrl=process.env.MAIL_SYSTEM_URL?.trim().replace(/\/+$/,"");
+  const apiKey=process.env.MAIL_SYSTEM_API_KEY?.trim();
   if(!baseUrl||!apiKey)return null;
   return {baseUrl,apiKey};
 }
