@@ -97,7 +97,7 @@ export default function AdminEnquiryEditor({enquiryId,requestType,canManageEnqui
   try{
    const r=await fetch("/api/admin/enquiries/"+enquiryId+"/booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({starts_at:new Date(newBooking.starts_at).toISOString(),ends_at:newBooking.ends_at?new Date(newBooking.ends_at).toISOString():null,location:newBooking.location})});
    const d=await r.json();if(!r.ok){setNotice(d.error??"Could not create booking.");return;}
-   setNewBooking({starts_at:"",ends_at:"",location:""});setNotice("Booking created and linked to the Jobcard and Workcard.");await load();
+   setNewBooking({starts_at:"",ends_at:"",location:""});await load();setNotice(Number(d.workcardsUpdated??0)>0?"Booking confirmed. The linked Workcard has been updated.":"Booking confirmed. No Workcard is linked yet; the booking is saved on the Jobcard.");
   }catch{setNotice("Could not create booking.");}finally{setBusy(false);}
  }
  async function updateBooking(appointmentId:string,action:"confirm"|"reschedule"|"cancel"){
@@ -108,8 +108,9 @@ export default function AdminEnquiryEditor({enquiryId,requestType,canManageEnqui
   try{
    const r=await fetch("/api/admin/enquiries/"+enquiryId+"/booking",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({appointmentId,action,starts_at:draft?.starts_at?new Date(draft.starts_at).toISOString():null,ends_at:null,location:draft?.location??""})});
    const d=await r.json();if(!r.ok){setNotice(d.error??"Could not update booking.");return;}
-   setConfirmCancelId(null);setNotice(action==="cancel"?"Booking cancelled.":action==="confirm"?"Booking confirmed and linked to the Workcard.":"Booking rescheduled and Workcard updated.");
+   setConfirmCancelId(null);
    await load();
+   setNotice(action==="cancel"?"Booking cancelled.":action==="confirm"?(Number(d.workcardsUpdated??0)>0?"Booking confirmed. The linked Workcard has been updated.":"Booking confirmed on the Jobcard."):(Number(d.workcardsUpdated??0)>0?"Booking rescheduled. The linked Workcard has been updated.":"Booking rescheduled on the Jobcard."));
   }catch{setNotice("Could not update booking.");}finally{setBusy(false);}
  }
  async function changeStage(stage:string){

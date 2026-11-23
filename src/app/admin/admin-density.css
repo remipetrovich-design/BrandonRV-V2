@@ -713,3 +713,22 @@
  .brv-admin-frame .brv-role-manager__layout { grid-template-columns:230px minmax(0,1fr); }
  .brv-admin-frame .brv-permission-group__items { grid-template-columns:minmax(0,1fr); }
 }
+
+
+.brv-admin-frame .brv-workcard-command-bar {
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:16px;
+ margin-bottom:12px;
+ padding:14px 16px;
+ border:1px solid #dce3e8;
+ border-radius:9px;
+ background:#fff;
+}
+.brv-admin-frame .brv-workcard-command-bar > div { display:grid; gap:4px; }
+.brv-admin-frame .brv-workcard-command-bar strong { color:#172b3a; font-size:14px; }
+.brv-admin-frame .brv-workcard-command-bar span { color:#526474; font-size:12px; }
+@media(max-width:640px) {
+ .brv-admin-frame .brv-workcard-command-bar { align-items:stretch; flex-direction:column; }
+}

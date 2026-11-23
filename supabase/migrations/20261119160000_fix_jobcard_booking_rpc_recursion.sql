@@ -10,8 +10,7 @@ CREATE OR REPLACE FUNCTION public.update_jobcard_booking(
   p_starts_at timestamptz,
   p_ends_at timestamptz,
   p_location text,
-  p_bypass_conflicts boolean
-) RETURNS jsonb
+  p_bypass_conflicts boolean) RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
