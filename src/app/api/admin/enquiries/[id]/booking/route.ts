@@ -1,6 +1,7 @@
 import {authorizePermission,currentUser,currentMembership,database,jsonError,sameOrigin,userHasPermission} from "@/lib/auth";
 import {validateBookingWindow} from "@/lib/booking-rules";
 import {bookingWindowsConflict} from "@/lib/booking-window-policy.mjs";
+import {emitIntegrationEvent} from "@/lib/emit-integration-event";
 export const runtime="nodejs";
 const idPattern=/^[0-9a-f-]{36}$/i;
 
@@ -66,6 +67,11 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   if(inserted.error||!inserted.data){console.error("Jobcard booking creation failed",inserted.error);return jsonError("Could not create the booking record.",500);}
   const {data:result,error:bookingError}=await db.rpc("update_jobcard_booking",{p_business_id:businessId,p_actor_user_id:access.user!.id,p_enquiry_id:id,p_appointment_id:inserted.data.id,p_action:"confirm",p_starts_at:startsAt.toISOString(),p_ends_at:endsAt?.toISOString()??null,p_location:location,p_bypass_conflicts:bypassRestrictions});
   if(bookingError){await db.from("appointments").delete().eq("id",inserted.data.id).eq("business_id",businessId);const status=bookingError.code==="P0002"?404:bookingError.code==="P0001"?409:bookingError.code==="22023"?400:500;return jsonError(bookingError.message??"Could not confirm the new booking.",status);}
+  if(enquiry.email)await emitIntegrationEvent("booking.confirmed",{
+   recipient:{email:enquiry.email,firstName:enquiry.contact_name},customer:{email:enquiry.email,name:enquiry.contact_name},
+   booking:{id:result?.appointment?.id??inserted.data.id,status:"confirmed",startsAt:startsAt.toISOString(),endsAt:endsAt?.toISOString()??null,location},
+   enquiry:{id:enquiry.id,referenceNumber:enquiry.request_number},business:{name:"Brandon RV"},confirmedAt:new Date().toISOString()
+  });
   return Response.json({booking:result?.appointment??null,workcardsUpdated:result?.workcardsUpdated??0},{status:201});
  }catch(error){console.error("Jobcard booking creation failed",error);return jsonError("Could not create this booking.",500);}
 }
@@ -80,7 +86,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(!["confirm","reschedule","cancel"].includes(action))return jsonError("Choose confirm, reschedule or cancel.");
   const db=database(),businessId=access.membership!.business_id;
   const bypassRestrictions=await userHasPermission(access.user!.id,"appointments.override_scheduling_restrictions");
-  const {data:enquiry,error:enquiryError}=await db.from("enquiries").select("id,stage").eq("id",id).eq("business_id",businessId).maybeSingle();
+  const {data:enquiry,error:enquiryError}=await db.from("enquiries").select("id,stage,contact_name,email,request_number").eq("id",id).eq("business_id",businessId).maybeSingle();
   if(enquiryError||!enquiry)return jsonError("Jobcard not found.",404);
   const {data:quotes,error:quoteError}=await db.from("quotes").select("id").eq("business_id",businessId).eq("enquiry_id",id);
   if(quoteError)return jsonError("Could not verify the Jobcard quote.",500);
@@ -116,6 +122,11 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    p_ends_at:action==="cancel"?null:patch.ends_at??null,p_location:action==="cancel"?null:patch.location,p_bypass_conflicts:bypassRestrictions
   });
   if(bookingUpdateError){const status=bookingUpdateError.code==="P0002"?404:bookingUpdateError.code==="P0001"?409:bookingUpdateError.code==="22023"?400:500;return jsonError(bookingUpdateError.message??"Could not update the booking and linked Workcards.",status);}
+  if(enquiry.email)await emitIntegrationEvent(action==="cancel"?"booking.cancelled":action==="reschedule"?"booking.rescheduled":"booking.confirmed",{
+   recipient:{email:enquiry.email,firstName:enquiry.contact_name},customer:{email:enquiry.email,name:enquiry.contact_name},
+   booking:{id:appointment.id,status:action==="cancel"?"cancelled":action==="reschedule"?"rescheduled":"confirmed",startsAt:action==="cancel"?null:new Date(String(patch.starts_at)).toISOString(),endsAt:action==="cancel"?null:patch.ends_at??null,location:action==="cancel"?appointment.location:patch.location},
+   enquiry:{id:enquiry.id,referenceNumber:enquiry.request_number},business:{name:"Brandon RV"},updatedAt:new Date().toISOString()
+  });
   return Response.json(result);
  }catch(error){console.error("Jobcard booking update failed",error);return jsonError("Could not update this booking.",500);}
 }
