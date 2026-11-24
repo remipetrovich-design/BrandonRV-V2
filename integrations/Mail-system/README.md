@@ -20,6 +20,14 @@ The module connects to the central Mail System using the host application's serv
 - Embeddable React console with module enable/disable, connection test and appearance controls.
 - Automated contract and behavior tests.
 
+## Brandon RV V2 integration manager
+
+This folder is a standalone module discovered by Brandon RV V2's existing Staff Portal → Integrations manager. Keep `integration.json` and `server.cjs` in this folder; the manager uses them to install, configure, test, enable and disable the integration. Set the manager's Endpoint URL to the central Mail System HTTPS origin (without `/api`) and save the dedicated External System API key in the `Mail System API key` secret field. The manager encrypts that key at rest and passes it only to the server entry point. The V2 server also needs its existing Supabase server credentials so event handlers can read this module's `app_mail_*` tables.
+
+The manager activation switch controls whether V2 dispatches events to this module. The module's own `app_mail_settings.enabled` setting remains a separate switch and must also be enabled before configured triggers send mail. This preserves the module's independent application-level enable/disable control.
+
+The V2 adapter currently subscribes to `account.password_reset_requested`, `account.password_changed` and `staff.invitation_created`, the events already wired in the host. Other event names remain available in the core event catalogue but are not subscribed here until the host workflows emit them. For each trigger, `recipient_mapping` must resolve recipients from the trusted event payload using `{"to":"path.to.email"}` or `{"to":["path.to.email","path.to.otherEmail"]}`. Literal addresses are not accepted as recipient mappings.
+
 ## Quick start
 
 1. Copy this folder into the host application's source tree.
