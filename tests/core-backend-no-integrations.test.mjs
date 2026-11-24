@@ -6,8 +6,10 @@ const read=path=>readFile(new URL("../"+path,import.meta.url),"utf8");
 test("core application exposes integration management without installing provider modules",async()=>{
  const adminLayout=await read("src/app/admin/layout.tsx"),index=await read("integrations/README.md");
  assert.match(adminLayout,/\/admin\/integrations/);
- assert.match(index,/core repository contains no installed provider modules/);
+ assert.match(index,/Mail System is installed here as a standalone provider module/);
  await access(new URL("../src/app/admin/integrations/page.tsx",import.meta.url));
+ await access(new URL("../integrations/Mail-system/integration.json",import.meta.url));
+ await access(new URL("../integrations/Mail-system/server.cjs",import.meta.url));
  await assert.rejects(access(new URL("../integrations/Mail-System",import.meta.url)));
  await assert.rejects(access(new URL("../integrations/Plugin2",import.meta.url)));
  await assert.rejects(access(new URL("../src/app/admin/email-templates/page.tsx",import.meta.url)));
@@ -50,11 +52,11 @@ test("legacy email verification is replaced with manual customer activation",asy
 });
 
 test("legacy email template and verification token storage are removed from the core schema",async()=>{
- const cleanup=await read("supabase/migrations/20261124000300_remove_core_email_templates.sql");
+ const cleanup=await read("supabase/migrations/20261124115557_remove_core_email_templates.sql");
  assert.match(cleanup,/DROP TABLE IF EXISTS public\.email_templates/i);
  assert.match(cleanup,/DROP TABLE IF EXISTS public\.email_verification_tokens/i);
 });
 
 test("the future integration archive remains untouched in the repository root",async()=>{
- await access(new URL("../mail-configuration-module.zip",import.meta.url));
+ await access(new URL("../Mail-system.zip",import.meta.url));
 });

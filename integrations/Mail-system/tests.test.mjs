@@ -1,4 +1,6 @@
 import test from "node:test";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -89,4 +91,98 @@ test("package and manifest return to the requested v1 version", async () => {
   assert.equal(pkg.version, "1.0.0");
   assert.equal(manifest.version, "1.0.0");
   assert.equal(pkg.private, false);
+});
+
+
+test("Brandon RV V2 manager manifest matches the installed integration contract", async () => {
+  const manifest = JSON.parse(await read("integration.json"));
+  const schema = JSON.parse(await read("../manifest.schema.json"));
+  assert.equal(manifest.id, "mail-system");
+  assert.equal(manifest.entrypoint, "server.cjs");
+  assert.ok(manifest.events.includes("account.password_reset_requested"));
+  assert.ok(manifest.events.includes("account.password_changed"));
+  assert.ok(manifest.events.includes("staff.invitation_created"));
+  assert.equal(schema.properties.entrypoint.const, "server.cjs");
+  assert.ok(manifest.config.some(field => field.key === "apiKey" && field.type === "secret" && field.required));
+});
+
+test("manager server entrypoint exports the required lifecycle functions", async () => {
+  const adapter = require("./server.cjs");
+  assert.equal(typeof adapter.testConnection, "function");
+  assert.equal(typeof adapter.handleEvent, "function");
+});
+
+test("manager connection test uses the encrypted secret and configured endpoint", async () => {
+  const adapter = require("./server.cjs");
+  const originalFetch = globalThis.fetch;
+  let request;
+  globalThis.fetch = async (url, init) => {
+    request = { url, init };
+    return { ok: true, status: 200, json: async () => ({ sender: "service@example.com", senders: [{ id: "1", address: "service@example.com" }] }) };
+  };
+  try {
+    const result = await adapter.testConnection({
+      endpoint: "https://mail.example.com",
+      secrets: { apiKey: "test-secret" },
+      settings: {}
+    });
+    assert.equal(result.ok, true);
+    assert.match(result.message, /1 permitted sender/);
+    assert.equal(request.url, "https://mail.example.com/api/mail/senders");
+    assert.equal(request.init.headers.Authorization, "Bearer test-secret");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+
+test("manager event handler loads module configuration and sends the mapped template", async () => {
+  const adapter = require("./server.cjs");
+  const originalFetch = globalThis.fetch;
+  const oldUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const oldKey = process.env.SUPABASE_SECRET_KEY;
+  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://lciylmfpcefdpsouoqvm.supabase.co";
+  process.env.SUPABASE_SECRET_KEY = "test-supabase-secret";
+  let sentMessage;
+  globalThis.fetch = async (input, init = {}) => {
+    const url = new URL(String(input));
+    if (url.hostname === "lciylmfpcefdpsouoqvm.supabase.co") {
+      const table = url.pathname.split("/").pop();
+      const rows = {
+        app_mail_settings: [{ value: { enabled: true, defaultSender: "service@example.com" } }],
+        app_mail_triggers: [{ event_key: "account.password_changed", template_key: "password-changed", route_key: null, recipient_mapping: { to: "user.email" }, active: true }],
+        app_mail_templates: [{ template_key: "password-changed", subject: "Hello {{user.name}}", body_text: "Your password changed.", body_html: null, active: true }],
+        app_mail_routes: []
+      };
+      return { ok: true, status: 200, text: async () => JSON.stringify(rows[table] || []) };
+    }
+    if (url.pathname === "/api/mail/senders") {
+      return { ok: true, status: 200, json: async () => ({ senders: [{ id: "1", address: "service@example.com" }] }) };
+    }
+    if (url.pathname === "/api/mail" && init.method === "POST") {
+      sentMessage = JSON.parse(init.body);
+      return { ok: true, status: 200, json: async () => ({ ok: true, id: "message-1" }) };
+    }
+    throw new Error("Unexpected request: " + url.href);
+  };
+  try {
+    const result = await adapter.handleEvent({
+      event: "account.password_changed",
+      payload: { user: { email: "recipient@example.com", name: "Ada" } }
+    }, {
+      endpoint: "https://mail.example.com",
+      secrets: { apiKey: "test-mail-secret" },
+      settings: {}
+    });
+    assert.equal(result.sent, true);
+    assert.deepEqual(sentMessage.to, ["recipient@example.com"]);
+    assert.equal(sentMessage.subject, "Hello Ada");
+    assert.equal(sentMessage.from_address, "service@example.com");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (oldUrl === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    else process.env.NEXT_PUBLIC_SUPABASE_URL = oldUrl;
+    if (oldKey === undefined) delete process.env.SUPABASE_SECRET_KEY;
+    else process.env.SUPABASE_SECRET_KEY = oldKey;
+  }
 });

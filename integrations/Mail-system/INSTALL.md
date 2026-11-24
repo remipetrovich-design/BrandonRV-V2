@@ -1,5 +1,13 @@
 # Installation and setup
 
+## Brandon RV V2 Integrations Manager installation
+
+The module is already packaged under `integrations/Mail-system` in the Brandon RV V2 repository. Keep the folder in place; do not copy it to another location or create a second manager page. `integration.json` and `server.cjs` are the manager compatibility files. After the application is deployed with the module folder present, open Staff Portal → Integrations, expand **Mail System**, set the Endpoint URL to the central Mail System HTTPS origin (no `/api` suffix), enter the dedicated External System API key, save, and use **Test connection**. The V2 manager stores the key encrypted. Enable the integration there only after the connection test succeeds.
+
+The V2 runtime requires its normal Supabase URL and server secret key environment variables to access the existing `app_mail_templates`, `app_mail_template_revisions`, `app_mail_routes`, `app_mail_triggers` and `app_mail_settings` tables. Apply `schema.sql` and `supabase-functions.sql` to the Brandon RV V2 database if these module tables are not already present. The manager enable switch and the module's own `app_mail_settings.enabled` switch are independent; enable both when ready to send. Configure triggers with recipient mappings that use event-payload paths, for example `{"to":"user.email"}`. The adapter subscribes only to core events that V2 currently emits.
+
+The manual/embedded installation steps below remain available for other host applications. They are not required to register Mail System in Brandon RV V2.
+
 ## 1. Copy the module
 
 Copy the complete `mail-configuration-module` folder into the host application's source tree. Keep it as a distinct folder so it can be upgraded or transferred independently. Do not copy the Mail System's Next.js application files.
