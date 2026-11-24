@@ -32,6 +32,7 @@ const navigation:AdminNavGroup[]=[
  ]},
  {title:"Business setup",items:[
   {label:"Integrations",href:"/admin/integrations",permission:"integrations.manage",icon:"settings"},
+  {label:"Mail System",href:"/admin/mail-system",permission:"integrations.manage",icon:"mail"},
   {label:"Services & scope",href:"/admin/services",permission:"business.settings.manage",icon:"services"},
   {label:"Service areas",href:"/admin/service-areas",permission:"business.settings.manage",icon:"location"},
   {label:"Website editor",href:"/admin/website",permission:"website.manage",icon:"website"},
