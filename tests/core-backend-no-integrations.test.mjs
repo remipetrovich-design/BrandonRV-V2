@@ -7,9 +7,11 @@ const read = (path) => readFile(new URL("../" + path, import.meta.url), "utf8");
 test("core application has no active integrations or email-template administration", async () => {
   const adminLayout = await read("src/app/admin/layout.tsx");
   const integrationsIndex = await read("integrations/README.md");
-  assert.doesNotMatch(adminLayout, /Email templates|\/admin\/integrations/);
-  assert.match(integrationsIndex, /No integrations are included in the core application/);
-  await assert.rejects(access(new URL("../src/app/admin/integrations/page.tsx", import.meta.url)));
+  assert.match(adminLayout, /\/admin\/integrations/);
+  assert.match(integrationsIndex, /No integration modules are installed in the core repository/);
+  await access(new URL("../src/app/admin/integrations/page.tsx", import.meta.url));
+  await assert.rejects(access(new URL("../integrations/Mail-System", import.meta.url)));
+  await assert.rejects(access(new URL("../integrations/Plugin2", import.meta.url)));
   await assert.rejects(access(new URL("../src/app/admin/email-templates/page.tsx", import.meta.url)));
   await assert.rejects(access(new URL("../src/lib/email.ts", import.meta.url)));
 });
