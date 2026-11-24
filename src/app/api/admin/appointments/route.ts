@@ -1,6 +1,7 @@
 import {authorizePermission,database,jsonError,sameOrigin,userHasPermission} from "@/lib/auth";
 import {validateBookingWindow} from "@/lib/booking-rules";
 import {bookingWindowsConflict} from "@/lib/booking-window-policy.mjs";
+import {emitIntegrationEvent} from "@/lib/emit-integration-event";
 export const runtime="nodejs";
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
@@ -52,6 +53,13 @@ export async function POST(request:Request){
    p_location:location,p_bypass_conflicts:bypassRestrictions
   });
   if(bookingError){await db.from("appointments").delete().eq("id",appointment.id).eq("business_id",businessId);const status=bookingError.code==="P0002"?404:bookingError.code==="P0001"?409:500;return jsonError(bookingError.message??"Could not create and link the appointment.",status);}
+  let recipientEmail=job.guest_email??null,recipientName:string|null=null;
+  if(job.user_id){const {data:customerUser}=await db.from("users").select("email,full_name").eq("id",job.user_id).maybeSingle();recipientEmail=customerUser?.email??recipientEmail;recipientName=customerUser?.full_name??null;}
+  if(recipientEmail)await emitIntegrationEvent("booking.confirmed",{
+   recipient:{email:recipientEmail,firstName:recipientName},customer:{email:recipientEmail,name:recipientName},
+   booking:{id:bookingResult.appointment?.id??appointment.id,status:"confirmed",startsAt:startsAt.toISOString(),endsAt:endsAt?.toISOString()??null,location},
+   job:{id:job.id,number:job.job_number},business:{name:"Brandon RV"},confirmedAt:new Date().toISOString()
+  });
   return Response.json({appointment:bookingResult.appointment,jobId:job.id,workcardsUpdated:bookingResult.workcardsUpdated},{status:201});
  }catch(error){console.error("Calendar appointment creation failed",error);return jsonError("Could not create appointment.",500);}
 }
