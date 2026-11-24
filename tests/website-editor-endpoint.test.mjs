@@ -347,3 +347,15 @@ test("public website builder always renders phone details from the business prof
  has(layout,"phoneLink={phoneHref(phone)}");
  has(footer,"{phone&&<a href={phoneLink}>{phone}</a>}");
 });
+
+
+test("unified website workspace exposes explicit publish and unpublish controls",async()=>{
+ const workspace=await source("../src/components/admin-website-workspace.tsx");
+ has(workspace,'method:"PATCH"');
+ has(workspace,'JSON.stringify({is_published:true})');
+ has(workspace,'JSON.stringify({is_published:false})');
+ has(workspace,"Publish changes");
+ has(workspace,"Unpublish page");
+ has(workspace,"Published ");
+ has(workspace,"The live website has been updated.");
+});
