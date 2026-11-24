@@ -29,7 +29,7 @@ test("customer registration and sign-in do not depend on email verification or o
 
 test("staff invitations emit an integration event and retain a manual link fallback",async()=>{
  const invitations=await read("src/app/api/staff/invitations/route.ts"),ui=await read("src/components/admin-staff-invitations.tsx");
- assert.match(invitations,/dispatchIntegrationEvent\("staff\.invitation_created"/);
+ assert.match(invitations,/emitIntegrationEvent\("staff\.invitation_created"/);
  assert.match(invitations,/notificationHandled/);
  assert.match(ui,/notificationHandled/);
  assert.match(invitations,/inviteUrl:link/);
