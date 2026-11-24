@@ -34,7 +34,7 @@ export async function discoverIntegrations(){
     seen.add(field.key);
     config.push({key:field.key,label:field.label,type:field.type,required:field.required===true,description:typeof field.description==="string"?field.description.slice(0,500):"",...(field.type==="select"?{options:field.options as string[]}:{})});
    }
-   const events:string[]=Array.isArray(raw.events)?[...new Set<string>(raw.events.filter((value:unknown):value is string=>typeof value==="string"&&(value==="*"||validEvent.test(value)))]:[];
+   const events:string[]=Array.isArray(raw.events)?[...new Set<string>(raw.events.filter((value:unknown):value is string=>typeof value==="string"&&(value==="*"||validEvent.test(value))))]:[];
    const providesEvents=Array.isArray(raw.providesEvents)?raw.providesEvents.filter((item:unknown)=>!!item&&typeof item==="object"&&validEvent.test(String((item as any).name??""))&&typeof (item as any).description==="string"&&typeof (item as any).trigger==="string").slice(0,200).map((item:any)=>({name:String(item.name),description:String(item.description).slice(0,500),trigger:String(item.trigger).slice(0,500)})):[];
    found.push({id,folder:entry.name,name:raw.name.trim().slice(0,100),version:raw.version.slice(0,40),description:raw.description.slice(0,1000),entrypoint:"server.cjs",...(adminPage?{adminPage}:{}),events,providesEvents,config});
   }catch{/* Invalid or incomplete module folders are not loadable and are omitted. */}
