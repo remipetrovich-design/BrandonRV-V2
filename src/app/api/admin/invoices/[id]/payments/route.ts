@@ -1,4 +1,5 @@
 import {currentUser,currentMembership,database,userHasPermission,jsonError,sameOrigin} from "@/lib/auth";
+import {emitIntegrationEvent} from "@/lib/emit-integration-event";
 export const runtime="nodejs";
 
 export async function GET(request:Request,{params}:{params:Promise<{id:string}>}){
@@ -38,6 +39,16 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
    p_method:method,p_reference:reference||null,p_payment_type:paymentType,p_idempotency_key:idempotencyKey
   });
   if(error){if(error.code==="P0001")return jsonError(error.message??"This invoice cannot accept payment.",409);if(error.code==="22023")return jsonError(error.message??"Enter a valid payment.",400);return jsonError("Could not record payment. No changes were made.",500);}
-  return Response.json(data);
+  const db=database();
+  const {data:invoice}=await db.from("invoices").select("id,invoice_number,total,amount_paid,customer_id,user_id").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
+  let recipientEmail:string|null=null,recipientName:string|null=null;
+  if(invoice?.user_id){const {data:customerUser}=await db.from("users").select("email,full_name").eq("id",invoice.user_id).maybeSingle();recipientEmail=customerUser?.email??null;recipientName=customerUser?.full_name??null;}
+  if(!recipientEmail&&invoice?.customer_id){const {data:customer}=await db.from("customers").select("email,full_name").eq("id",invoice.customer_id).eq("business_id",membership.business_id).maybeSingle();recipientEmail=customer?.email??null;recipientName=customer?.full_name??null;}
+  if(recipientEmail&&invoice)await emitIntegrationEvent("payment.received",{
+   recipient:{email:recipientEmail,firstName:recipientName},customer:{email:recipientEmail,name:recipientName},
+   invoice:{id:invoice.id,number:invoice.invoice_number,total:invoice.total,amountPaid:invoice.amount_paid},
+   payment:{amount,method,reference,paymentType},business:{name:"Brandon RV"},receivedAt:new Date().toISOString()
+  });
+  return Response.json({...data,emailSent:!!recipientEmail});
  }catch(error){console.error("Invoice payment recording failed.",error);return jsonError("Could not record payment.",500);}
 }
