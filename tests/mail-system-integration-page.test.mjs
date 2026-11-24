@@ -15,7 +15,7 @@ test("Mail System owns its complete admin page and editor inside its integration
  assert.match(actions,/createSupabaseMailModuleStore/);
  assert.match(editor,/contentEditable/);
  assert.match(editor,/HTML source/);
- assert.match(editor,/Upload image/);
+ assert.match(editor,/Upload image/);\n for(const feature of ["fontName","foreColor","hiliteColor","insertTable","Email button","Image URL","Resize image","Image centre","HTML source"])assert.ok(editor.includes(feature),feature);
  assert.match(actions,/"use server"/);
 });
 
