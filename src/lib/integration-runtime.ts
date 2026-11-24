@@ -4,6 +4,7 @@ import path from "node:path";
 import {discoverIntegrations,type IntegrationManifest} from "@/lib/integration-registry";
 import {database} from "@/lib/auth";
 import {decryptIntegrationSecrets} from "@/lib/integration-secrets";
+import type {CoreIntegrationEvent} from "@/lib/integration-events";
 
 export type IntegrationContext={id:string;name:string;version:string;endpoint:string;settings:Record<string,unknown>;secrets:Record<string,string>};
 export type IntegrationTestResult={ok:boolean;message:string};
@@ -27,7 +28,7 @@ function contextFor(manifest:IntegrationManifest,row:{endpoint:string|null;setti
  const settings=row.settings&&typeof row.settings==="object"&&!Array.isArray(row.settings)?row.settings as Record<string,unknown>:{};
  return {id:manifest.id,name:manifest.name,version:manifest.version,endpoint:row.endpoint??"",settings,secrets:row.secret?decryptIntegrationSecrets(row.secret):{}};
 }
-export async function testInstalledIntegration(id:string):Promise<IntegrationTestResult>{
+export function validateInstalledIntegration(id:string){\n const manifestPromise=discoverIntegrations();\n return manifestPromise.then(manifests=>{const manifest=manifests.find(item=>item.id===id);if(!manifest)throw new Error("Integration is not installed or its module files are incomplete.");moduleFor(manifest);});\n}\n\nexport async function testInstalledIntegration(id:string):Promise<IntegrationTestResult>{
  const manifest=(await discoverIntegrations()).find(item=>item.id===id);
  if(!manifest)throw new Error("Integration is not installed or its module files are incomplete.");
  const {data,error}=await database().from("app_integrations").select("endpoint,settings,secret,active").eq("slug",id).maybeSingle();
@@ -41,7 +42,7 @@ export async function testInstalledIntegration(id:string):Promise<IntegrationTes
 }
 
 /** Dispatch a named core event to every enabled installed module that declares it in integration.json. */
-export async function dispatchIntegrationEvent(event:string,payload:unknown){
+export async function dispatchIntegrationEvent(event:CoreIntegrationEvent,payload:unknown){
  if(!validEvent.test(event))throw new Error("Invalid integration event name.");
  const manifests=await discoverIntegrations(),byId=new Map(manifests.map(item=>[item.id,item]));
  const {data,error}=await database().from("app_integrations").select("slug,endpoint,settings,secret").eq("active",true);
