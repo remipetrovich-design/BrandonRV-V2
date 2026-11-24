@@ -45,9 +45,10 @@ export default function AdminIntegrations() {
       const response = await fetch("/api/admin/integrations", { cache: "no-store" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Could not load integrations.");
-      const unique = [...new Map((data.integrations ?? []).map((item: Integration) => [item.id, item])).values()];
+      const received = Array.isArray(data.integrations) ? data.integrations as Integration[] : [];
+      const unique = Array.from(new Map<string, Integration>(received.map((item) => [item.id, item] as [string, Integration])).values());
       setItems(unique);
-      setValues(Object.fromEntries(unique.map((item: Integration) => [item.id, { ...item.settings, endpoint: item.endpoint }])));
+      setValues(Object.fromEntries(unique.map((item) => [item.id, { ...item.settings, endpoint: item.endpoint }])));
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not load integrations.");
     } finally {
