@@ -4,35 +4,40 @@ import {useMemo} from "react";
 import {MailModuleConsole} from "./console";
 import type {MailModuleStore,MailTemplate,MailTemplateRevision,MailRoute,MailTrigger,MailModuleSettings} from "./types";
 
-async function request<T>(method:"GET"|"POST",body?:Record<string,unknown>,query=""):Promise<T>{
- const response=await fetch("/api/admin/mail-system"+query,{method,headers:body?{"Content-Type":"application/json"}:undefined,body:body?JSON.stringify(body):undefined,cache:"no-store"});
- const data=await response.json().catch(()=>({}));
- if(!response.ok)throw new Error(data.error||data.message||"Mail System request failed.");
- return data as T;
+async function request<T>(body:Record<string,unknown>):Promise<T>{
+ const response=await fetch("/api/admin/mail-system",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body),cache:"no-store"});
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok||result.success!==true)throw new Error(result.error||result.message||"Mail System request failed.");
+ return result.data as T;
 }
+const availableEvents=[
+ "account.password_reset_requested","account.password_changed","staff.invitation_created","customer.account_created",
+ "enquiry.received","quote.issued","quote.accepted","quote.declined","quote.changes_requested","booking.requested",
+ "booking.confirmed","booking.rescheduled","booking.cancelled","job.assigned","job.started","job.completed",
+ "job.customer_approval_requested","job.customer_approved","job.customer_changes_requested","invoice.issued",
+ "payment.received","payment.refunded","invoice.credit_issued"
+];
 export default function MailSystemConsolePage(){
  const store=useMemo<MailModuleStore>(()=>({
-  async listTemplates(){return (await request<{templates:MailTemplate[]}>("GET",undefined,"?resource=templates")).templates;},
-  async getTemplateByKey(key){return (await this.listTemplates()).find(item=>item.template_key===key)||null;},
-  async saveTemplate(input){return (await request<{template:MailTemplate}>("POST",{action:"saveTemplate",input})).template;},
-  async listTemplateRevisions(templateId){return (await request<{revisions:MailTemplateRevision[]}>("GET",undefined,"?resource=revisions&templateId="+encodeURIComponent(templateId))).revisions;},
-  async restoreTemplateRevision(templateId,revision){return (await request<{template:MailTemplate}>("POST",{action:"restoreTemplateRevision",templateId,revision})).template;},
-  async deleteTemplate(id){await request("POST",{action:"deleteTemplate",id});},
-  async listRoutes(){return (await request<{routes:MailRoute[]}>("GET",undefined,"?resource=routes")).routes;},
-  async saveRoute(input){return (await request<{route:MailRoute}>("POST",{action:"saveRoute",input})).route;},
-  async deleteRoute(id){await request("POST",{action:"deleteRoute",id});},
-  async listTriggers(){return (await request<{triggers:MailTrigger[]}>("GET",undefined,"?resource=triggers")).triggers;},
-  async getTrigger(eventKey){return (await this.listTriggers()).find(item=>item.event_key===eventKey)||null;},
-  async saveTrigger(input){return (await request<{trigger:MailTrigger}>("POST",{action:"saveTrigger",input})).trigger;},
-  async deleteTrigger(id){await request("POST",{action:"deleteTrigger",id});},
-  async getSettings(){return (await request<{settings:MailModuleSettings}>("GET",undefined,"?resource=settings")).settings;},
-  async saveSettings(input){return (await request<{settings:MailModuleSettings}>("POST",{action:"saveSettings",input})).settings;}
+  async listTemplates(){return request<MailTemplate[]>({action:"listTemplates"});},
+  async getTemplateByKey(key){return request<MailTemplate|null>({action:"getTemplateByKey",key});},
+  async saveTemplate(input){return request<MailTemplate>({action:"saveTemplate",input});},
+  async listTemplateRevisions(templateId){return request<MailTemplateRevision[]>({action:"listTemplateRevisions",templateId});},
+  async restoreTemplateRevision(templateId,revision){return request<MailTemplate>({action:"restoreTemplateRevision",templateId,revision});},
+  async deleteTemplate(id){await request({action:"deleteTemplate",id});},
+  async listRoutes(){return request<MailRoute[]>({action:"listRoutes"});},
+  async saveRoute(input){return request<MailRoute>({action:"saveRoute",input});},
+  async deleteRoute(id){await request({action:"deleteRoute",id});},
+  async listTriggers(){return request<MailTrigger[]>({action:"listTriggers"});},
+  async getTrigger(eventKey){return request<MailTrigger|null>({action:"getTrigger",eventKey});},
+  async saveTrigger(input){return request<MailTrigger>({action:"saveTrigger",input});},
+  async deleteTrigger(id){await request({action:"deleteTrigger",id});},
+  async getSettings(){return request<MailModuleSettings>({action:"getSettings"});},
+  async saveSettings(input){return request<MailModuleSettings>({action:"saveSettings",input});}
  }),[]);
  async function onTestConnection(){
-  const response=await fetch("/api/admin/integrations",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:"mail-system"}),cache:"no-store"});
-  const result=await response.json().catch(()=>({}));
-  if(!response.ok&&!result.message)throw new Error(result.error||"Connection test failed.");
-  return {connected:result.success===true,senders:result.senders||[],message:result.message||result.error||"Connection test failed."};
+  const result=await request<{connected:boolean;senders:{id:string;address:string;display_name?:string|null}[];message:string}>({action:"testConnection"});
+  return {...result,canSend:result.connected};
  }
- return <main className="portal-page"><div className="shell portal-shell brv-admin-page-inner"><div className="portal-page-heading"><p className="eyebrow"><span className="eyebrow-line"/> BUSINESS COMMUNICATIONS</p><h1>Mail System.</h1><p>Manage email templates, HTML content, sender routing, event triggers and module appearance.</p></div><MailModuleConsole store={store} onTestConnection={onTestConnection} canManage/></div></main>;
+ return <main className="portal-page"><div className="shell portal-shell brv-admin-page-inner"><div className="portal-page-heading"><p className="eyebrow"><span className="eyebrow-line"/> BUSINESS COMMUNICATIONS</p><h1>Mail System.</h1><p>Manage email templates, HTML content, sender routing, event triggers and module appearance.</p></div><MailModuleConsole store={store} onTestConnection={onTestConnection} canManage availableEvents={availableEvents}/></div></main>;
 }
