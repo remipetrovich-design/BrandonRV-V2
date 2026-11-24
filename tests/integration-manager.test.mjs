@@ -45,7 +45,7 @@ test("manifest schema and module contract are documented without installing prov
  const schema=JSON.parse(await read("integrations/manifest.schema.json"));
  assert.equal(schema.properties.entrypoint.const,"server.cjs");
  const events=await read("src/lib/integration-events.ts");
- assert.match(events,/account.password_reset_requested/);
+ assert.match(events,/account.password_reset_requested/);\n assert.match(events,/account.password_changed/);
  assert.match(events,/quote.issued/);
  const docs=await read("integrations/README.md");
  assert.match(docs,/dispatchIntegrationEvent/);
