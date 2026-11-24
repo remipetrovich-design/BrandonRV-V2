@@ -1,4 +1,5 @@
--- Staff Portal integration management permission and safe disabled default.
+-- Staff Portal integration management permission and disabled-by-default activation.
+alter table public.app_integrations alter column active set default false;
 insert into public.permissions(permission_key,description)
 values ('integrations.manage','Discover, configure, enable and disable installed integration modules.')
 on conflict(permission_key) do update set description=excluded.description;
