@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { MailModuleConsole } from "../../integrations/Mail-system/console";
 import type { MailModuleStore } from "../../integrations/Mail-system/types";
+import { CORE_INTEGRATION_EVENT_NAMES } from "@/lib/integration-events";
 
 async function request(action: string, data: Record<string, unknown> = {}) {
   const response = await fetch("/api/admin/mail-system", {
@@ -39,6 +40,7 @@ export default function AdminMailSystem() {
     <MailModuleConsole
       store={store}
       canManage
+      availableEvents={CORE_INTEGRATION_EVENT_NAMES}
       onTestConnection={async () => request("testConnection")}
     />
   );
