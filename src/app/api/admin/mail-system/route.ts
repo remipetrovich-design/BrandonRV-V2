@@ -1,5 +1,5 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
-import {createSupabaseMailModuleStore} from "../../../../integrations/Mail-system/supabase-store";
+import {createSupabaseMailModuleStore} from "../../../../../integrations/Mail-system/supabase-store";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 const store=()=>createSupabaseMailModuleStore(database() as any);
