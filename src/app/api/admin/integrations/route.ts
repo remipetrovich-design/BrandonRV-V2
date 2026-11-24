@@ -1,7 +1,7 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
 import {discoverIntegrations} from "@/lib/integration-registry";
 import {decryptIntegrationSecrets,encryptIntegrationSecrets} from "@/lib/integration-secrets";
-import {testInstalledIntegration} from "@/lib/integration-runtime";
+import {testInstalledIntegration,validateInstalledIntegration} from "@/lib/integration-runtime";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 
@@ -66,6 +66,7 @@ export async function PATCH(request:Request){
    settings[field.key]=text;
   }
   if(enabled)for(const field of module.config){if(field.required&&field.type!=="secret"&&!String(settings[field.key]??"").trim())return jsonError(field.label+" is required.");if(field.required&&field.type==="secret"&&!secrets[field.key])return jsonError(field.label+" is required.");}
+  if(enabled)await validateInstalledIntegration(id);
   let encrypted=existing?.secret??"";
   if(Object.keys(secrets).length)encrypted=encryptIntegrationSecrets(secrets);
   const endpoint=typeof body.endpoint==="string"?body.endpoint.trim().slice(0,2000):(existing?.endpoint??"");
