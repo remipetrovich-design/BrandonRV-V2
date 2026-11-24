@@ -1,6 +1,5 @@
 import {createHash} from "node:crypto";
-import {database,normalizeEmail,passwordHash,digest,newToken,jsonError,sameOrigin,createSession} from "@/lib/auth";
-import {isEmailConfigured,sendBrandonRvTemplateEmail} from "@/lib/email";
+import {database,normalizeEmail,passwordHash,digest,jsonError,sameOrigin,createSession} from "@/lib/auth";
 export const runtime="nodejs";
 const isValidBirthDate=(value:string)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;const date=new Date(value+"T00:00:00Z");return !Number.isNaN(date.getTime())&&date.toISOString().slice(0,10)===value&&date<=new Date();};
 export async function POST(request:Request){
@@ -46,24 +45,14 @@ export async function POST(request:Request){
    if(!invite||invite.email!==email||invite.business_id!==business.id||invite.accepted_at||invite.revoked_at||invite.expires_at<=new Date().toISOString())return jsonError("This staff invitation is invalid, expired or does not match this email address.",410);
    staffInvitation=invite;
   }
-  const verificationEnabled=isEmailConfigured();
+  const verificationEnabled=false;
   const {data:user,error}=await db.from("users").insert({
    email,password_hash:await passwordHash(password),full_name:fullName,first_name:firstName,last_name:lastName||null,
    date_of_birth:dateOfBirth,phone:phone||null,address:address||null,suburb:suburb||null,state:state||null,postcode:postcode||null,account_type:"customer",primary_group:"customer",
    user_role:null,business_id:business.id,status:verificationEnabled?"unverified":"active",email_verified_at:verificationEnabled?null:new Date().toISOString()
   }).select("id").single();
   if(error||!user)return jsonError("Could not create your account. Please try again.",500);
-  if(!verificationEnabled){
-   if(staffInvitation)await createSession(user.id,request);
-   return Response.json({verificationRequired:false,invitationUrl:staffInvitation?"/portal/accept-staff-invitation?token="+encodeURIComponent(invitationToken):null,message:staffInvitation?"Your customer account is ready. Continue to accept your staff invitation.":"Your customer account is ready. You can now sign in. Email verification and password recovery emails are not enabled yet; use an email address you can access."},{status:201});
-  }
-  const token=newToken();const tokenHash=digest(token);
-  const {error:tokenError}=await db.from("email_verification_tokens").insert({user_id:user.id,token_hash:tokenHash,expires_at:new Date(Date.now()+86400000).toISOString()});
-  if(tokenError){await db.from("users").delete().eq("id",user.id);return jsonError("Could not start email verification.",500);}
-  const base= (process.env.NEXT_PUBLIC_APP_URL?.trim()||new URL(request.url).origin).replace(/\/+$/g,"");
-  const link=base+"/portal/verify-email?token="+encodeURIComponent(token)+(staffInvitation?"&invitation_token="+encodeURIComponent(invitationToken):"");
-  const sent=await sendBrandonRvTemplateEmail({templateId:"verify_account",sender:"noreply",to:email,variables:{firstname:firstName,lastname:lastName,verification_url:link,expiry_time:"24 hours"}});
-  if(!sent){await db.from("email_verification_tokens").delete().eq("token_hash",tokenHash);await db.from("users").delete().eq("id",user.id);return jsonError("Email delivery failed. Please try again later or contact Brandon RV.",503);}
-  return Response.json({verificationRequired:true,message:"Check your email for a verification link."},{status:201});
+  if(staffInvitation)await createSession(user.id,request);
+  return Response.json({verificationRequired:false,invitationUrl:staffInvitation?"/portal/accept-staff-invitation?token="+encodeURIComponent(invitationToken):null,message:staffInvitation?"Your customer account is ready. Continue to accept your staff invitation.":"Your customer account is ready. You can now sign in."},{status:201});
  }catch{return jsonError("Registration is temporarily unavailable.",500);}
 }

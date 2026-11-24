@@ -41,11 +41,11 @@ test("Jobcard Quote tab exposes quote and linked Workcard management controls",a
  assert.match(editor,/AdminWorkcardManagement jobId=\{workcard\.id\}/);
 });
 
-test("quote-specific PATCH route retains atomic issue and customer email behavior",async()=>{
+test("quote-specific PATCH route retains atomic issue without outbound notification delivery",async()=>{
  const route=await read("../src/app/api/admin/quotes/[id]/route.ts");
  assert.match(route,/issue_quote_for_jobcard/);
- assert.match(route,/Your Brandon RV quote/);
- assert.match(route,/sendEmail/);
+ assert.match(route,/emailSent:false/);
+ assert.doesNotMatch(route,/sendEmail|@\/lib\/email/);
 });
 
 

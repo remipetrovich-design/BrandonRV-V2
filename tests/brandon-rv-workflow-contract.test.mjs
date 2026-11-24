@@ -101,11 +101,12 @@ test("admin cannot reclassify a general enquiry into a quote request",async()=>{
  assert.match(api,/guest_access_token_hash=null/);
 });
 
-test("quote issue email resolves the real customer foreign key",async()=>{
+test("generic admin quote issue remains transactional without outbound notification delivery",async()=>{
  const route=await source("../src/app/api/admin/[section]/[id]/route.ts");
- assert.match(route,/select\("quote_number,total,customer_id,user_id,enquiry_id"\)/);
- assert.match(route,/eq\("id",quoteRecord\.user_id\)/);
- assert.match(route,/from\("customers"\)\.select\("full_name,email"\)/);
+ assert.match(route,/rpc\("issue_quote_for_jobcard"/);
+ assert.match(route,/quoteIssued=true/);
+ assert.match(route,/emailSent:false/);
+ assert.doesNotMatch(route,/sendEmail|@\/lib\/email/);
 });
 
 
