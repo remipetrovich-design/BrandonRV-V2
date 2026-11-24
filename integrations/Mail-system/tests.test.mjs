@@ -187,3 +187,15 @@ test("manager event handler loads module configuration and sends the mapped temp
     else process.env.SUPABASE_SECRET_KEY = oldKey;
   }
 });
+
+
+test("Staff Portal exposes Mail System directly and permits configuration while its integration is disabled", async () => {
+ const [layout,page]=await Promise.all([read("../../src/app/admin/layout.tsx"),read("../../src/app/admin/settings/mail-system/page.tsx")]);
+ assert.match(layout,/label:"Mail System",href:"\\/admin\\/settings\\/mail-system"/);
+ assert.doesNotMatch(page,/data\?\.active !== true/);
+});
+
+test("template editor is wired into the template form with rendered preview", async () => {
+ const source=await read("console.tsx");
+ assert.match(source,/MailHtmlEditor/);assert.match(source,/New template/);assert.match(source,/sandbox=""/);assert.match(source,/srcDoc=/);
+});
