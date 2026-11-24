@@ -18,7 +18,8 @@ test("registration and enquiry intake do not depend on outbound mail", async () 
   const registration = await read("src/app/api/auth/register/route.ts");
   const enquiries = await read("src/app/api/enquiries/route.ts");
   assert.doesNotMatch(registration, /@\/lib\/email|sendBrandonRvTemplateEmail|isEmailConfigured/);
-  assert.match(registration, /status:"active"/);
+  assert.match(registration, /const verificationEnabled=false/);
+  assert.match(registration, /status:verificationEnabled\?"unverified":"active"/);
   assert.doesNotMatch(enquiries, /@\/lib\/email|sendBrandonRvTemplateEmail|sendEmail\(/);
 });
 
