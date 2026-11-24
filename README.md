@@ -64,12 +64,12 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Set the required values in `.env.local` before using application features that connect to Supabase or send email.
+Set the required values in `.env.local` before using application features that connect to Supabase.
 
 Available scripts:
 
 - `npm run dev` — start the local development server
-- `npm test` — run the Node unit tests for role policy, portal navigation, service approval, deployment configuration and email templates
+- `npm test` — run the Node unit tests for role policy, portal navigation, service approval and deployment configuration
 - `npm run typecheck` — run the TypeScript check
 - `npm run build` — create a production build
 - `npm run start` — start the production server
@@ -78,23 +78,13 @@ Available scripts:
 
 The root `.env.example` is the complete list of application runtime variables. See [Environment and pre-deployment setup](./docs/PRODUCTION_SETUP.md) for the exact purpose of each variable and whether it belongs in GitHub Actions or Vercel. The standard V2 checks workflow requires no secrets. The separate manual deploy workflow is dormant, uses the Vercel-Supabase integration for database migrations, and requires Vercel deployment secrets plus activation gates; see [Environment and pre-deployment setup](./docs/PRODUCTION_SETUP.md). Runtime variables belong in local `.env.local` and, when hosting is configured, in Vercel. Never commit actual secret values.
 
-## Transactional email and staff invitations
-
-V2 uses `NEXT_PUBLIC_APP_URL` for account verification, password reset and staff invitation links when configured. If it is blank, those auth links use the current request origin. Bundled email templates fall back to the V2 Vercel domain, not the old V1 domain. Set `NEXT_PUBLIC_APP_URL` to the V2 production URL; do not set it to the original Brandon RV production URL.
-
-Transactional mail is intended to use the existing OrbitFS Mail integration, but delivery is currently paused because `ORBITFS_MAIL_URL` and `BRANDONSRV_MAIL_API_KEY` are empty. Do not enable outbound mail until those existing integration values are configured and tested. `BRANDONRV_PUBLIC_EMAIL` must remain blank until the supplied address, domain and mailbox are verified. The email-template admin page is available under Admin → Business configuration → Email templates and requires `business.settings.manage`.
-
-Administrators can create, edit and delete custom templates, attach templates to registered application events/functions, enable or disable eligible templates, and select a sender mailbox from the live sender assignments returned by OrbitFS Mail. Sender mailbox IDs are checked against the current Mail System directory before sending. Required account-security templates cannot be disabled, moved to another event or deleted.
-
-The shared email renderer applies Brandon RV branding to automated and manually-triggered template emails: branded header with the business logo and tagline, message content, and footer with logo, website and phone, plus an optional verified public email address, privacy/sensitive-information handling notice and copyright. Messages sent from a `noreply` mailbox display an additional notice at the top stating that the mailbox is unmonitored and replies or messages sent to it will not be read. The current shared logo asset is `public/brv-mark.webp`.
-
 ### Staff invitation flow
 
-Staff invitations are created by authorised staff administrators from People/Staff management. Each invitation is single-use, expires after seven days and is tied to the invited email address and selected staff role. The invitation email uses the managed `staff_invitation` template and links to:
+Staff invitations are created by authorised staff administrators from People/Staff management. Each invitation is single-use, expires after seven days and is tied to the invited email address and selected staff role. The system generates a single-use invitation link for the administrator to copy and deliver using an approved channel. The link opens:
 
 `[V2_APP_ORIGIN]/portal/accept-staff-invitation?token=...`
 
-If the invitee already has an active customer account, they sign in with that account and accept the invitation; staff access is added to the existing identity without replacing customer records or history. If they do not have an account, they register as a customer using the invited email address. Email verification, when enabled, carries the invitation token forward; after verification they return to the invitation acceptance page. The invitation is validated again at acceptance, including email match, expiry, revocation and single-use status. The new account remains a customer account with staff access added as an employment/role extension.
+If the invitee already has an active customer account, they sign in with that account and accept the invitation; staff access is added to the existing identity without replacing customer records or history. If they do not have an account, they register as a customer using the invited email address. The invitation is validated again at acceptance, including email match, expiry, revocation and single-use status. The new account remains a customer account with staff access added as an employment/role extension.
 
 ## Business configuration
 
@@ -104,8 +94,6 @@ The Business Configuration area is the control centre for the public business we
 - **Services:** create, edit, organise, price, activate, publish and delete the services Brandon RV chooses to offer. The live catalogue starts empty; Chris manages the actual service list.
 - **Service areas:** manage area names, descriptions, radius, suburbs, postcodes, travel fees and publication status.
 - **Settings:** manage the public business profile and general operating preferences from one consolidated page.
-- **Email templates:** remains a separate tool for managing automated and customer email content.
-- **Integrations:** shows the status of existing connected services, including the OrbitFS Mail System, without exposing credentials.
 
 Service and area changes are stored against the Brandon RV business and flow to the public service pages and customer-facing service selection where applicable. Draft or unpublished entries remain hidden from the public website. Existing customer, job, quote, appointment, invoice and account records are retained.
 
@@ -131,7 +119,7 @@ The migration is part of V2 source history. Check the dedicated V2 project's mig
 
 ## Owner configuration and launch readiness (Phase 6)
 
-The owner-facing Business Configuration area supports public business details, draft website content with preview and separate publishing, service areas, email templates and sender assignments, integrations, role permissions, booking availability, cancellation settings and pricing/GST configuration. Booking days, hours and unavailable dates are enforced when configured. Rates and GST remain unconfigured until Chris confirms them with the accountant; the business-plan figures are not treated as approved prices.
+The owner-facing Business Configuration area supports public business details, draft website content with preview and separate publishing, service areas, role permissions, booking availability, cancellation settings and pricing/GST configuration. Booking days, hours and unavailable dates are enforced when configured. Rates and GST remain unconfigured until Chris confirms them with the accountant; the business-plan figures are not treated as approved prices.
 
 Services have an explicit approval status: Approved for launch, Conditional, Assessment required, Deferred or Not offered. Only active, published services approved for launch are exposed to customers. Newly created services default to Assessment required and cannot be published until explicitly approved.
 
