@@ -31,6 +31,7 @@ async function mailRequest(context, path, init = {}) {
       const message = typeof body.error === "string" ? body.error : "Mail System request failed (" + response.status + ").";
       const error = new Error(message);
       error.statusCode = response.status;
+      error.responseBody = body;
       throw error;
     }
     return body;
@@ -122,10 +123,10 @@ async function testConnection(context) {
     const result = await mailRequest(context, "/api/mail/senders");
     const senders = Array.isArray(result.senders) ? result.senders.filter(item => item && typeof item.address === "string" && EMAIL.test(item.address)) : [];
     if (!senders.length) return { ok: false, message: "Connected to Mail System, but no active sender mailbox is assigned to this External System." };
-    return { ok: true, message: "Connected. " + senders.length + " permitted sender mailbox(es) available." };
+    return { ok: true, message: "Connected. " + senders.length + " permitted sender mailbox(es) available.", senders, sender: result.sender || senders[0].address };
   } catch (error) {
     if (error && error.statusCode === 401) return { ok: false, message: "Mail System rejected the API key. Check the key and whether it has been revoked." };
-    if (error && error.statusCode === 403) return { ok: false, message: "The External System is inactive or the API key does not have the required mail:send scope." };
+    if (error && error.statusCode === 403) return { ok: false, message: "Mail System returned HTTP 403: " + (error.message || "The External System is inactive or the API key permissions are invalid.") + " Verify the External System active flag and that its key has exactly the mail:send scope." };
     return { ok: false, message: error instanceof Error ? error.message : "Mail System connection failed." };
   }
 }
