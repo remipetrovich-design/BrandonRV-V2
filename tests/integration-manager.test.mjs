@@ -48,6 +48,9 @@ test("sender discovery preserves usable mailbox choices and returns them to the 
  assert.match(runtime,/const senders=Array\.isArray\(result\.senders\)/);
  assert.match(api,/senders:result\.senders/);
  assert.match(manager,/Permitted sender mailboxes/);
+ const consoleSource=await read("integrations/Mail-system/console.tsx");
+ assert.match(consoleSource,/void testConnection\(\)/);
+ assert.match(consoleSource,/setSenders\(result\.senders \|\| \[\]\)/);
 });
 
 test("staff API is permission checked, validates configuration, tests connections and redacts secrets",async()=>{
