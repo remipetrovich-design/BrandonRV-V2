@@ -186,3 +186,48 @@ test("manager event handler loads module configuration and sends the mapped temp
     else process.env.SUPABASE_SECRET_KEY = oldKey;
   }
 });
+
+
+test("V2 Mail System page is reachable from the Staff Portal navigation", async () => {
+  const [layout, page, consolePage, api] = await Promise.all([
+    read("../../src/app/admin/layout.tsx"),
+    read("../../src/app/admin/mail-system/page.tsx"),
+    read("admin-console-page.tsx"),
+    read("../../src/app/api/admin/mail-system/route.ts"),
+  ]);
+  assert.match(layout, /label:"Mail System",href:"\/admin\/mail-system"/);
+  assert.match(page, /integrations\.manage/);
+  assert.match(consolePage, /MailModuleConsole/);
+  for (const action of ["saveTemplate", "saveRoute", "saveTrigger", "saveSettings", "restoreTemplateRevision"]) assert.match(api, new RegExp(action));
+});
+
+test("template editor supports rich formatting, image uploads, HTTPS image URLs and HTML source editing", async () => {
+  const [editor, consoleSource, assets] = await Promise.all([
+    read("template-html-editor.tsx"),
+    read("console.tsx"),
+    read("../../src/app/api/admin/mail-system/assets/route.ts"),
+  ]);
+  for (const feature of ["bold", "italic", "underline", "insertUnorderedList", "insertOrderedList", "createLink", "insertHTML"]) assert.match(editor, new RegExp(feature));
+  assert.match(editor, /Upload image/);
+  assert.match(editor, /HTML source/);
+  assert.match(editor, /5\\*1024\\*1024/);
+  assert.match(consoleSource, /MailHtmlEditor/);
+  assert.match(consoleSource, /sandbox=""/);
+  assert.match(assets, /mail-template-assets/);
+  assert.match(assets, /authorizePermission\\("integrations\\.manage"\\)/);
+});
+
+test("manager connection test preserves the exact Mail System 403 response and permitted senders", async () => {
+  const adapter = require("./server.cjs");
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => ({ ok: false, status: 403, json: async () => ({ error: "External system credentials are disabled or have invalid permissions." }) });
+    const denied = await adapter.testConnection({ endpoint: "https://mail.example.com", secrets: { apiKey: "key" } });
+    assert.equal(denied.ok, false);
+    assert.match(denied.message, /External system credentials are disabled or have invalid permissions/);
+    globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({ sender: "service@example.com", senders: [{ id: "1", address: "service@example.com" }] }) });
+    const accepted = await adapter.testConnection({ endpoint: "https://mail.example.com", secrets: { apiKey: "key" } });
+    assert.equal(accepted.ok, true);
+    assert.equal(accepted.senders[0].address, "service@example.com");
+  } finally { globalThis.fetch = originalFetch; }
+});
