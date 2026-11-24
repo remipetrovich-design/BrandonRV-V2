@@ -21,7 +21,7 @@ test("registration and enquiry intake do not depend on outbound mail", async () 
   const enquiries = await read("src/app/api/enquiries/route.ts");
   assert.doesNotMatch(registration, /@\/lib\/email|sendBrandonRvTemplateEmail|isEmailConfigured/);
   assert.match(registration, /status:"active"/);
-  assert.doesNotMatch(registration, /email_verified_at|verificationEnabled/);
+  assert.doesNotMatch(registration, /email_verified_at|verificationEnabled/);\n  const login = await read("src/app/api/auth/login/route.ts");\n  assert.doesNotMatch(login, /verify your email|check your inbox|email_verified_at/);\n  await assert.rejects(access(new URL("../src/app/api/auth/verify-email/route.ts", import.meta.url)));\n  await assert.rejects(access(new URL("../src/app/portal/verify-email/page.tsx", import.meta.url)));\n  await assert.rejects(access(new URL("../src/components/admin-customer-email-verification.tsx", import.meta.url)));
   assert.doesNotMatch(enquiries, /@\/lib\/email|sendBrandonRvTemplateEmail|sendEmail\(/);
 });
 
@@ -29,7 +29,7 @@ test("staff invitations create a secure link without attempting delivery", async
   const invitations = await read("src/app/api/staff/invitations/route.ts");
   assert.doesNotMatch(invitations, /@\/lib\/email|sendBrandonRvTemplateEmail/);
   assert.match(invitations, /delivery:"manual_link"/);
-  assert.match(invitations, /emailSent:false,inviteUrl:link/);
+  assert.match(invitations, /dispatchIntegrationEvent\("staff\.invitation_created"/);\n  assert.match(invitations, /notificationHandled/);
 });
 
 test("password recovery remains explicitly unavailable until the notification module is installed", async () => {
