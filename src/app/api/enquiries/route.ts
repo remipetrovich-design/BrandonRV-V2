@@ -1,6 +1,5 @@
 import {randomBytes,randomUUID} from "node:crypto";
 import {currentUser,database,normalizeEmail,jsonError,sameOrigin,digest} from "@/lib/auth";
-import {sendBrandonRvTemplateEmail,sendEmail} from "@/lib/email";
 export const runtime="nodejs";
 const allowedTypes=new Set(["image/jpeg","image/png","image/webp","application/pdf"]);
 const requestNumber=(type:string)=> (type==="public_enquiry"||type==="general_enquiry"?"BRV-GEN-":"BRV-RQ-")+new Date().toISOString().slice(2,10).replaceAll("-","")+"-"+randomBytes(3).toString("hex").toUpperCase();
@@ -40,7 +39,6 @@ export async function POST(request:Request){
    const {data:enquiry,error}=await db.from("enquiries").insert({business_id:business.id,customer_id:account?.id??null,user_id:account?.id??null,contact_name:name,email,phone,requested_service:requestType==="public_enquiry"?"Public Contact form":"General enquiry",description,preferred_contact:"email",status:"new",source:requestType==="public_enquiry"?"contact_page":"website",request_type:requestType,request_number:reference,submission_key:submissionKey}).select("id").single();
    if(error?.code==="23505"){const {data:duplicate}=await db.from("enquiries").select("id,request_number,request_type,user_id,email").eq("business_id",business.id).eq("submission_key",submissionKey).maybeSingle();if(duplicate?.request_type===requestType&&duplicate.user_id===(account?.id??null)&&duplicate.email===email)return Response.json({success:true,referenceNumber:duplicate.request_number,message:"Your general enquiry has already been sent."},{status:200});}
    if(error||!enquiry)return jsonError("Could not submit your enquiry. Please try again.",500);
-   await sendBrandonRvTemplateEmail({templateId:"enquiry_received",sender:"noreply",to:email,variables:{firstname:first,lastname:last,enquiry_number:reference,service:"General enquiry",vehicle:"",suburb:"",enquiry_url:process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin}});
    return Response.json({success:true,referenceNumber:reference,message:"Your general enquiry has been sent. It is not a quote request or booking."},{status:201});
   }
   const vehicleType=String(form.get("vehicleType")??"").trim();const vehicle=String(form.get("vehicle")??"").trim();
@@ -73,7 +71,6 @@ export async function POST(request:Request){
    if(attachmentError){await db.storage.from("brandon-rv-private").remove(uploaded);await db.from("enquiries").delete().eq("id",enquiry.id);return jsonError("Could not save enquiry attachments.",500);}
   }
   const base=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;
-  if(guestToken){const accessUrl=base+"/request-status?ticket="+encodeURIComponent(enquiry.id)+"&token="+encodeURIComponent(guestToken);await sendEmail({sender:"brandonrv",to:email,subject:"Your Brandon RV Request Quote access details · "+reference,html:"<p>Hi "+name.replace(/[&<>"]/g,"")+",</p><p>Your quote request has been received.</p><p>Request Quote ID: <strong>"+reference+"</strong></p><p>Use the secure link below to view quotes and message Brandon RV. Keep this email private.</p><p><a href=\""+accessUrl+"\">Open your Request Quote conversation</a></p><p>This is not a confirmed booking. The date, time and location must be agreed separately.</p>"});}else await sendBrandonRvTemplateEmail({templateId:"enquiry_received",sender:"noreply",to:email,variables:{firstname:first,lastname:last,enquiry_number:reference,service:workType,vehicle:vehicleDescription,suburb:location,enquiry_url:base}});
   return Response.json({success:true,enquiryId:enquiry.id,referenceNumber:reference,guestAccessToken:guestToken,message:"Your quote request has been received. Keep your Request Quote ID"+(guestToken?" and guest access code":"")+" so you can return to this conversation. This is not a booking."},{status:201});
  }catch{return jsonError("Could not submit your enquiry.",500);}
 }
