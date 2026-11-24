@@ -23,7 +23,9 @@ test("Mail System navigation is generated from enabled integration manifests onl
  const layout=await read("src/app/admin/layout.tsx");
  assert.match(layout,/discoverIntegrations/);
  assert.match(layout,/app_integrations/);
- assert.match(layout,/active/);\n const manager=await read("src/components/admin-integrations.tsx");\n assert.match(manager,/router\.refresh\(\)/);
+ assert.match(layout,/active/);
+ const manager=await read("src/components/admin-integrations.tsx");
+ assert.match(manager,/router\.refresh\(\)/);
  assert.match(layout,/admin\/integrations\/\$\{[^}]+\}/);
  assert.doesNotMatch(layout,/href:"\/admin\/settings\/mail-system"/);
 });
