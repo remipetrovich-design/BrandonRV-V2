@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { currentUser, currentMembership, userHasPermission, database } from "@/lib/auth";
+import { currentUser, currentMembership, userHasPermission } from "@/lib/auth";
 import AdminMailSystem from "@/components/admin-mail-system";
 
 export const dynamic = "force-dynamic";
@@ -10,9 +10,6 @@ export default async function MailSystemSettingsPage() {
   const membership = await currentMembership(user.id);
   if (!membership) redirect("/staff");
   if (!(await userHasPermission(user.id, "integrations.manage"))) redirect("/admin");
-  const { data } = await database()
-    .from("app_integrations").select("active").eq("slug", "mail-system").maybeSingle();
-  if (data?.active !== true) redirect("/admin/integrations");
 
   return (
     <main className="portal-page">
