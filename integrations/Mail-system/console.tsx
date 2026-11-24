@@ -12,6 +12,7 @@ import type {
 } from "./types";
 import { configureTemplate, configureRoute, configureTrigger, updateModuleSettings } from "./configuration";
 import { renderTemplate } from "./renderer";
+import MailHtmlEditor from "./template-html-editor";
 
 type ConnectionResult = { connected: boolean; canSend?: boolean; status?: string; message?: string; sender?: string | null; senders: MailSender[]; error?: string };
 
@@ -191,19 +192,19 @@ export function MailModuleConsole({
           <label>Name<input value={templateName} onChange={(event) => setTemplateName(event.target.value)} /></label>
           <label>Subject<input value={subject} onChange={(event) => setSubject(event.target.value)} /></label>
           <label>Text body<textarea value={textBody} onChange={(event) => setTextBody(event.target.value)} /></label>
-          <label>HTML body<textarea value={htmlBody} onChange={(event) => setHtmlBody(event.target.value)} /></label>
+          <label>HTML email body</label><MailHtmlEditor value={htmlBody} onChange={setHtmlBody} disabled={!canManage || busy} />
           <label><input type="checkbox" checked={templateActive} onChange={(event) => setTemplateActive(event.target.checked)} /> Active</label>
         </fieldset>
         <button type="button" disabled={!canManage || busy} onClick={saveTemplate}>Save template</button>
         <button type="button" disabled={busy} onClick={async () => {
           try {
             const rendered = renderTemplate({ subject, text: textBody, html: htmlBody }, { sample: "Example", customer: { name: "Sample Customer" } });
-            setPreview(JSON.stringify(rendered, null, 2));
+            setPreview(rendered.html || "<p>" + (rendered.text || "").replace(/</g, "&lt;") + "</p>");
           } catch (error) {
             setStatus(error instanceof Error ? error.message : "Preview failed");
           }
         }}>Preview sample</button>
-        {preview && <pre style={{ whiteSpace: "pre-wrap" }}>{preview}</pre>}
+        {preview && <section aria-label="Rendered email preview"><h4>Rendered preview</h4><iframe title="Email template preview" sandbox="" srcDoc={preview} style={{ width: "100%", minHeight: 420, border: "1px solid " + appearance.borderColor, borderRadius: 8, background: "#fff" }} /></section>}
         {templateId && <section aria-label="Template revision history">
           <h4>Revision history</h4>
           <ul>{revisions.map((revision) => <li key={revision.id}>
