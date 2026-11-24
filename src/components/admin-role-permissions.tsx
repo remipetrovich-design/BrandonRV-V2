@@ -10,7 +10,7 @@ const sections:{title:string;description:string;prefixes?:string[];keys?:string[
  {title:"Quotes, bookings & Workcards",description:"Quote preparation, approvals, appointment management and job execution.",prefixes:["quotes.","appointments.","jobs."]},
  {title:"Finance & purchasing",description:"Invoices, payments, expenses, reports, suppliers and assets.",prefixes:["invoices.","payments.","expenses.","reports.","suppliers.","assets."]},
  {title:"People & workforce",description:"Staff records, time, leave, payroll and onboarding.",prefixes:["staff.","time.","leave.","payroll.","onboarding."]},
- {title:"Business configuration",description:"Website, business settings, integrations and role administration.",prefixes:["website.","business.","settings.","roles."]},
+ {title:"Business configuration",description:"Website, business settings, integrations and role administration.",prefixes:["website.","business.","settings.","roles.","integrations."]},
  {title:"Developer controls",description:"Technical deployment and database migration operations.",prefixes:["developer."]}
 ];
 const sectionFor=(key:string)=>sections.findIndex(section=>section.keys?.includes(key)||section.prefixes?.some(prefix=>key.startsWith(prefix)));
