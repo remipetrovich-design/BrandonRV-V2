@@ -24,7 +24,8 @@ export async function discoverIntegrations(){
    if(!raw||typeof raw!=="object"||!validId.test(id)||id!==entry.name.toLowerCase().replace(/[^a-z0-9-]/g,"-"))continue;
    if(typeof raw.name!=="string"||!raw.name.trim()||typeof raw.version!=="string"||typeof raw.description!=="string"||!Array.isArray(raw.config))continue;
    if(raw.entrypoint!=="server.cjs"||!(await stat(path.join(folder,"server.cjs"))).isFile())continue;
-   const adminPage=raw.adminPage===undefined?undefined:raw.adminPage==="admin-page.tsx"&&(await stat(path.join(folder,"admin-page.tsx")).catch(()=>null))?.isFile()?"admin-page.tsx":null;\n   if(adminPage===null)continue;
+   const adminPage=raw.adminPage===undefined?undefined:raw.adminPage==="admin-page.tsx"&&(await stat(path.join(folder,"admin-page.tsx")).catch(()=>null))?.isFile()?"admin-page.tsx":null;
+   if(adminPage===null)continue;
    const config:IntegrationField[]=[];
    const seen=new Set<string>();
    for(const field of raw.config){
