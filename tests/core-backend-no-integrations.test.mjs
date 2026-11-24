@@ -38,6 +38,11 @@ test("password recovery remains explicitly unavailable until the notification mo
   assert.match(recovery, /,503\)/);
 });
 
+test("email template storage is removed from the core database schema", async () => {
+  const cleanup = await read("supabase/migrations/20261124000300_remove_core_email_templates.sql");
+  assert.match(cleanup, /DROP TABLE IF EXISTS public\\.email_templates/i);
+});
+
 test("the future mail module archive remains untouched in the repository root", async () => {
   await access(new URL("../mail-configuration-module.zip", import.meta.url));
 });
