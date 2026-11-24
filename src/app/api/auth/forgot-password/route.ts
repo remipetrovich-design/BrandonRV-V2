@@ -1,6 +1,6 @@
 import {createHash} from "node:crypto";
 import {database,digest,newToken,normalizeEmail,jsonError,sameOrigin} from "@/lib/auth";
-import {dispatchIntegrationEvent} from "@/lib/integration-runtime";
+import {emitIntegrationEvent} from "@/lib/emit-integration-event";
 export const runtime="nodejs";
 const genericMessage="If an active account matches those details and account recovery is available, instructions will be sent.";
 export async function POST(request:Request){
@@ -22,8 +22,7 @@ export async function POST(request:Request){
   const base=(process.env.NEXT_PUBLIC_APP_URL?.trim()||new URL(request.url).origin).replace(/\/+$/g,"");
   const resetUrl=base+"/portal/reset-password?token="+encodeURIComponent(token);
   try{
-   const results=await dispatchIntegrationEvent("account.password_reset_requested",{recipient:{email:user.email,firstName:user.first_name??String(user.full_name??"").split(/\s+/)[0]??""},resetUrl,expiresAt});
-   if(!results.length||results.some(result=>!result.ok))console.warn("[account-recovery] No successful account recovery notification handler was available.");
+   await emitIntegrationEvent("account.password_reset_requested",{recipient:{email:user.email,firstName:user.first_name??String(user.full_name??"").split(/\s+/)[0]??""},resetUrl,expiresAt});
   }catch(error){console.error("[account-recovery] Notification dispatch failed.",error instanceof Error?error.message:"unknown error");}
   return Response.json({success:true,message:genericMessage});
  }catch(error){
