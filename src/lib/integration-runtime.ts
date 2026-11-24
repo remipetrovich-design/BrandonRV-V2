@@ -28,7 +28,12 @@ function contextFor(manifest:IntegrationManifest,row:{endpoint:string|null;setti
  const settings=row.settings&&typeof row.settings==="object"&&!Array.isArray(row.settings)?row.settings as Record<string,unknown>:{};
  return {id:manifest.id,name:manifest.name,version:manifest.version,endpoint:row.endpoint??"",settings,secrets:row.secret?decryptIntegrationSecrets(row.secret):{}};
 }
-export function validateInstalledIntegration(id:string){\n const manifestPromise=discoverIntegrations();\n return manifestPromise.then(manifests=>{const manifest=manifests.find(item=>item.id===id);if(!manifest)throw new Error("Integration is not installed or its module files are incomplete.");moduleFor(manifest);});\n}\n\nexport async function testInstalledIntegration(id:string):Promise<IntegrationTestResult>{
+export function validateInstalledIntegration(id:string){
+ const manifestPromise=discoverIntegrations();
+ return manifestPromise.then(manifests=>{const manifest=manifests.find(item=>item.id===id);if(!manifest)throw new Error("Integration is not installed or its module files are incomplete.");moduleFor(manifest);});
+}
+
+export async function testInstalledIntegration(id:string):Promise<IntegrationTestResult>{
  const manifest=(await discoverIntegrations()).find(item=>item.id===id);
  if(!manifest)throw new Error("Integration is not installed or its module files are incomplete.");
  const {data,error}=await database().from("app_integrations").select("endpoint,settings,secret,active").eq("slug",id).maybeSingle();
