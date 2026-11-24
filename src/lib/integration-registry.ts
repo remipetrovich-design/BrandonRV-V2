@@ -1,12 +1,13 @@
 import "server-only";
 import {readdir,readFile,stat} from "node:fs/promises";
 import path from "node:path";
+import {CORE_INTEGRATION_EVENT_NAMES} from "@/lib/integration-events";
 
 export type IntegrationField={key:string;label:string;type:"text"|"url"|"secret"|"boolean"|"number"|"select";required?:boolean;description?:string;options?:string[]};
 export type IntegrationManifest={id:string;folder:string;name:string;version:string;description:string;entrypoint:"server.cjs";events:string[];config:IntegrationField[]};
 const validId=/^[a-z0-9][a-z0-9-]{1,62}$/;
 const validField=/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/;
-const validEvent=/^[a-z0-9][a-z0-9._-]{0,99}$/;
+const validEvents=new Set<string>(CORE_INTEGRATION_EVENT_NAMES);
 const types=new Set(["text","url","secret","boolean","number","select"]);
 export async function discoverIntegrations(){
  const root=path.resolve(process.cwd(),"integrations");
@@ -31,7 +32,7 @@ export async function discoverIntegrations(){
     seen.add(field.key);
     config.push({key:field.key,label:field.label,type:field.type,required:field.required===true,description:typeof field.description==="string"?field.description.slice(0,500):"",...(field.type==="select"?{options:field.options as string[]}:{})});
    }
-   const events=Array.isArray(raw.events)?[...new Set(raw.events.filter((value:unknown):value is string=>typeof value==="string"&&validEvent.test(value)))]:[];
+   const events=Array.isArray(raw.events)?[...new Set(raw.events.filter((value:unknown):value is string=>typeof value==="string"&&validEvents.has(value)))]:[];
    found.push({id,folder:entry.name,name:raw.name.trim().slice(0,100),version:raw.version.slice(0,40),description:raw.description.slice(0,1000),entrypoint:"server.cjs",events,config});
   }catch{/* Invalid or incomplete module folders are not loadable and are omitted. */}
  }
