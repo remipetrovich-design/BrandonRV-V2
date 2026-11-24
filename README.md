@@ -127,7 +127,7 @@ The Phase 6 migration adds this service approval gate. It is forward-only. V2 do
 
 ## Launch readiness (Phase 7)
 
-The production build must complete successfully before the application is considered deployable. Customer account isolation, staff permissions, quote approval, confirmed booking creation, Work Order generation, invoices, payment provider confirmation, email delivery, private file access and backup recovery still require operational verification before real customer use. Some checks require Chris to use the customer and staff interfaces; those are not represented as completed by a successful build.
+The production build must complete successfully before the application is considered deployable. Customer account isolation, staff permissions, quote approval, confirmed booking creation, Work Order generation, invoices, payment provider confirmation, private file access and backup recovery still require operational verification before real customer use. Some checks require Chris to use the customer and staff interfaces; those are not represented as completed by a successful build.
 
 
 ## Unified enquiry and request management
