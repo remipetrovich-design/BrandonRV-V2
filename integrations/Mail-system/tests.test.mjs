@@ -90,3 +90,45 @@ test("package and manifest return to the requested v1 version", async () => {
   assert.equal(manifest.version, "1.0.0");
   assert.equal(pkg.private, false);
 });
+
+
+test("Brandon RV V2 manager manifest matches the installed integration contract", async () => {
+  const manifest = JSON.parse(await read("integration.json"));
+  const schema = JSON.parse(await read("../manifest.schema.json"));
+  assert.equal(manifest.id, "mail-system");
+  assert.equal(manifest.entrypoint, "server.cjs");
+  assert.ok(manifest.events.includes("account.password_reset_requested"));
+  assert.ok(manifest.events.includes("account.password_changed"));
+  assert.ok(manifest.events.includes("staff.invitation_created"));
+  assert.equal(schema.properties.entrypoint.const, "server.cjs");
+  assert.ok(manifest.config.some(field => field.key === "apiKey" && field.type === "secret" && field.required));
+});
+
+test("manager server entrypoint exports the required lifecycle functions", async () => {
+  const adapter = require("./server.cjs");
+  assert.equal(typeof adapter.testConnection, "function");
+  assert.equal(typeof adapter.handleEvent, "function");
+});
+
+test("manager connection test uses the encrypted secret and configured endpoint", async () => {
+  const adapter = require("./server.cjs");
+  const originalFetch = globalThis.fetch;
+  let request;
+  globalThis.fetch = async (url, init) => {
+    request = { url, init };
+    return { ok: true, status: 200, json: async () => ({ sender: "service@example.com", senders: [{ id: "1", address: "service@example.com" }] }) };
+  };
+  try {
+    const result = await adapter.testConnection({
+      endpoint: "https://mail.example.com",
+      secrets: { apiKey: "test-secret" },
+      settings: {}
+    });
+    assert.equal(result.ok, true);
+    assert.match(result.message, /1 permitted sender/);
+    assert.equal(request.url, "https://mail.example.com/api/mail/senders");
+    assert.equal(request.init.headers.Authorization, "Bearer test-secret");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
