@@ -199,3 +199,17 @@ test("template editor is wired into the template form with rendered preview", as
  const source=await read("console.tsx");
  assert.match(source,/MailHtmlEditor/);assert.match(source,/New template/);assert.match(source,/sandbox=""/);assert.match(source,/srcDoc=/);
 });
+
+test("rich HTML template editor includes formatting, colour, layout, image and HTML-source tools", async () => {
+ const editor=await read("template-html-editor.tsx");
+ for(const feature of ["bold","italic","underline","strikeThrough","insertUnorderedList","insertOrderedList","fontName","foreColor","hiliteColor","justifyFull","Upload image","Image URL","Email button","Table","Divider","HTML source"]) assert.ok(editor.includes(feature),feature);
+ const assets=await read("../../src/app/api/admin/mail-system/assets/route.ts");
+ assert.match(assets,/authorizePermission\("integrations\.manage"\)/);
+ assert.match(assets,/mail-template-assets/);
+ assert.match(assets,/MAX_BYTES=5\*1024\*1024/);
+});
+test("connection 403 diagnostic explains the strict send-only key contract", async () => {
+ const source=await read("server.cjs");
+ assert.match(source,/exactly one scope: mail:send/);
+ assert.match(source,/Additional scopes such as mail:read/);
+});
