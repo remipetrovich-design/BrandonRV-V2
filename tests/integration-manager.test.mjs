@@ -16,7 +16,9 @@ test("discovery requires a valid manifest and server entry point in each integra
  assert.match(registry,/entry\.isDirectory\(\)/);
  assert.match(registry,/raw\.entrypoint!==\"server\.cjs\"/);
  assert.match(registry,/server\.cjs/);
- assert.match(registry,/CORE_INTEGRATION_EVENT_NAMES/);
+ assert.match(registry,/CORE_INTEGRATION_EVENT_DEFINITIONS/);
+ assert.match(registry,/discoverIntegrationEvents/);
+ assert.match(registry,/providesEvents/);
 });
 
 test("server runtime validates module contract and dispatches only declared events to enabled modules",async()=>{
@@ -27,6 +29,8 @@ test("server runtime validates module contract and dispatches only declared even
  assert.match(runtime,/handleEvent/);
  assert.match(runtime,/eq\(\"active\",true\)/);
  assert.match(runtime,/manifest\.events\.includes\(event\)/);
+ assert.match(runtime,/manifest\.events\.includes\("\*"\)/);
+ assert.match(runtime,/discoverIntegrationEvents/);
 });
 
 test("staff API is permission checked, validates configuration, tests connections and redacts secrets",async()=>{
