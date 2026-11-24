@@ -2,7 +2,6 @@
 export const CORE_INTEGRATION_EVENTS = {
   ACCOUNT_PASSWORD_RESET_REQUESTED: "account.password_reset_requested",
   ACCOUNT_PASSWORD_CHANGED: "account.password_changed",
-  ACCOUNT_INVITATION_CREATED: "account.invitation_created",
   STAFF_INVITATION_CREATED: "staff.invitation_created",
   CUSTOMER_ACCOUNT_CREATED: "customer.account_created",
   ENQUIRY_RECEIVED: "enquiry.received",
@@ -23,10 +22,7 @@ export const CORE_INTEGRATION_EVENTS = {
   INVOICE_ISSUED: "invoice.issued",
   PAYMENT_RECEIVED: "payment.received",
   PAYMENT_REFUNDED: "payment.refunded",
-  INVOICE_CREDIT_ISSUED: "invoice.credit_issued",
-  SUPPLIER_ORDER_PLACED: "supplier_order.placed",
-  SUPPLIER_ORDER_DELAYED: "supplier_order.delayed",
-  REVIEW_REQUESTED: "review.requested"
+  INVOICE_CREDIT_ISSUED: "invoice.credit_issued"
 } as const;
 
 export type CoreIntegrationEvent = typeof CORE_INTEGRATION_EVENTS[keyof typeof CORE_INTEGRATION_EVENTS];
