@@ -39,7 +39,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
     recipientEmail=enquiry?.email??null;recipientName=enquiry?.contact_name??null;
    }
    if(recipientEmail&&notificationQuote){
-    const origin=(process.env.NEXT_PUBLIC_APP_URL?.trim()||new URL(request.url).origin).replace(/\\/+$/g,"");
+    const origin=(process.env.NEXT_PUBLIC_APP_URL?.trim()||new URL(request.url).origin).replace(/\/+$/g,"");
     await emitIntegrationEvent("quote.issued",{
      recipient:{email:recipientEmail,firstName:recipientName},
      customer:{name:recipientName,email:recipientEmail},
