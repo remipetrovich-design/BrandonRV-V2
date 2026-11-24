@@ -11,7 +11,8 @@ import type {
   MailSender,
 } from "./types";
 import { configureTemplate, configureRoute, configureTrigger, updateModuleSettings } from "./configuration";
-import { renderTemplate } from "./renderer";\nimport MailHtmlEditor from "./template-html-editor";
+import { renderTemplate } from "./renderer";
+import MailHtmlEditor from "./template-html-editor";
 
 type ConnectionResult = { connected: boolean; canSend?: boolean; status?: string; message?: string; sender?: string | null; senders: MailSender[]; error?: string };
 
