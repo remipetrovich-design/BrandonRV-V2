@@ -26,7 +26,7 @@ test("duplicate folders with the same integration id resolve to one canonical ma
  assert.match(registry,/const found=new Map<string,IntegrationManifest>\(\)/);
  assert.match(registry,/const existing=found\.get\(id\)/);
  assert.match(registry,/found\.set\(id,candidate\)/);
- assert.match(manager,/new Map\(\(data\.integrations\?\?\[\]\)\.map/);
+ assert.match(manager,/new Map\(\(data\.integrations\\s*\\?\\?\\s*\\[\\]\\)\.map/);
 });
 
 test("server runtime validates module contract and dispatches only declared events to enabled modules",async()=>{
