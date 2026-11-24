@@ -1,0 +1,21 @@
+{
+  "id": "mail-system",
+  "name": "Mail System",
+  "version": "1.0.0",
+  "description": "Standalone Mail System integration for templates, revisions, sender routing and event-triggered email. Connects to the central Mail System using a dedicated mail:send API key.",
+  "entrypoint": "server.cjs",
+  "events": [
+    "account.password_reset_requested",
+    "account.password_changed",
+    "staff.invitation_created"
+  ],
+  "config": [
+    {
+      "key": "apiKey",
+      "label": "Mail System API key",
+      "type": "secret",
+      "required": true,
+      "description": "Dedicated active External System key with the mail:send scope. Stored encrypted by the V2 Integrations Manager."
+    }
+  ]
+}
