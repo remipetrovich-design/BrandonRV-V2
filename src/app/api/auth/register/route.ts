@@ -49,7 +49,7 @@ export async function POST(request:Request){
   const {data:user,error}=await db.from("users").insert({
    email,password_hash:await passwordHash(password),full_name:fullName,first_name:firstName,last_name:lastName||null,
    date_of_birth:dateOfBirth,phone:phone||null,address:address||null,suburb:suburb||null,state:state||null,postcode:postcode||null,account_type:"customer",primary_group:"customer",
-   user_role:null,business_id:business.id,status:verificationEnabled?"unverified":"active",email_verified_at:verificationEnabled?null:new Date().toISOString()
+   user_role:null,business_id:business.id,status:verificationEnabled?"unverified":"active"
   }).select("id").single();
   if(error||!user)return jsonError("Could not create your account. Please try again.",500);
   if(staffInvitation)await createSession(user.id,request);
