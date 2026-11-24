@@ -7,7 +7,6 @@
   "events": [
     "account.password_reset_requested",
     "account.password_changed",
-    "account.invitation_created",
     "staff.invitation_created",
     "customer.account_created",
     "enquiry.received",
@@ -28,10 +27,7 @@
     "invoice.issued",
     "payment.received",
     "payment.refunded",
-    "invoice.credit_issued",
-    "supplier_order.placed",
-    "supplier_order.delayed",
-    "review.requested"
+    "invoice.credit_issued"
   ],
   "config": [
     {
