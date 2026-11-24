@@ -15,8 +15,7 @@ Last checked: 17 November 2026. This document records the V2 environment only. I
 - The internal service catalogue contains 9 draft scope records: 2 assessment-required launch candidates, 2 conditional services, 3 deferred services and 2 not-offered categories. All are inactive and unpublished.
 - One provisional Tamworth 20 km service area exists; it is unpublished and has no travel fee.
 - Eight website-builder pages exist; none are published.
-- The database email-template table currently has no configured rows. Bundled template rendering exists, but outbound mail delivery remains paused.
-- Business pricing/GST and operating hours are not configured. The supplied public email address still requires spelling, domain and mailbox verification.
+- Business pricing/GST and operating hours are not configured.
 
 The service catalogue and provisional service area are internal setup records only. They are not customer-facing offers. No service is approved for launch or selectable for a quote until the business owner completes the required scope, licensing, insurance, competence and operational review.
 
@@ -30,14 +29,6 @@ The Vercel project is connected to the dedicated V2 Supabase integration. The in
 - Do not paste database URLs, passwords, or secret API keys into chat or commit them to source control.
 - `NEXT_PUBLIC_APP_URL` should remain the V2 application origin, not the V1 domain.
 - `BRANDONRV_PUBLIC_EMAIL` must remain blank until the supplied address, domain and mailbox are verified.
-
-## External systems
-
-### Email delivery
-
-The existing OrbitFS Mail integration is send-only. Brandon RV resolves the sender address from the Mail System sender directory; do not duplicate sender addresses in Vercel variables or substitute a separate mail provider.
-
-`ORBITFS_MAIL_URL` and `BRANDONSRV_MAIL_API_KEY` are present as application configuration points but are currently empty. Outbound customer and staff email is therefore not ready. Do not enable email-dependent customer workflows until the existing Mail integration is configured and tested. Do not invent or substitute a new mail provider key.
 
 ## Manual production deployment and migrations
 
@@ -60,7 +51,7 @@ The V2 repository migration filenames have been aligned with the 76 migration ve
 3. Confirm legal scope, licences, insurance, competence, safe work conditions and any supplier/parts arrangements before approving a service.
 4. Configure opening hours and booking rules before accepting customer bookings.
 5. Confirm pricing, GST registration/status and payment terms before issuing operational quotes or invoices.
-6. Verify the supplied public email address and configure the existing Mail integration before enabling outbound email.
+6. Complete account-notification delivery through the future installed module before enabling notification-dependent workflows.
 7. Publish website-builder pages only after the business content and contact details are confirmed.
 
 The general enquiry form and assessment-required quote-request path are implemented. Once public access is deliberately enabled, customers can submit genuine enquiries without the application fabricating sample customers or jobs. With no approved service records, quote requests must remain assessment/inspection requests rather than promises to perform unapproved work.

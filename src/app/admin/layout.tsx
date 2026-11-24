@@ -34,8 +34,6 @@ const navigation:AdminNavGroup[]=[
   {label:"Services & scope",href:"/admin/services",permission:"business.settings.manage",icon:"services"},
   {label:"Service areas",href:"/admin/service-areas",permission:"business.settings.manage",icon:"location"},
   {label:"Website editor",href:"/admin/website",permission:"website.manage",icon:"website"},
-  {label:"Email templates",href:"/admin/email-templates",permission:"business.settings.manage",icon:"settings"},
-  {label:"Integrations",href:"/admin/integrations",permission:"business.settings.manage",icon:"business"},
   {label:"Settings",href:"/admin/settings",permission:"business.settings.manage",icon:"settings"},
   {label:"Deployment control",href:"/admin/deployment",permission:"deployment.manage",icon:"settings"}
  ]}
