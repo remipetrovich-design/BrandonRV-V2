@@ -137,21 +137,12 @@ export function MailModuleConsole({
   if (!settings) return <section aria-live="polite">Loading mail configuration… {status}</section>;
 
   const appearance = settings.appearance;
-  const style: React.CSSProperties = {
-    fontFamily: appearance.fontFamily,
-    color: appearance.textColor,
-    background: appearance.surfaceColor,
-    border: "1px solid " + appearance.borderColor,
-    borderRadius: appearance.borderRadius,
-    padding: 20,
-  };
-
   return (
-    <section style={style}>
+    <section className="brv-mail-module-console">
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <div>
           {appearance.logoUrl && <img src={appearance.logoUrl} alt="" style={{ maxHeight: 36, maxWidth: 140 }} />}
-          <h2 style={{ color: appearance.primaryColor }}>{appearance.title}</h2>
+          <h2>{appearance.title}</h2>
           <p>{appearance.subtitle}</p>
         </div>
         <label>
