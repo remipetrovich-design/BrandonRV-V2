@@ -182,7 +182,10 @@ export function MailModuleConsole({
       </nav>
 
       {tab === "templates" && <div>
-        <h3>Templates</h3>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+          <h3>Templates</h3>
+          <button type="button" disabled={!canManage||busy} onClick={()=>{setTemplateId(undefined);setTemplateKey("");setTemplateName("");setSubject("");setTextBody("");setHtmlBody("");setTemplateActive(false);setRevisions([]);setPreview("");}}>+ New template</button>
+        </div>
         <ul>{templates.map((template) => <li key={template.id}>
           <button type="button" onClick={() => selectTemplate(template)}>
             {template.display_name} · {template.template_key} · {template.active ? "Active" : "Disabled"}
