@@ -356,6 +356,6 @@ test("unified website workspace exposes explicit publish and unpublish controls"
  has(workspace,'JSON.stringify({is_published:false})');
  has(workspace,"Publish changes");
  has(workspace,"Unpublish page");
- has(workspace,"Published ");
+ has(workspace,"Published. The live website has been updated.");
  has(workspace,"The live website has been updated.");
 });
