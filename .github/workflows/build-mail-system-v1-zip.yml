@@ -1,0 +1,24 @@
+name: Build Mail System v1 ZIP
+
+on:
+  push:
+    paths:
+      - ".github/workflows/build-mail-system-v1-zip.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create ZIP with the folder at archive root
+        run: zip -r mail-system-v1.zip mail-system-v1
+      - name: Commit ZIP archive
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add mail-system-v1.zip
+          git commit -m "Add Mail System v1 ZIP archive"
+          git push
