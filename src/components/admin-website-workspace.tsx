@@ -61,6 +61,25 @@ export default function AdminWebsiteWorkspace({pages:initialPages,business,accep
   finally{setBusy(false);}
  }
 
+ async function setPublished(publish:boolean){
+  if(!selectedPage||busy||dirty)return;
+  if(!window.confirm(publish?"Publish this page to the live website?":"Unpublish this page from the live website?"))return;
+  setBusy(true);setNotice("");
+  try{
+   const response=await fetch("/api/admin/website/"+selectedPage.id,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({is_published:publish})});
+   const result=await response.json();
+   if(!response.ok){setNotice(result.error??"Could not update website publishing status.");return;}
+   const publishedPage=result.page;
+   setPages(current=>current.map(page=>page.id===selectedPage.id?{...page,...publishedPage,draft_title:null,draft_content:null,draft_meta_title:null,draft_meta_description:null,draft_updated_at:null}:page));
+   setPageTitle(publishedPage.title??pageTitle);
+   setSeoTitle(publishedPage.meta_title??"");
+   setSeoDescription(publishedPage.meta_description??"");
+   setDirty(false);
+   setNotice(publish?"Published. The live website has been updated.":"Unpublished. The live website is no longer using this page's published content.");
+  }catch{setNotice("Could not update publishing status. Check your connection and try again.");}
+  finally{setBusy(false);}
+ }
+
  if(!selectedPage)return <section className="portal-panel"><h2>No website pages found</h2><p>There are no pages available for this business yet.</p></section>;
 
  return <main className="portal-page brv-builder-page"><div className="shell portal-shell brv-builder-shell">
@@ -68,7 +87,7 @@ export default function AdminWebsiteWorkspace({pages:initialPages,business,accep
   <section className="portal-panel brv-unified-builder" id="brv-unified-builder">
    <div className="brv-builder-toolbar">
     <div className="brv-builder-page-picker"><label htmlFor="brv-page-select">Editing page</label><select id="brv-page-select" value={selectedPage.slug} onChange={event=>switchPage(event.target.value)}>{pages.map(page=><option key={page.id} value={page.slug}>{pageLabel(page.slug)}</option>)}</select></div>
-    <div className="brv-builder-toolbar-actions"><span className="status-pill">Live on website</span><span className={"status-pill "+(selectedPage.is_published?"":"status-pill-draft")}>{selectedPage.is_published?(asRecord(selectedPage.content).builder?"Visual editor version published":"Database content published"):"Current public website layout"}</span>{(selectedPage.draft_content!==null&&selectedPage.draft_content!==undefined)&&<span className="status-pill status-pill-draft">Draft saved</span>}<Link className="button button-secondary brv-builder-view-link" href={publicPageHref(selectedPage.slug)} target="_blank">View page ↗</Link><button className="button button-primary" type="button" disabled={busy||!dirty} onClick={()=>void save()}>{busy?"Saving…":"Save draft"}</button></div>
+    <div className="brv-builder-toolbar-actions"><span className="status-pill">Live on website</span><span className={"status-pill "+(selectedPage.is_published?"":"status-pill-draft")}>{selectedPage.is_published?(asRecord(selectedPage.content).builder?"Visual editor version published":"Database content published"):"Current public website layout"}</span>{hasSavedDraft&&<span className="status-pill status-pill-draft">Draft saved</span>}<Link className="button button-secondary brv-builder-view-link" href={publicPageHref(selectedPage.slug)} target="_blank">View page ↗</Link><button className="button button-secondary" type="button" disabled={busy||dirty||!selectedPage.is_published} onClick={()=>void setPublished(false)}>Unpublish page</button><button className="button button-primary" type="button" disabled={busy||dirty||selectedPage.is_published&&!hasSavedDraft} onClick={()=>void setPublished(true)}>{busy?"Working…":hasSavedDraft?"Publish changes":"Publish page"}</button><button className="button button-primary" type="button" disabled={busy||!dirty} onClick={()=>void save()}>{busy?"Saving…":"Save draft"}</button></div>
    </div>
    <div className="brv-builder-page-meta">
     <label>Page title<input value={pageTitle} onChange={event=>{setPageTitle(event.target.value);setDirty(true);}} maxLength={160}/></label>
