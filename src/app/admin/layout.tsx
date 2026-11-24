@@ -31,6 +31,7 @@ const navigation:AdminNavGroup[]=[
   {label:"Workforce",href:"/admin/workforce",permission:"time.clock",icon:"calendar"},
  ]},
  {title:"Business setup",items:[
+  {label:"Integrations",href:"/admin/integrations",permission:"integrations.manage",icon:"settings"},
   {label:"Services & scope",href:"/admin/services",permission:"business.settings.manage",icon:"services"},
   {label:"Service areas",href:"/admin/service-areas",permission:"business.settings.manage",icon:"location"},
   {label:"Website editor",href:"/admin/website",permission:"website.manage",icon:"website"},

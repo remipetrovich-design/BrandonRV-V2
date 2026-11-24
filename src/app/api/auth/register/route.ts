@@ -45,11 +45,10 @@ export async function POST(request:Request){
    if(!invite||invite.email!==email||invite.business_id!==business.id||invite.accepted_at||invite.revoked_at||invite.expires_at<=new Date().toISOString())return jsonError("This staff invitation is invalid, expired or does not match this email address.",410);
    staffInvitation=invite;
   }
-  const verificationEnabled=false;
   const {data:user,error}=await db.from("users").insert({
    email,password_hash:await passwordHash(password),full_name:fullName,first_name:firstName,last_name:lastName||null,
    date_of_birth:dateOfBirth,phone:phone||null,address:address||null,suburb:suburb||null,state:state||null,postcode:postcode||null,account_type:"customer",primary_group:"customer",
-   user_role:null,business_id:business.id,status:verificationEnabled?"unverified":"active",email_verified_at:verificationEnabled?null:new Date().toISOString()
+   user_role:null,business_id:business.id,status:"active"
   }).select("id").single();
   if(error||!user)return jsonError("Could not create your account. Please try again.",500);
   if(staffInvitation)await createSession(user.id,request);

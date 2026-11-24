@@ -1100,3 +1100,23 @@ button:disabled,.button:disabled,[aria-disabled="true"] { cursor:not-allowed; }
   gap: 0 !important;
   margin: 0 !important;
 }
+
+/* Staff integration manager */
+.brv-integrations-manager{display:grid;gap:16px}
+.brv-integrations-summary{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:18px 20px;border:1px solid var(--line);background:var(--white)}
+.brv-integrations-summary h2{margin:5px 0;font:400 25px/1.2 var(--display)}
+.brv-integrations-summary p,.brv-integration-card__header p,.brv-integrations-empty p{max-width:720px;margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.6}
+.brv-integrations-empty{padding:24px}
+.brv-integrations-empty h3,.brv-integration-card h3{margin:6px 0;font:400 23px/1.2 var(--display)}
+.brv-integrations-list{display:grid;gap:12px}
+.brv-integration-card{display:grid;gap:14px;padding:17px}
+.brv-integration-card__header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.brv-integration-card__actions{display:flex;flex-wrap:wrap;gap:8px}
+.brv-integration-config{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding-top:14px;border-top:1px solid var(--line)}
+.brv-integration-config label{display:grid;align-content:start;gap:6px;min-width:0;color:var(--muted);font-size:11px;font-weight:700}
+.brv-integration-config input:not([type=checkbox]),.brv-integration-config select{width:100%;min-height:42px;padding:9px 11px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--ink);font:400 13px Arial,sans-serif}
+.brv-integration-config input[type=checkbox]{width:19px;height:19px;justify-self:start}
+.brv-integration-config small,.brv-integration-secret-note{color:var(--muted);font-size:10px;line-height:1.5}
+.brv-integration-config .brv-integration-secret-note{grid-column:1/-1;margin:0}
+.brv-integration-config>.button{justify-self:start}
+@media(max-width:650px){.brv-integrations-summary,.brv-integration-card__header{align-items:stretch;flex-direction:column}.brv-integrations-config{grid-template-columns:1fr}.brv-integration-config{grid-template-columns:1fr}.brv-integration-card__actions{display:grid;grid-template-columns:1fr}.brv-integration-card__actions .button{width:100%}}

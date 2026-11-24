@@ -10,11 +10,11 @@ export async function POST(request:Request){
   const db=database();const ip=request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()??"unknown";const ipHash=createHash("sha256").update(ip).digest("hex");const since=new Date(Date.now()-15*60*1000).toISOString();
   const {count}=await db.from("login_attempts").select("id",{count:"exact",head:true}).eq("attempt_type","login").eq("email",email).eq("ip_hash",ipHash).eq("succeeded",false).gte("attempted_at",since);
   if((count??0)>=8)return jsonError("Too many attempts. Try again in 15 minutes.",429);
-  const {data:user}=await db.from("users").select("id,email,full_name,phone,account_type,status,password_hash,email_verified_at,force_password_change,primary_group,business_id,user_role,employment_status").eq("email",email).maybeSingle();
+  const {data:user}=await db.from("users").select("id,email,full_name,phone,account_type,status,password_hash,force_password_change,primary_group,business_id,user_role,employment_status").eq("email",email).maybeSingle();
   const passwordValid=!!user&&await passwordMatches(password,user.password_hash);
   await db.from("login_attempts").insert({attempt_type:"login",email,ip_hash:ipHash,succeeded:passwordValid});
   if(!passwordValid||!user)return jsonError("Email or password is incorrect.",401);
-  if(user.status==="unverified")return jsonError("Please verify your email before signing in. Check your inbox for the verification link.",403);
+  if(user.status==="unverified")return jsonError("This account has not been activated. Contact Brandon RV for assistance.",403);
   if(user.status!=="active")return jsonError("This account is "+String(user.status??"unavailable")+". Contact Brandon RV for assistance.",403);
   await db.from("users").update({last_login_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",user.id);
   await createSession(user.id,request);const {password_hash:_passwordHash,...safeUser}=user;const privileged=isGlobalAdministrator(String(user.user_role??"").toLowerCase());const hasBusinessAccess=!!user.user_role&&(privileged||user.employment_status==="active");return Response.json({user:{...safeUser,account_type:"customer",primary_group:"customer"},hasBusinessAccess});

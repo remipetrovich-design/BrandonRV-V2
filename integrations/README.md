@@ -1,53 +1,44 @@
 # Integrations
 
-This directory is the dedicated home for external service integrations used by Brandon RV V2.
+This directory is the discovery root for optional, separately installed modules. The core application scans its immediate child folders for a valid `integration.json` manifest and a `server.cjs` entry point. Valid modules appear in Staff Portal → Integrations.
 
-Each integration must live in its own named directory. Keep its implementation, configuration schema, adapter/client, types, documentation and integration-specific tests together. Do not place one provider's implementation inside another provider's folder.
+**The core repository contains no installed provider modules.** Do not add demo modules, provider placeholders or provider credentials here.
 
-## Structure
+## Installed module layout
 
 ```text
 integrations/
 ├── README.md
-├── Mail-System/
-│   └── README.md
-└── Plugin2/
-    └── README.md
+├── manifest.schema.json
+└── <Integration-Name>/
+    ├── integration.json
+    └── server.cjs
 ```
 
-## Integration boundaries
+Each installed module owns its implementation, provider adapter, configuration, types, documentation and tests in its own folder. Its manifest declares its stable id, name, version, description, configuration fields and the core events it handles. The folder id is the lowercase, hyphenated form of its folder name (for example, `Inventory-Provider` uses `inventory-provider`).
 
-- Each integration owns its provider-specific API communication and data mapping.
-- Application features should call an integration through a stable adapter/interface rather than importing provider SDK details throughout the application.
-- Keep credentials and secrets in environment configuration or the authorised secret store. Never commit credentials.
-- Keep provider configuration separate from business feature configuration.
-- An integration must expose its connection/configuration status without returning secret values.
-- Document required environment variables, permissions/scopes, setup, failure behaviour and test coverage in that integration's folder.
-- Integration-specific tests belong alongside the integration or in the central test suite with clear naming.
+The module entry point is CommonJS `server.cjs` so it can be loaded by the Node.js server runtime from the deployed integration folder. It must export:
 
-## Adding an integration
+- `testConnection(context)` — returns `{ ok: boolean, message: string }`.
+- `handleEvent({ event, payload }, context)` — handles one declared core event.
 
-1. Create `integrations/<Integration-Name>/`.
-2. Add a README describing purpose, provider, setup, configuration and exposed capabilities.
-3. Implement the provider adapter and types inside that folder.
-4. Add tests for successful requests, invalid configuration, provider errors and unavailable services.
-5. Connect application features through the adapter; do not duplicate provider calls in UI components.
-6. Register the integration in the application's integration catalogue/status service where required.
+The server context contains the module id/name/version, configured endpoint, non-secret settings and decrypted secrets. It is only passed server-side and must never be returned to the browser or written to logs. Keep provider SDKs and provider-specific request/response types inside the module folder. Modules are trusted server code: review their source and dependencies before installing them.
 
-The folder is the source-code boundary for integrations. It does not imply that an integration is enabled or connected in production.
-This directory is reserved for future, separately installed integrations.
+## Lifecycle and security
 
-No integrations are included in the core application at this stage. Do not add provider-specific code, credentials, configuration, templates or external-service dependencies here until the core backend is complete and an integration is explicitly approved.
+1. Install the complete module folder into `/integrations` and deploy the application. Discovery is server-side and reads module manifests from the deployed filesystem.
+2. The Staff Portal lists valid installed modules and their manifest-defined configuration fields.
+3. Save configuration, test the connection, then enable the module. Disabling a module stops its core-event handlers without deleting its configuration.
+4. Only users with `integrations.manage` can view, configure, test, enable or disable modules.
+5. Secret values are encrypted at rest using AES-256-GCM. Configure a strong, persistent `INTEGRATIONS_ENCRYPTION_KEY` environment secret before saving any integration secrets. Generate one with `openssl rand -base64 32`. Keep it stable; changing it without re-encrypting stored values makes existing secrets unreadable.
+6. Do not commit credentials. Do not put secrets in manifest files, settings JSON, event payloads, browser responses or logs.
 
-When an integration is introduced, give it its own directory:
+## Core event contract
 
-```text
-integrations/
-└── Integration-Name/
-    ├── README.md
-    ├── adapter/
-    ├── config/
-    └── tests/
-```
+A module declares the exact event names it handles in the manifest `events` array. The core backend exposes `dispatchIntegrationEvent(event, payload)`; it invokes only enabled modules that declare that event. Each handler receives a single event and payload. Errors are isolated per module and returned to the caller so one module cannot prevent other modules from running.
 
-Each installed integration must remain isolated from core business logic and expose a documented, permission-checked configuration and enable/disable lifecycle through the staff administration interface.
+The event names currently reserved for future wiring include `account.password_reset_requested`, `account.invitation_created`, `staff.invitation_created`, `enquiry.received`, `quote.issued`, `invoice.issued` and `booking.confirmed`. Password recovery, password-change and staff-invitation workflows already emit their corresponding core events. Other events are declared for future wiring; adding a module does not silently change those core workflows.
+
+## Runtime boundary
+
+The core manager reads manifests, validates module structure, stores settings and controls activation. It does not import provider code into unrelated application features. Provider communication must go through the module's server entry point. All modules run in the trusted application server process; do not install unreviewed code.
