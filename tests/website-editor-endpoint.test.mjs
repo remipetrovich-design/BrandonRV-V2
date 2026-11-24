@@ -352,8 +352,8 @@ test("public website builder always renders phone details from the business prof
 test("unified website workspace exposes explicit publish and unpublish controls",async()=>{
  const workspace=await source("../src/components/admin-website-workspace.tsx");
  has(workspace,'method:"PATCH"');
- has(workspace,'JSON.stringify({is_published:true})');
- has(workspace,'JSON.stringify({is_published:false})');
+ has(workspace,'JSON.stringify({is_published:publish})');
+ has(workspace,'JSON.stringify({is_published:publish})');
  has(workspace,"Publish changes");
  has(workspace,"Unpublish page");
  has(workspace,"Published. The live website has been updated.");
