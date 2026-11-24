@@ -4,7 +4,7 @@ Mail System owns the Mail module source, its sending/receiving infrastructure, d
 
 Brandon RV, registered as an External System, owns all Brandon RV business data and application configuration: customer/staff records, business settings, templates and revisions, event triggers, recipient mappings, sender-selection rules, module activation and appearance. These records live in the Brandon RV V2 database. Mail System does not become a second store for Brandon RV customers, quotes, bookings, jobs or invoice data.
 
-The V2 adapter connects to Mail System using a dedicated External System API key. The key is encrypted by the V2 Integrations Manager and is only read by server-side code. Mail System validates the External System and mailbox assignment on every send.
+The V2 adapter connects to Mail System using a dedicated External System API key. The key is encrypted by the V2 Integrations Manager and is only read by server-side code. Use `mail:send` for normal least-privilege operation. `mail:admin` is also accepted, but is privileged and grants system-wide mailbox administration and sender discovery. Mail System validates the External System and mailbox assignment on every send.
 
 ## Configuration
 
@@ -26,7 +26,7 @@ Supplier-order emails, scheduled booking reminders, review requests and inbound-
 
 ## Receiving email
 
-Mail System receives inbound mail and owns mailbox storage, routing and processing. The current Brandon RV integration key is send-only (mail:send): inbound replies remain in Mail System mailboxes and are not yet synchronised into Brandon RV records. A scoped inbound webhook/read contract is a separate integration step; do not grant broad mailbox access to Brandon RV to work around this.
+Mail System receives inbound mail and owns mailbox storage, routing and processing. The recommended Brandon RV integration key is send-only (`mail:send`): inbound replies remain in Mail System mailboxes and are not yet synchronised into Brandon RV records. `mail:admin` is supported only when system-wide mailbox administration is explicitly required; it is not an inbound synchronisation mechanism. A scoped inbound webhook/read contract is a separate integration step.
 
 ## Files
 
