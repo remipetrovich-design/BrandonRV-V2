@@ -36,7 +36,7 @@ test("generic integration page refuses disabled modules and loads their declared
  assert.match(page,/app_integrations/);
  assert.match(page,/active/);
  assert.match(page,/notFound/);
- assert.match(page,/manifest\.adminPage/);
+ assert.match(page,/item\.adminPage/);
  assert.match(page,/integrations\/\$\{/);
 });
 
@@ -44,7 +44,7 @@ test("Mail System admin actions re-check permission and integration enabled stat
  const actions=await read("integrations/Mail-system/actions.ts");
  assert.match(actions,/authorizePermission\("integrations\.manage"\)/);
  assert.match(actions,/app_integrations/);
- assert.match(actions,/eq\("active",true\)/);
+ assert.match(actions,/data\?\.active!==true/);
  assert.match(actions,/createSupabaseMailModuleStore/);
  assert.match(actions,/mail-template-assets/);
 });
