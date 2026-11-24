@@ -15,11 +15,14 @@ test("discovery requires a valid manifest and a server entry point inside each i
  assert.match(registry,/raw\.entrypoint!==\"server\.cjs\"/);
  assert.match(registry,/server\.cjs/);
  assert.match(registry,/events/);
+ assert.match(registry,/CORE_INTEGRATION_EVENT_NAMES/);
 });
 test("server runtime validates module contract and dispatches only declared events to enabled modules",async()=>{
  const runtime=await read("src/lib/integration-runtime.ts");
  assert.match(runtime,/createRequire/);
  assert.match(runtime,/testConnection/);
+ assert.match(runtime,/validateInstalledIntegration/);
+ assert.match(runtime,/createRequire/);
  assert.match(runtime,/handleEvent/);
  assert.match(runtime,/eq\(\"active\",true\)/);
  assert.match(runtime,/manifest\.events\.includes\(event\)/);
@@ -41,6 +44,9 @@ test("integration secret values are encrypted with authenticated encryption",asy
 test("manifest schema and module contract are documented without installing provider placeholders",async()=>{
  const schema=JSON.parse(await read("integrations/manifest.schema.json"));
  assert.equal(schema.properties.entrypoint.const,"server.cjs");
+ const events=await read("src/lib/integration-events.ts");
+ assert.match(events,/account.password_reset_requested/);
+ assert.match(events,/quote.issued/);
  const docs=await read("integrations/README.md");
  assert.match(docs,/dispatchIntegrationEvent/);
  assert.match(docs,/openssl rand -base64 32/);
