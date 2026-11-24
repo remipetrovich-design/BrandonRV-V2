@@ -47,7 +47,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(recipientEmail){
    const payload={recipient:{email:recipientEmail,firstName:customerUser?.full_name??null},customer:{email:recipientEmail,name:customerUser?.full_name??null},job:{id:job.id,number:job.job_number,title:job.title,status:"completed"},workSummary:summary,business:{name:"Brandon RV"},completedAt:new Date().toISOString()};
    await emitIntegrationEvent("job.completed",payload);
-   await emitIntegrationEvent("job.customer_approval_requested",{...payload,approvalUrl:(process.env.NEXT_PUBLIC_APP_URL?.trim()||new URL(request.url).origin).replace(/\\/+$/g,"")+"/portal/jobcards/"+id});
+   await emitIntegrationEvent("job.customer_approval_requested",{...payload,approvalUrl:(process.env.NEXT_PUBLIC_APP_URL?.trim()||new URL(request.url).origin).replace(/\/+$/g,"")+"/portal/jobcards/"+id});
   }
   return Response.json({success:true,status:"completed",invoice:result?.invoice,alreadyFinished:result?.already_finished===true});
  }catch{return jsonError("Could not update Work Order.",500);}
