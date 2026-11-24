@@ -29,8 +29,10 @@ export default function MailSystemConsolePage(){
   async saveSettings(input){return (await request<{settings:MailModuleSettings}>("POST",{action:"saveSettings",input})).settings;}
  }),[]);
  async function onTestConnection(){
-  const result=await request<{success:boolean;message:string;senders?:{id:string;address:string}[]}>("POST",{id:"mail-system"},"/api/admin/integrations");
-  return {connected:result.success,senders:(result.senders||[]) as any[],message:result.message};
+  const response=await fetch("/api/admin/integrations",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:"mail-system"}),cache:"no-store"});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok&&!result.message)throw new Error(result.error||"Connection test failed.");
+  return {connected:result.success===true,senders:result.senders||[],message:result.message||result.error||"Connection test failed."};
  }
  return <main className="portal-page"><div className="shell portal-shell brv-admin-page-inner"><div className="portal-page-heading"><p className="eyebrow"><span className="eyebrow-line"/> BUSINESS COMMUNICATIONS</p><h1>Mail System.</h1><p>Manage email templates, HTML content, sender routing, event triggers and module appearance.</p></div><MailModuleConsole store={store} onTestConnection={onTestConnection} canManage/></div></main>;
 }
