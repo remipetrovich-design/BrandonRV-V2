@@ -128,7 +128,7 @@ export function MailModuleConsole({
       setConnection(result);
       setSenders(result.senders || []);
       const firstSender = result.sender || result.senders?.[0]?.address;
-      if (result.connected && firstSender && !settings.defaultSender) {
+      if (result.connected && firstSender && !settings?.defaultSender) {
         setSettings(current => current ? { ...current, defaultSender: firstSender } : current);
       }
       setStatus(result.message || result.error || (result.connected ? "Connected" : "Connection failed"));
@@ -138,6 +138,18 @@ export function MailModuleConsole({
       setBusy(false);
     }
   }
+
+  useEffect(() => {
+    void testConnection();
+  }, []);
+
+  useEffect(() => {
+    if (settings && !settings.defaultSender && senders.length > 0) {
+      setSettings(current => current && !current.defaultSender
+        ? { ...current, defaultSender: senders[0].address }
+        : current);
+    }
+  }, [settings, senders]);
 
   if (!settings) return <section aria-live="polite">Loading mail configuration… {status}</section>;
 
