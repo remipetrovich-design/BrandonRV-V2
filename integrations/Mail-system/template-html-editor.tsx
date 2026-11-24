@@ -20,15 +20,15 @@ export default function MailHtmlEditor({value,onChange,disabled=false}:Props){
  function insertLink(){const url=window.prompt("Link URL");if(url)command("createLink",url);}
  function insertImageUrl(){const url=window.prompt("Image URL (HTTPS)");if(url&&/^https:\/\//i.test(url))insertImage(url);else if(url)setNotice("Use an HTTPS image URL.");}
  return <section className="mail-html-editor" aria-label="HTML email editor">
-  <div className="mail-html-editor__toolbar">
-   {commands.map(([name,label,title])=><button key={name} type="button" title={title} aria-label={title} disabled={disabled||sourceMode} onMouseDown={e=>e.preventDefault()} onClick={()=>command(name,name==="formatBlock"?"<h2>":undefined)}>{label}</button>)}
-   <button type="button" disabled={disabled||sourceMode} onMouseDown={e=>e.preventDefault()} onClick={insertLink}>Link</button>
-   <button type="button" disabled={disabled||sourceMode} onMouseDown={e=>e.preventDefault()} onClick={insertImageUrl}>Image URL</button>
-   <button type="button" disabled={disabled||sourceMode} onClick={()=>fileRef.current?.click()}>Upload image</button>
-   <button type="button" aria-pressed={sourceMode} onClick={()=>{if(!sourceMode){setSource(editorRef.current?.innerHTML||"");setSourceMode(true);}else{if(editorRef.current)editorRef.current.innerHTML=source;onChange(source);setSourceMode(false);}}}>{sourceMode?"Apply HTML":"HTML source"}</button>
+  <div className="mail-html-editor__toolbar" style={{display:"flex",gap:6,flexWrap:"wrap",padding:10,border:"1px solid #d9e0ea",borderRadius:"8px 8px 0 0",background:"#f5f7fa"}}>
+   {commands.map(([name,label,title])=><button key={name} style={{minWidth:34,padding:"7px 10px",border:"1px solid #d0d7e2",borderRadius:6,background:"#fff",cursor:"pointer"}} type="button" title={title} aria-label={title} disabled={disabled||sourceMode} onMouseDown={e=>e.preventDefault()} onClick={()=>command(name,name==="formatBlock"?"<h2>":undefined)}>{label}</button>)}
+   <button style={{padding:"7px 10px",border:"1px solid #d0d7e2",borderRadius:6,background:"#fff"}} type="button" disabled={disabled||sourceMode} onMouseDown={e=>e.preventDefault()} onClick={insertLink}>Link</button>
+   <button style={{padding:"7px 10px",border:"1px solid #d0d7e2",borderRadius:6,background:"#fff"}} type="button" disabled={disabled||sourceMode} onMouseDown={e=>e.preventDefault()} onClick={insertImageUrl}>Image URL</button>
+   <button style={{padding:"7px 10px",border:"1px solid #d0d7e2",borderRadius:6,background:"#fff"}} type="button" disabled={disabled||sourceMode} onClick={()=>fileRef.current?.click()}>Upload image</button>
+   <button style={{padding:"7px 10px",border:"1px solid #d0d7e2",borderRadius:6,background:"#fff"}} type="button" aria-pressed={sourceMode} onClick={()=>{if(!sourceMode){setSource(editorRef.current?.innerHTML||"");setSourceMode(true);}else{if(editorRef.current)editorRef.current.innerHTML=source;onChange(source);setSourceMode(false);}}}>{sourceMode?"Apply HTML":"HTML source"}</button>
    <input ref={fileRef} type="file" accept="image/*" hidden onChange={e=>void upload(e.target.files?.[0])}/>
   </div>
-  {sourceMode?<textarea className="mail-html-editor__source" aria-label="HTML source" value={source} disabled={disabled} onChange={e=>setSource(e.target.value)} spellCheck={false}/>:<div ref={editorRef} className="mail-html-editor__canvas" contentEditable={!disabled} suppressContentEditableWarning role="textbox" aria-label="Email HTML content" aria-multiline="true" onInput={sync} onBlur={sync}/>}
-  <div className="mail-html-editor__footer"><span>Rich HTML · images · links · formatting · lists</span><span role="status">{notice}</span></div>
+  {sourceMode?<textarea style={{width:"100%",minHeight:360,padding:14,border:"1px solid #d9e0ea",borderRadius:"0 0 8px 8px",fontFamily:"monospace",fontSize:13}} className="mail-html-editor__source" aria-label="HTML source" value={source} disabled={disabled} onChange={e=>setSource(e.target.value)} spellCheck={false}/>:<div style={{minHeight:360,padding:18,border:"1px solid #d9e0ea",borderTop:0,borderRadius:"0 0 8px 8px",background:"#fff",color:"#172033",outline:"none",overflow:"auto"}} ref={editorRef} className="mail-html-editor__canvas" contentEditable={!disabled} suppressContentEditableWarning role="textbox" aria-label="Email HTML content" aria-multiline="true" onInput={sync} onBlur={sync}/>}
+  <div className="mail-html-editor__footer" style={{display:"flex",justifyContent:"space-between",gap:12,padding:"8px 2px",fontSize:12,color:"#667085"}}><span>Rich HTML · images · links · formatting · lists</span><span role="status">{notice}</span></div>
  </section>;
 }
