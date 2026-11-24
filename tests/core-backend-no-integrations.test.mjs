@@ -20,8 +20,8 @@ test("registration and enquiry intake do not depend on outbound mail", async () 
   const registration = await read("src/app/api/auth/register/route.ts");
   const enquiries = await read("src/app/api/enquiries/route.ts");
   assert.doesNotMatch(registration, /@\/lib\/email|sendBrandonRvTemplateEmail|isEmailConfigured/);
-  assert.match(registration, /const verificationEnabled=false/);
-  assert.match(registration, /status:verificationEnabled\?"unverified":"active"/);
+  assert.match(registration, /status:"active"/);
+  assert.doesNotMatch(registration, /email_verified_at|verificationEnabled/);
   assert.doesNotMatch(enquiries, /@\/lib\/email|sendBrandonRvTemplateEmail|sendEmail\(/);
 });
 
@@ -41,6 +41,7 @@ test("password recovery remains explicitly unavailable until the notification mo
 test("email template storage is removed from the core database schema", async () => {
   const cleanup = await read("supabase/migrations/20261124000300_remove_core_email_templates.sql");
   assert.match(cleanup, /DROP TABLE IF EXISTS public\\.email_templates/i);
+  assert.match(cleanup, /DROP TABLE IF EXISTS public\\.email_verification_tokens/i);
 });
 
 test("the future mail module archive remains untouched in the repository root", async () => {
