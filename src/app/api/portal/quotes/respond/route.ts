@@ -1,4 +1,5 @@
 import {currentUser,database,jsonError,sameOrigin} from "@/lib/auth";
+import {emitIntegrationEvent} from "@/lib/emit-integration-event";
 export const runtime="nodejs";
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
@@ -13,7 +14,7 @@ export async function POST(request:Request){
  const prefix="/portal/jobcards/";
  const destination=returnTo.startsWith(prefix)&&/^[0-9a-f-]{36}$/i.test(returnTo.slice(prefix.length))?returnTo:"/portal/quotes";
  const db=database();
- const {data:quote}=await db.from("quotes").select("quote_kind").eq("id",quoteId).eq("user_id",user.id).maybeSingle();
+ const {data:quote}=await db.from("quotes").select("id,quote_kind,quote_number,total,revision_number,customer_id,enquiry_id").eq("id",quoteId).eq("user_id",user.id).maybeSingle();
  const rpcName=quote?.quote_kind==="variation"?"respond_to_job_variation":"respond_to_customer_quote";
  const {data,error}=await db.rpc(rpcName,{
   p_quote_id:quoteId,p_user_id:user.id,p_response:response,p_response_note:responseNote||null
@@ -24,6 +25,12 @@ export async function POST(request:Request){
  }
  if(data?.expired)return Response.redirect(new URL(destination+"?notice=expired",request.url),303);
  if(!data?.success)return jsonError("Could not confirm your quote response. No changes were made.",500);
+ await emitIntegrationEvent(response==="accepted"?"quote.accepted":"quote.declined",{
+  recipient:{email:user.email,firstName:user.full_name},
+  customer:{id:user.id,name:user.full_name,email:user.email},
+  quote:{id:quoteId,number:quote?.quote_number??null,total:quote?.total??null,revisionNumber:quote?.revision_number??null,kind:quote?.quote_kind??"standard"},
+  response:{decision:response,note:responseNote||null},respondedAt:new Date().toISOString(),business:{name:"Brandon RV"}
+ });
  const notice=quote?.quote_kind==="variation"?(response==="declined"?"variation_declined":"variation_accepted"):(response==="declined"?"declined":"accepted");
  return Response.redirect(new URL(destination+"?notice="+notice,request.url),303);
 }
