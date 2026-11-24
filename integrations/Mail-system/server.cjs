@@ -121,12 +121,12 @@ async function testConnection(context) {
   try {
     const result = await mailRequest(context, "/api/mail/senders");
     const senders = Array.isArray(result.senders) ? result.senders.filter(item => item && typeof item.address === "string" && EMAIL.test(item.address)) : [];
-    if (!senders.length) return { ok: false, message: "Connected to Mail System, but no active sender mailbox is assigned to this External System." };
-    return { ok: true, message: "Connected. " + senders.length + " permitted sender mailbox(es) available." };
+    if (!senders.length) return { ok: false, senders: [], message: "Mail System accepted the API key, but no active sender mailbox on an active sender domain is assigned to this External System." };
+    return { ok: true, senders, message: "Connected. " + senders.length + " permitted sender mailbox(es) available." };
   } catch (error) {
-    if (error && error.statusCode === 401) return { ok: false, message: "Mail System rejected the API key. Check the key and whether it has been revoked." };
-    if (error && error.statusCode === 403) return { ok: false, message: "The External System is inactive or the API key does not have the required mail:send scope." };
-    return { ok: false, message: error instanceof Error ? error.message : "Mail System connection failed." };
+    if (error && error.statusCode === 401) return { ok: false, senders: [], message: "Mail System returned HTTP 401: " + (error.message || "The API key was not accepted. Check revocation and that the saved key is the current External System key.") };
+    if (error && error.statusCode === 403) return { ok: false, senders: [], message: "Mail System returned HTTP 403 from GET /api/mail/senders: " + (error.message || "Request forbidden.") + " The endpoint verifies that this key is linked to an External System, that External System is active, and that the key has exactly the mail:send scope. It also returns no senders unless active mailboxes and sender domains are assigned." };
+    return { ok: false, senders: [], message: error instanceof Error ? error.message : "Mail System connection failed." };
   }
 }
 
