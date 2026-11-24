@@ -1,9 +1,9 @@
 "use strict";
 
-const VALID_ADDRESS = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+const VALID_ADDRESS = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function connectionDetails(context) {
-  const endpoint = String(context.endpoint || "").trim().replace(/\\/+$/, "");
+  const endpoint = String(context.endpoint || "").trim().replace(/\/+$/, "");
   const apiKey = String(context.secrets && context.secrets.API_KEY || "").trim();
   if (!endpoint || !apiKey) throw new Error("Mail System endpoint and External System API key are required.");
   const url = new URL(endpoint);
