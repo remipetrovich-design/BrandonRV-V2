@@ -41,10 +41,11 @@ test("Jobcard Quote tab exposes quote and linked Workcard management controls",a
  assert.match(editor,/AdminWorkcardManagement jobId=\{workcard\.id\}/);
 });
 
-test("quote-specific PATCH route retains atomic issue without outbound notification delivery",async()=>{
+test("quote-specific PATCH route emits a configurable quote-issued event after atomic issue",async()=>{
  const route=await read("../src/app/api/admin/quotes/[id]/route.ts");
  assert.match(route,/issue_quote_for_jobcard/);
- assert.match(route,/emailSent:false/);
+ assert.match(route,/emitIntegrationEvent\("quote\.issued"/);
+ assert.match(route,/emailSent:!!recipientEmail/);
  assert.doesNotMatch(route,/sendEmail|@\/lib\/email/);
 });
 
