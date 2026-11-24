@@ -47,7 +47,7 @@ export async function testInstalledIntegration(id:string):Promise<IntegrationTes
   if(!item||typeof item!=="object")return [];
   const value=item as {id?:unknown;address?:unknown};
   const address=typeof value.address==="string"?value.address.trim().toLowerCase():"";
-  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(address))return [];
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address))return [];
   const id=value.id===undefined||value.id===null||String(value.id).trim()===""?address:String(value.id);
   return [{id,address}];
  }).filter((item,index,all)=>all.findIndex(candidate=>candidate.address===item.address)===index).slice(0,100):[];
