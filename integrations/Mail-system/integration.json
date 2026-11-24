@@ -14,7 +14,7 @@
       "label": "Mail System API key",
       "type": "secret",
       "required": true,
-      "description": "Dedicated active Brandon RV External System key with the mail:send scope. Stored encrypted by the V2 Integrations Manager."
+      "description": "Dedicated active Brandon RV External System key with mail:send or mail:admin permission. mail:admin is privileged and grants system-wide mailbox administration. Stored encrypted by the V2 Integrations Manager."
     }
   ]
 }
