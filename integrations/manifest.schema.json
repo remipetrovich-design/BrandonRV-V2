@@ -94,6 +94,37 @@
       "type": "string",
       "const": "admin-page.tsx",
       "description": "Optional integration-owned Staff Portal page loaded by the generic integration route only while the integration is enabled."
+    },
+    "providesEvents": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 200,
+      "description": "Events emitted by this integration and exposed to subscribers such as Mail System.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "description",
+          "trigger"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,99}$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "trigger": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        }
+      }
     }
   }
 }
