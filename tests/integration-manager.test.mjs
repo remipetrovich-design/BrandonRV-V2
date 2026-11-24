@@ -30,7 +30,7 @@ test("staff API is permission checked, validates configuration, tests connection
  assert.match(api,/authorizePermission\(\"integrations\.manage\"\)/);
  assert.match(api,/testInstalledIntegration/);
  assert.match(api,/encryptIntegrationSecrets/);
- assert.match(api,/secretConfigured/);
+ assert.match(api,/secretConfigured/);\n assert.match(api,/secret_fields/);
  assert.doesNotMatch(api,/Response\.json\(\{[^}]*secrets[,}] /);
 });
 test("integration secret values are encrypted with authenticated encryption",async()=>{
