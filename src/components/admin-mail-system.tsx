@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MailModuleConsole } from "../../integrations/Mail-system/console";
 import type { MailModuleStore } from "../../integrations/Mail-system/types";
-import { CORE_INTEGRATION_EVENT_NAMES } from "@/lib/integration-events";
+import type { IntegrationEventDefinition } from "@/lib/integration-events";
 
 async function request(action: string, data: Record<string, unknown> = {}) {
   const response = await fetch("/api/admin/mail-system", {
@@ -18,6 +18,8 @@ async function request(action: string, data: Record<string, unknown> = {}) {
 }
 
 export default function AdminMailSystem() {
+  const [availableEvents, setAvailableEvents] = useState<IntegrationEventDefinition[]>([]);
+  useEffect(() => { request("listAvailableEvents").then(setAvailableEvents).catch(() => setAvailableEvents([])); }, []);
   const store = useMemo<MailModuleStore>(() => ({
     listTemplates: () => request("listTemplates"),
     getTemplateByKey: (key) => request("getTemplateByKey", { key }),
@@ -40,7 +42,7 @@ export default function AdminMailSystem() {
     <MailModuleConsole
       store={store}
       canManage
-      availableEvents={CORE_INTEGRATION_EVENT_NAMES}
+      availableEvents={availableEvents}
       onTestConnection={async () => request("testConnection")}
     />
   );
