@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://brandonrv.example/schemas/integration-manifest.schema.json",
+  "$id": "urn:brandon-rv:integration-manifest",
   "title": "Brandon RV integration manifest",
   "type": "object",
   "additionalProperties": false,
