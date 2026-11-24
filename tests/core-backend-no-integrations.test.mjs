@@ -8,7 +8,7 @@ test("core application has no active integrations or email-template administrati
   const adminLayout = await read("src/app/admin/layout.tsx");
   const integrationsIndex = await read("integrations/README.md");
   assert.match(adminLayout, /\/admin\/integrations/);
-  assert.match(integrationsIndex, /No integration modules are installed in the core repository/);
+  assert.match(integrationsIndex, /core repository contains no installed provider modules/);
   await access(new URL("../src/app/admin/integrations/page.tsx", import.meta.url));
   await assert.rejects(access(new URL("../integrations/Mail-System", import.meta.url)));
   await assert.rejects(access(new URL("../integrations/Plugin2", import.meta.url)));
