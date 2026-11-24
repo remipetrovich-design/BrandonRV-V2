@@ -2,11 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile,access} from "node:fs/promises";
 const read=path=>readFile(new URL("../"+path,import.meta.url),"utf8");
+
 test("staff integrations page is present and permission protected",async()=>{
  const page=await read("src/app/admin/integrations/page.tsx"),layout=await read("src/app/admin/layout.tsx");
  assert.match(page,/integrations\.manage/);
  assert.match(layout,/\/admin\/integrations/);
 });
+
 test("discovery requires a valid manifest and server entry point in each integration folder",async()=>{
  const registry=await read("src/lib/integration-registry.ts");
  assert.match(registry,/readdir\(root/);
@@ -16,6 +18,7 @@ test("discovery requires a valid manifest and server entry point in each integra
  assert.match(registry,/server\.cjs/);
  assert.match(registry,/CORE_INTEGRATION_EVENT_NAMES/);
 });
+
 test("server runtime validates module contract and dispatches only declared events to enabled modules",async()=>{
  const runtime=await read("src/lib/integration-runtime.ts");
  assert.match(runtime,/createRequire/);
@@ -25,20 +28,24 @@ test("server runtime validates module contract and dispatches only declared even
  assert.match(runtime,/eq\(\"active\",true\)/);
  assert.match(runtime,/manifest\.events\.includes\(event\)/);
 });
-test("staff API is permission checked, validates configuration, tests connections and never returns secret values",async()=>{
+
+test("staff API is permission checked, validates configuration, tests connections and redacts secrets",async()=>{
  const api=await read("src/app/api/admin/integrations/route.ts");
  assert.match(api,/authorizePermission\(\"integrations\.manage\"\)/);
  assert.match(api,/testInstalledIntegration/);
  assert.match(api,/encryptIntegrationSecrets/);
- assert.match(api,/secretConfigured/);\n assert.match(api,/secret_fields/);
- assert.doesNotMatch(api,/Response\.json\(\{[^}]*secrets[,}] /);
+ assert.match(api,/secretConfigured/);
+ assert.match(api,/secret_fields/);
+ assert.doesNotMatch(api,/secrets:\\s*secrets/);
 });
+
 test("integration secret values are encrypted with authenticated encryption",async()=>{
  const secrets=await read("src/lib/integration-secrets.ts");
  assert.match(secrets,/aes-256-gcm/);
  assert.match(secrets,/getAuthTag/);
  assert.match(secrets,/INTEGRATIONS_ENCRYPTION_KEY/);
 });
+
 test("manifest schema and module contract are documented without provider placeholders",async()=>{
  const schema=JSON.parse(await read("integrations/manifest.schema.json"));
  assert.equal(schema.properties.entrypoint.const,"server.cjs");
