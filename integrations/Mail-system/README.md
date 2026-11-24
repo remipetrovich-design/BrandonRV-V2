@@ -8,9 +8,9 @@ The V2 adapter connects to Mail System using a dedicated External System API key
 
 ## Configuration
 
-The Business Settings page exposes the Mail System console when the integration is enabled. It manages templates, revisions, sender routes, event triggers, recipient mappings, module settings and appearance. The integration manager's enable switch and the module's own enable switch are separate; automated sends require both to be enabled and an active event trigger/template.
+The Mail System integration owns its Staff Portal administration page at `/admin/integrations/mail-system`. The page component, console, HTML editor, image-upload action, persistence adapter and module logic all live inside `integrations/Mail-system`. The generic Staff Portal integration host discovers the page from `integration.json` and adds its navigation entry only while the Integrations Manager row is enabled. Disabling the integration removes the navigation entry, makes the route return not-found, rejects all Mail System admin actions and stops event dispatch.
 
-The current event catalogue contains only events emitted by existing Brandon RV V2 workflows. The integration manifest and integration-events source must stay aligned. Each event payload uses trusted server-side context and a recipient.email path for its primary recipient.
+The page manages templates and revision history, full HTML email composition, image uploads, rendered previews, sender routes, event triggers, recipient mappings, module settings and appearance. The separate `Automated email sending enabled` setting is an additional send-safety switch; it does not control whether the integration page is installed or visible.
 
 ## Current event coverage
 

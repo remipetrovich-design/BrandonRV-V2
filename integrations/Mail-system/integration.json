@@ -1,9 +1,10 @@
 {
   "id": "mail-system",
   "name": "Mail System",
-  "version": "1.1.0",
-  "description": "Brandon RV communications integration. Brandon RV owns business data, templates, triggers and recipient rules; Mail System provides mailbox infrastructure, sending, receiving and delivery processing.",
+  "version": "1.2.0",
+  "description": "Brandon RV communications integration. Owns its templates, revisions, routing, event triggers and administration page inside this integration module.",
   "entrypoint": "server.cjs",
+  "adminPage": "admin-page.tsx",
   "events": [
     "account.password_reset_requested",
     "account.password_changed",

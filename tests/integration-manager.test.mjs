@@ -59,3 +59,14 @@ test("manifest schema and module contract are documented without provider placeh
  await assert.rejects(access(new URL("../integrations/Mail-System",import.meta.url)));
  await assert.rejects(access(new URL("../integrations/Plugin2",import.meta.url)));
 });
+
+
+test("integration registry validates optional module-owned admin page entrypoints",async()=>{
+ const registry=await read("src/lib/integration-registry.ts");
+ const manifest=JSON.parse(await read("integrations/Mail-system/integration.json"));
+ const schema=JSON.parse(await read("integrations/manifest.schema.json"));
+ assert.equal(manifest.adminPage,"admin-page.tsx");
+ assert.equal(schema.properties.adminPage.const,"admin-page.tsx");
+ assert.match(registry,/raw\.adminPage/);
+ assert.match(registry,/admin-page\.tsx/);
+});

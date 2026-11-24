@@ -89,6 +89,11 @@
           }
         }
       }
+    },
+    "adminPage": {
+      "type": "string",
+      "const": "admin-page.tsx",
+      "description": "Optional integration-owned Staff Portal page loaded by the generic integration route only while the integration is enabled."
     }
   }
 }

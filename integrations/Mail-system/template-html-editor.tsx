@@ -1,0 +1,48 @@
+"use client";
+import React,{useEffect,useRef,useState} from "react";
+import {uploadTemplateImage} from "./actions";
+type Props={value:string;onChange:(html:string)=>void;disabled?:boolean};
+const btn:React.CSSProperties={border:"1px solid #d5dbe3",background:"#fff",borderRadius:5,padding:"7px 9px",fontSize:12,cursor:"pointer",color:"#182230"};
+const commands=[["bold","B","Bold"],["italic","I","Italic"],["underline","U","Underline"],["strikeThrough","S","Strikethrough"],["insertUnorderedList","• List","Bulleted list"],["insertOrderedList","1. List","Numbered list"],["justifyLeft","⇤","Align left"],["justifyCenter","↔","Align centre"],["justifyRight","⇥","Align right"],["justifyFull","Justify","Justify"],["undo","↶","Undo"],["redo","↷","Redo"],["removeFormat","Clear","Clear formatting"]] as const;
+export default function MailHtmlEditor({value,onChange,disabled=false}:Props){
+ const editor=useRef<HTMLDivElement>(null),file=useRef<HTMLInputElement>(null);
+ const [sourceMode,setSourceMode]=useState(false),[source,setSource]=useState(value),[notice,setNotice]=useState("");
+ useEffect(()=>{setSource(value);if(!sourceMode&&editor.current&&editor.current.innerHTML!==value)editor.current.innerHTML=value||"";},[value,sourceMode]);
+ const sync=()=>{const html=editor.current?.innerHTML||"";setSource(html);onChange(html);};
+ const run=(command:string,arg?:string)=>{if(disabled||!editor.current)return;editor.current.focus();document.execCommand(command,false,arg);sync();};
+ const insert=(html:string)=>{if(disabled||!editor.current)return;editor.current.focus();document.execCommand("insertHTML",false,html);sync();};
+ const escape=(s:string)=>s.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+ const image=(url:string,alt="")=>{if(!/^https:\/\//i.test(url)){setNotice("Image URL must use HTTPS.");return;}insert('<img src="'+escape(url)+'" alt="'+escape(alt)+'" style="display:block;max-width:100%;height:auto;margin:12px 0" />');};
+ const askImage=()=>{const url=window.prompt("Enter an HTTPS image URL");if(url)image(url,window.prompt("Image alternative text (optional)")||"");};
+ const askLink=()=>{const url=window.prompt("Enter an HTTPS link URL");if(url){if(!/^https:\/\//i.test(url)){setNotice("Link URL must use HTTPS.");return;}run("createLink",url);}};
+ const selectedImage=():HTMLImageElement|null=>{const node=window.getSelection()?.anchorNode;const element=node instanceof Element?node:node?.parentElement;if(element instanceof HTMLImageElement)return element;const image=element?.closest("img");return image instanceof HTMLImageElement?image:null;};
+ const resizeImage=()=>{const img=selectedImage();if(!img){setNotice("Select an image in the editor first.");return;}const width=window.prompt("Image width (pixels or percentage)","600px");if(!width)return;if(!/^(?:[1-9]\\d{0,3}px|[1-9]\\d{0,2}%)$/.test(width)){setNotice("Use a width such as 600px or 100%.");return;}img.style.width=width;img.style.maxWidth="100%";img.style.height="auto";sync();};
+ const alignImage=(alignment:"left"|"center"|"right")=>{const img=selectedImage();if(!img){setNotice("Select an image in the editor first.");return;}img.style.display="block";img.style.margin=alignment==="left"?"12px auto 12px 0":alignment==="right"?"12px 0 12px auto":"12px auto";sync();};
+ const upload=async(selected?:File)=>{if(!selected)return;if(!selected.type.startsWith("image/")){setNotice("Choose an image file.");return;}if(selected.size>5*1024*1024){setNotice("Images must be 5 MB or smaller.");return;}setNotice("Uploading image…");try{const data=new FormData();data.set("file",selected);const url=await uploadTemplateImage(data);image(url,selected.name);setNotice("Image uploaded.");}catch(e){setNotice(e instanceof Error?e.message:"Image upload failed.");}finally{if(file.current)file.current.value="";}};
+ const insertButton=()=>{const label=window.prompt("Button text","View details"),url=window.prompt("Button destination (HTTPS URL)");if(!label||!url)return;if(!/^https:\/\//i.test(url)){setNotice("Button destination must use HTTPS.");return;}insert('<p style="margin:20px 0"><a href="'+escape(url)+'" style="display:inline-block;padding:12px 20px;background:#173b63;color:#fff;text-decoration:none;border-radius:5px;font-weight:600">'+escape(label)+'</a></p>');};
+ const insertTable=()=>{const rows=Math.max(1,Math.min(10,Number(window.prompt("Rows","2"))||2)),cols=Math.max(1,Math.min(6,Number(window.prompt("Columns","2"))||2));const body=Array.from({length:rows},()=>"<tr>"+Array.from({length:cols},()=>'<td style="border:1px solid #d5dbe3;padding:8px">&nbsp;</td>').join("")+"</tr>").join("");insert('<table role="presentation" style="width:100%;border-collapse:collapse;margin:16px 0"><tbody>'+body+"</tbody></table><p></p>");};
+ return <section aria-label="HTML email editor" style={{border:"1px solid #cbd3dd",borderRadius:8,overflow:"hidden",background:"#fff",color:"#172033"}}>
+  <div style={{padding:9,display:"flex",flexWrap:"wrap",gap:6,borderBottom:"1px solid #dce2e9",background:"#f5f7fa"}}>
+   <select aria-label="Text style" disabled={disabled||sourceMode} defaultValue="P" onChange={e=>run("formatBlock","<"+e.target.value.toLowerCase()+">")} style={btn}><option value="P">Paragraph</option><option value="H1">Heading 1</option><option value="H2">Heading 2</option><option value="H3">Heading 3</option><option value="BLOCKQUOTE">Quote</option><option value="PRE">Preformatted</option></select>
+   <select aria-label="Font family" disabled={disabled||sourceMode} defaultValue="" onChange={e=>e.target.value&&run("fontName",e.target.value)} style={btn}><option value="">Font</option>{["Arial","Georgia","Tahoma","Verdana","Trebuchet MS","Times New Roman"].map(x=><option key={x}>{x}</option>)}</select>
+   <select aria-label="Font size" disabled={disabled||sourceMode} defaultValue="" onChange={e=>e.target.value&&run("fontSize",e.target.value)} style={btn}><option value="">Size</option><option value="2">Small</option><option value="3">Normal</option><option value="4">Large</option><option value="5">XL</option><option value="6">XXL</option></select>
+   {commands.map(([command,label,title])=><button key={command} type="button" title={title} aria-label={title} disabled={disabled||sourceMode} onMouseDown={e=>e.preventDefault()} onClick={()=>run(command)} style={btn}>{label}</button>)}
+   <label style={{...btn,display:"inline-flex",alignItems:"center",gap:5}}>Text colour <input type="color" aria-label="Text colour" disabled={disabled||sourceMode} onChange={e=>run("foreColor",e.target.value)} style={{width:22,height:20,border:0,padding:0}}/></label>
+   <label style={{...btn,display:"inline-flex",alignItems:"center",gap:5}}>Highlight <input type="color" aria-label="Highlight colour" disabled={disabled||sourceMode} defaultValue="#fff2a8" onChange={e=>run("hiliteColor",e.target.value)} style={{width:22,height:20,border:0,padding:0}}/></label>
+   <button type="button" disabled={disabled||sourceMode} onMouseDown={e=>e.preventDefault()} onClick={askLink} style={btn}>Link</button>
+   <button type="button" disabled={disabled||sourceMode} onClick={askImage} style={btn}>Image URL</button>
+   <button type="button" disabled={disabled||sourceMode} onClick={resizeImage} style={btn}>Resize image</button>
+   <button type="button" disabled={disabled||sourceMode} onClick={()=>alignImage("left")} style={btn}>Image left</button>
+   <button type="button" disabled={disabled||sourceMode} onClick={()=>alignImage("center")} style={btn}>Image centre</button>
+   <button type="button" disabled={disabled||sourceMode} onClick={()=>alignImage("right")} style={btn}>Image right</button>
+   <button type="button" disabled={disabled||sourceMode} onClick={()=>file.current?.click()} style={btn}>Upload image</button>
+   <button type="button" disabled={disabled||sourceMode} onClick={insertButton} style={btn}>Email button</button>
+   <button type="button" disabled={disabled||sourceMode} onClick={insertTable} style={btn}>Table</button>
+   <button type="button" disabled={disabled||sourceMode} onClick={()=>insert("<hr style='border:0;border-top:1px solid #d5dbe3;margin:20px 0' />")} style={btn}>Divider</button>
+   <button type="button" aria-pressed={sourceMode} onClick={()=>{if(!sourceMode){setSource(editor.current?.innerHTML||"");setSourceMode(true);}else{if(editor.current)editor.current.innerHTML=source;onChange(source);setSourceMode(false);}}} style={btn}>{sourceMode?"Apply HTML":"HTML source"}</button>
+   <input ref={file} type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden onChange={e=>void upload(e.target.files?.[0])}/>
+  </div>
+  {sourceMode?<textarea aria-label="HTML source" value={source} disabled={disabled} onChange={e=>{setSource(e.target.value);onChange(e.target.value);}} spellCheck={false} style={{display:"block",width:"100%",minHeight:420,padding:16,border:0,resize:"vertical",fontFamily:"monospace",fontSize:13,color:"#172033"}}/>:<div ref={editor} contentEditable={!disabled} suppressContentEditableWarning role="textbox" aria-label="Email HTML content" aria-multiline="true" onInput={sync} onBlur={sync} style={{minHeight:420,padding:24,outline:"none",lineHeight:1.6,color:"#202a38",fontFamily:"Arial,sans-serif",overflowWrap:"anywhere"}}/>}
+  <footer style={{padding:"8px 12px",display:"flex",justifyContent:"space-between",gap:8,flexWrap:"wrap",borderTop:"1px solid #dce2e9",background:"#f8fafc",fontSize:12,color:"#596579"}}><span>Rich HTML · formatting · images · tables · buttons · source editor</span><span role="status">{notice}</span></footer>
+ </section>;
+}
