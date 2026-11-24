@@ -127,6 +127,10 @@ export function MailModuleConsole({
       const result = await onTestConnection();
       setConnection(result);
       setSenders(result.senders || []);
+      const firstSender = result.sender || result.senders?.[0]?.address;
+      if (result.connected && firstSender && !settings.defaultSender) {
+        setSettings(current => current ? { ...current, defaultSender: firstSender } : current);
+      }
       setStatus(result.message || result.error || (result.connected ? "Connected" : "Connection failed"));
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Connection failed");
