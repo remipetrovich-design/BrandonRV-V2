@@ -1,13 +1,37 @@
 {
   "id": "mail-system",
   "name": "Mail System",
-  "version": "1.0.0",
-  "description": "Standalone Mail System integration for templates, revisions, sender routing and event-triggered email. Connects to the central Mail System using a dedicated mail:send API key.",
+  "version": "1.1.0",
+  "description": "Brandon RV communications integration. Brandon RV owns business data, templates, triggers and recipient rules; Mail System provides mailbox infrastructure, sending, receiving and delivery processing.",
   "entrypoint": "server.cjs",
   "events": [
     "account.password_reset_requested",
     "account.password_changed",
-    "staff.invitation_created"
+    "account.invitation_created",
+    "staff.invitation_created",
+    "customer.account_created",
+    "enquiry.received",
+    "quote.issued",
+    "quote.accepted",
+    "quote.declined",
+    "quote.changes_requested",
+    "booking.requested",
+    "booking.confirmed",
+    "booking.rescheduled",
+    "booking.cancelled",
+    "job.assigned",
+    "job.started",
+    "job.completed",
+    "job.customer_approval_requested",
+    "job.customer_approved",
+    "job.customer_changes_requested",
+    "invoice.issued",
+    "payment.received",
+    "payment.refunded",
+    "invoice.credit_issued",
+    "supplier_order.placed",
+    "supplier_order.delayed",
+    "review.requested"
   ],
   "config": [
     {
@@ -15,7 +39,7 @@
       "label": "Mail System API key",
       "type": "secret",
       "required": true,
-      "description": "Dedicated active External System key with the mail:send scope. Stored encrypted by the V2 Integrations Manager."
+      "description": "Dedicated active Brandon RV External System key with the mail:send scope. Stored encrypted by the V2 Integrations Manager."
     }
   ]
 }
