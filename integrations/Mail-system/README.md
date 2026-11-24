@@ -1,41 +1,36 @@
-# Standalone Mail Configuration Module
+# Brandon RV V2 Mail System integration
 
-A portable, brand-neutral mail component for installation inside other applications. The module is maintained independently in this folder and can be copied into a host application's source tree without copying the Mail System itself.
+Mail System owns the Mail module source, its sending/receiving infrastructure, domains, mailboxes, provider credentials, transport, delivery processing and central delivery logs. The module is maintained in the Mail System repository and installed into Brandon RV V2 through this integration adapter.
 
-## Responsibility boundary
+Brandon RV, registered as an External System, owns all Brandon RV business data and application configuration: customer/staff records, business settings, templates and revisions, event triggers, recipient mappings, sender-selection rules, module activation and appearance. These records live in the Brandon RV V2 database. Mail System does not become a second store for Brandon RV customers, quotes, bookings, jobs or invoice data.
 
-The **host application** owns templates, immutable template revisions, variables, event triggers, recipient resolution, sender routing rules, module enable/disable state, appearance, admin authentication and its database. The **central Mail System** owns mail transports, domains, sender mailboxes, API credentials/scopes, delivery processing and central delivery logs.
+The V2 adapter connects to Mail System using a dedicated External System API key. The key is encrypted by the V2 Integrations Manager and is only read by server-side code. Mail System validates the External System and mailbox assignment on every send.
 
-The module connects to the central Mail System using the host application's server-only `MAIL_SYSTEM_URL` and `MAIL_SYSTEM_API_KEY`. It verifies the key against `GET /api/mail/senders`, discovers only mailboxes assigned to that External System, and sends through `POST /api/mail`. The central service validates the key and sender permission again on every send.
+## Configuration
 
-## Included
+The Business Settings page exposes the Mail System console when the integration is enabled. It manages templates, revisions, sender routes, event triggers, recipient mappings, module settings and appearance. The integration manager's enable switch and the module's own enable switch are separate; automated sends require both to be enabled and an active event trigger/template.
 
-- Supabase persistence adapter for templates, revisions, routing, triggers and module settings.
-- Host database schema and atomic template-revision SQL functions.
-- Server-only Mail System API client and connection verification.
-- Explicit setup outcomes: connected, no sender assigned, invalid API key, inactive External System or invalid scope, missing configuration, network failure and Mail System failure.
-- Template authoring, variable discovery, preview, revision history and restore.
-- Priority-based conditional sender routing and event triggers.
-- Recipient resolution delegated to trusted host-side code.
-- Embeddable React console with module enable/disable, connection test and appearance controls.
-- Automated contract and behavior tests.
+The current event catalogue contains only events emitted by existing Brandon RV V2 workflows. The integration manifest and integration-events source must stay aligned. Each event payload uses trusted server-side context and a recipient.email path for its primary recipient.
 
-## Brandon RV V2 integration manager
+## Current event coverage
 
-This folder is a standalone module discovered by Brandon RV V2's existing Staff Portal → Integrations manager. Keep `integration.json` and `server.cjs` in this folder; the manager uses them to install, configure, test, enable and disable the integration. Set the manager's Endpoint URL to the central Mail System HTTPS origin (without `/api`) and save the dedicated External System API key in the `Mail System API key` secret field. The manager encrypts that key at rest and passes it only to the server entry point. The V2 server also needs its existing Supabase server credentials so event handlers can read this module's `app_mail_*` tables.
+- Account password reset and password changed.
+- Staff invitation created and customer account created.
+- Public, quote-request and customer-portal enquiries received.
+- Quote issued, accepted, declined and senior-review changes requested.
+- Booking requested, confirmed, rescheduled and cancelled.
+- Workcard assigned, started, completed, awaiting customer approval, approved and changes requested.
+- Invoice issued, payment received, payment refunded and credit note issued.
 
-The manager activation switch controls whether V2 dispatches events to this module. The module's own `app_mail_settings.enabled` setting remains a separate switch and must also be enabled before configured triggers send mail. This preserves the module's independent application-level enable/disable control.
+Supplier-order emails, scheduled booking reminders, review requests and inbound-reply-to-business-workflow automation are not yet emitted by V2. They must not be configured as live triggers until their source workflows and delivery paths are implemented.
 
-The V2 adapter currently subscribes to `account.password_reset_requested`, `account.password_changed` and `staff.invitation_created`, the events already wired in the host. Other event names remain available in the core event catalogue but are not subscribed here until the host workflows emit them. For each trigger, `recipient_mapping` must resolve recipients from the trusted event payload using `{"to":"path.to.email"}` or `{"to":["path.to.email","path.to.otherEmail"]}`. Literal addresses are not accepted as recipient mappings.
+## Receiving email
 
-## Quick start
+Mail System receives inbound mail and owns mailbox storage, routing and processing. The current Brandon RV integration key is send-only (mail:send): inbound replies remain in Mail System mailboxes and are not yet synchronised into Brandon RV records. A scoped inbound webhook/read contract is a separate integration step; do not grant broad mailbox access to Brandon RV to work around this.
 
-1. Copy this folder into the host application's source tree.
-2. Apply `schema.sql`, then `supabase-functions.sql` to the host application's database.
-3. Configure server-only `MAIL_SYSTEM_URL` and `MAIL_SYSTEM_API_KEY`.
-4. Register the host as an External System in Mail System. Issue an active key with the exact `mail:send` scope and assign at least one active sender mailbox.
-5. Create the host's authenticated Supabase client, call `createSupabaseMailModuleStore(client)`, and mount `MailModuleConsole` behind the host's own admin authorization.
-6. Pass a server-side `onTestConnection` callback that calls `verifyMailSystemConnection()`. Do not pass the key to a Client Component.
-7. Test the connection, choose an assigned sender, configure templates/routes/triggers, then enable the module.
+## Files
 
-See [INSTALL.md](./INSTALL.md), [API.md](./API.md) and [schema.sql](./schema.sql). The module does not create public admin routes or bypass host authorization.
+- integration.json: V2 Integrations Manager manifest and event subscriptions.
+- server.cjs: server-only adapter between V2 business events and Mail System.
+- console.tsx, types.ts, configuration.ts, supabase-store.ts: installed configuration console and V2-owned persistence.
+- schema.sql, supabase-functions.sql: host database schema and revision functions.
