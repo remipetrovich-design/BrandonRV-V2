@@ -1,5 +1,6 @@
 import { authorizePermission, database, jsonError, sameOrigin } from "@/lib/auth";
 import { decryptIntegrationSecrets } from "@/lib/integration-secrets";
+import { discoverIntegrationEvents } from "@/lib/integration-registry";
 import { createSupabaseMailModuleStore } from "../../../../../integrations/Mail-system/supabase-store";
 import {
   configureTemplate, configureRoute, configureTrigger, updateModuleSettings,
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
     let data: unknown;
 
     switch (action) {
+      case "listAvailableEvents": data = await discoverIntegrationEvents(); break;
       case "listTemplates": data = await store.listTemplates(); break;
       case "getTemplateByKey": data = await store.getTemplateByKey(String(body.key || "")); break;
       case "saveTemplate": data = await configureTemplate(store, body.input); break;
