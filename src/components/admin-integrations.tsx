@@ -1,5 +1,6 @@
 "use client";
-import {useEffect,useState} from "react";\nimport {useRouter} from "next/navigation";
+import {useEffect,useState} from "react";
+import {useRouter} from "next/navigation";
 type Field={key:string;label:string;type:"text"|"url"|"secret"|"boolean"|"number"|"select";required?:boolean;description?:string;options?:string[]};
 type Integration={id:string;name:string;version:string;description:string;config:Field[];enabled:boolean;endpoint:string;settings:Record<string,unknown>;secretConfigured:Record<string,boolean>;updatedAt:string|null;events:string[]};
 export default function AdminIntegrations(){
