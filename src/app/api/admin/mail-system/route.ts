@@ -63,7 +63,7 @@ export async function POST(request: Request) {
         const result = await response.json().catch(() => ({}));
         if (!response.ok) {
           const message = response.status === 401 ? "Mail System rejected the API key." :
-            response.status === 403 ? "The External System is inactive or the key does not have the mail:send scope." :
+            response.status === 403 ? "Mail System returned HTTP 403: " + (typeof result.error === "string" ? result.error : "External System credentials are disabled or permissions are invalid.") + " Verify the External System active flag and exact mail:send-only scope." :
             (typeof result.error === "string" ? result.error : "Mail System connection failed (" + response.status + ").");
           return Response.json({ error: message }, { status: 502 });
         }
