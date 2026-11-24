@@ -100,9 +100,11 @@ test("Brandon RV V2 manager manifest matches the installed integration contract"
   const schema = JSON.parse(await read("../manifest.schema.json"));
   assert.equal(manifest.id, "mail-system");
   assert.equal(manifest.entrypoint, "server.cjs");
-  assert.ok(manifest.events.includes("account.password_reset_requested"));
-  assert.ok(manifest.events.includes("account.password_changed"));
-  assert.ok(manifest.events.includes("staff.invitation_created"));
+  assert.ok(manifest.events.includes("*"));
+  const hostEvents = await read("../../src/lib/integration-events.ts");
+  assert.match(hostEvents, /account\\.password_reset_requested/);
+  assert.match(hostEvents, /account\\.password_changed/);
+  assert.match(hostEvents, /staff\\.invitation_created/);
   assert.equal(schema.properties.entrypoint.const, "server.cjs");
   assert.ok(manifest.config.some(field => field.key === "apiKey" && field.type === "secret" && field.required));
 });
