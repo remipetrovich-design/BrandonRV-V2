@@ -15,7 +15,7 @@ integrations/
     └── server.cjs
 ```
 
-Each installed module owns its implementation, provider adapter, configuration, types, documentation and tests in its own folder. Its manifest declares its stable id, name, version, description, configuration fields and the core events it handles. The folder id is the lowercase, hyphenated form of its folder name (for example, `Mail-System` uses `mail-system`).
+Each installed module owns its implementation, provider adapter, configuration, types, documentation and tests in its own folder. Its manifest declares its stable id, name, version, description, configuration fields and the core events it handles. The folder id is the lowercase, hyphenated form of its folder name (for example, `Inventory-Provider` uses `inventory-provider`).
 
 The module entry point is CommonJS `server.cjs` so it can be loaded by the Node.js server runtime from the deployed integration folder. It must export:
 
