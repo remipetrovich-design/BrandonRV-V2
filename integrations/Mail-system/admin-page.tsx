@@ -2,16 +2,16 @@ import {MailModuleConsole} from "./console";
 import type {MailModuleStore} from "./types";
 import {
  deleteTemplate,deleteRoute,deleteTrigger,listTemplates,listRoutes,listTriggers,
- getSettings,saveTemplate,listTemplateRevisions,restoreTemplateRevision,
+ getSettings,saveTemplate,listTemplateRevisions,restoreTemplateRevision,getTemplateByKey,getTrigger,
  saveRoute,saveTrigger,saveSettings,testMailConnection,
 } from "./actions";
 import {CORE_INTEGRATION_EVENT_NAMES} from "@/lib/integration-events";
 const store:MailModuleStore={
  listTemplates,
- getTemplateByKey:async(key)=>(await listTemplates()).find(item=>item.template_key===key)??null,
+ getTemplateByKey,
  saveTemplate,listTemplateRevisions,restoreTemplateRevision,deleteTemplate,
  listRoutes,saveRoute,deleteRoute,listTriggers,
- getTrigger:async(eventKey)=>(await listTriggers()).find(item=>item.event_key===eventKey)??null,
+ getTrigger,
  saveTrigger,deleteTrigger,getSettings,saveSettings,
 };
 export default function MailSystemAdminPage(){
