@@ -1,6 +1,7 @@
 import {redirect} from "next/navigation";
 import type {ReactNode} from "react";
-import {currentUser,currentMembership,userHasPermissions,database} from "@/lib/auth";\nimport {discoverIntegrations} from "@/lib/integration-registry";
+import {currentUser,currentMembership,userHasPermissions,database} from "@/lib/auth";
+import {discoverIntegrations} from "@/lib/integration-registry";
 import AdminShell,{type AdminNavGroup} from "@/components/admin-shell";
 import "./admin-density.css";
 export const dynamic="force-dynamic";
