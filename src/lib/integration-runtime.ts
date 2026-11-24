@@ -7,7 +7,7 @@ import {decryptIntegrationSecrets} from "@/lib/integration-secrets";
 import type {CoreIntegrationEvent} from "@/lib/integration-events";
 
 export type IntegrationContext={id:string;name:string;version:string;endpoint:string;settings:Record<string,unknown>;secrets:Record<string,string>};
-export type IntegrationTestResult={ok:boolean;message:string};
+export type IntegrationTestResult={ok:boolean;message:string;senders?:{id:string;address:string}[]};
 type IntegrationModule={
  testConnection:(context:IntegrationContext)=>Promise<IntegrationTestResult>;
  handleEvent:(input:{event:string;payload:unknown},context:IntegrationContext)=>Promise<unknown>;
@@ -43,7 +43,7 @@ export async function testInstalledIntegration(id:string):Promise<IntegrationTes
  for(const field of manifest.config)if(field.required&&(field.type==="secret"?!context.secrets[field.key]:context.settings[field.key]===undefined||String(context.settings[field.key]).trim()===""))throw new Error(field.label+" is required before testing the connection.");
  const result=await moduleFor(manifest).testConnection(context);
  if(!result||typeof result.ok!=="boolean"||typeof result.message!=="string")throw new Error("Integration returned an invalid connection-test result.");
- return {ok:result.ok,message:result.message.slice(0,500)};
+ return {ok:result.ok,message:result.message.slice(0,500),...(Array.isArray((result as IntegrationTestResult).senders)?{senders:(result as IntegrationTestResult).senders}: {})};
 }
 
 /** Dispatch a named core event to every enabled installed module that declares it in integration.json. */
