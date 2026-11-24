@@ -26,7 +26,8 @@ export async function POST(request:Request){
   const body=await request.json(),id=String(body.id??"");
   const result=await testInstalledIntegration(id);
   await database().from("audit_events").insert({business_id:access.membership!.business_id,actor_user_id:access.user!.id,action:result.ok?"integration.connection_test_succeeded":"integration.connection_test_failed",entity_type:"app_integration",details:{integration_id:id}});
-  return Response.json({success:result.ok,canSend:result.ok&&result.senders.length>0,message:result.message,senders:result.senders},{status:result.ok?200:502});
+  const senders=result.senders??[];
+  return Response.json({success:result.ok,canSend:result.ok&&senders.length>0,message:result.message,senders},{status:result.ok?200:502});
  }catch(error){return jsonError(error instanceof Error?error.message:"Could not test integration connection.",500);}
 }
 
