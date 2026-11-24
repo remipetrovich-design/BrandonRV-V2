@@ -15,7 +15,6 @@ const AdminInvoiceExport=nextDynamic(()=>import("@/components/admin-invoice-expo
 const AdminWebsiteEditor=nextDynamic(()=>import("@/components/admin-website-editor"));
 const AdminCustomerResetLink=nextDynamic(()=>import("@/components/admin-customer-reset-link"));
 const AdminCustomerEmailVerification=nextDynamic(()=>import("@/components/admin-customer-email-verification"));
-const AdminCustomerEmailVerification=nextDynamic(()=>import("@/components/admin-customer-email-verification"));
 const AdminCreateCustomer=nextDynamic(()=>import("@/components/admin-create-customer"));
 const AdminCreateSupplier=nextDynamic(()=>import("@/components/admin-create-supplier"));
 const AdminSupplierActions=nextDynamic(()=>import("@/components/admin-supplier-actions"));
