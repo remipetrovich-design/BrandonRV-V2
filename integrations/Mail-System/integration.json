@@ -1,0 +1,17 @@
+{
+  "id": "mail-system",
+  "name": "Mail System",
+  "version": "1.0.1",
+  "description": "Connect Brandon RV to the central Mail System and verify permitted sender mailboxes using a server-only External System API key.",
+  "entrypoint": "server.cjs",
+  "events": [],
+  "config": [
+    {
+      "key": "API_KEY",
+      "label": "Mail System External System API key",
+      "type": "secret",
+      "required": true,
+      "description": "Server-side key. Use mail:send with assigned mailboxes or mail:admin for system-wide active sender access."
+    }
+  ]
+}
