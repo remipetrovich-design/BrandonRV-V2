@@ -1,6 +1,7 @@
 import {authorizePermission,database,jsonError,sameOrigin} from "@/lib/auth";
 import {isUuid} from "@/lib/api-validation.mjs";
 import {prepareQuoteLines,validateQuoteTaxPolicy} from "@/lib/quote-engine.mjs";
+import {emitIntegrationEvent} from "@/lib/emit-integration-event";
 export const runtime="nodejs";
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
  const access=await authorizePermission("quotes.manage");if(access.response)return access.response;
@@ -27,7 +28,26 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    if(issueError){if(issueError.code==="P0001")return jsonError("This quote or Jobcard is no longer available for issue.",409);return jsonError("Could not issue quote. No changes were made.",500);}
    if(!issued?.success)return jsonError("Could not confirm quote issue. No changes were made.",500);
 
-   return Response.json({success:true,emailSent:false});
+   const {data:notificationQuote}=await db.from("quotes").select("id,quote_number,total,expiry_date,revision_number,quote_kind,customer_id,enquiry_id").eq("id",id).eq("business_id",businessId).maybeSingle();
+   let recipientEmail:string|null=null,recipientName:string|null=null;
+   if(notificationQuote?.customer_id){
+    const {data:customer}=await db.from("customers").select("full_name,email").eq("id",notificationQuote.customer_id).eq("business_id",businessId).maybeSingle();
+    recipientEmail=customer?.email??null;recipientName=customer?.full_name??null;
+   }
+   if(!recipientEmail&&notificationQuote?.enquiry_id){
+    const {data:enquiry}=await db.from("enquiries").select("contact_name,email").eq("id",notificationQuote.enquiry_id).eq("business_id",businessId).maybeSingle();
+    recipientEmail=enquiry?.email??null;recipientName=enquiry?.contact_name??null;
+   }
+   if(recipientEmail&&notificationQuote){
+    const origin=(process.env.NEXT_PUBLIC_APP_URL?.trim()||new URL(request.url).origin).replace(/\\/+$/g,"");
+    await emitIntegrationEvent("quote.issued",{
+     recipient:{email:recipientEmail,firstName:recipientName},
+     customer:{name:recipientName,email:recipientEmail},
+     quote:{id:notificationQuote.id,number:notificationQuote.quote_number,total:notificationQuote.total,expiryDate:notificationQuote.expiry_date,revisionNumber:notificationQuote.revision_number,kind:notificationQuote.quote_kind},
+     business:{name:"Brandon RV"},portalUrl:origin+"/portal/quotes",issuedAt:new Date().toISOString()
+    });
+   }
+   return Response.json({success:true,emailSent:!!recipientEmail});
   }
   if(quote.status!=="draft")return jsonError("Only draft quotes can be edited. Create a revision to change an issued or accepted quote.",409);
   const oldItems=(quote.quote_items??[]) as any[];
