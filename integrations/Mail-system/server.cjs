@@ -125,7 +125,7 @@ async function testConnection(context) {
     return { ok: true, message: "Connected. " + senders.length + " permitted sender mailbox(es) available." };
   } catch (error) {
     if (error && error.statusCode === 401) return { ok: false, message: "Mail System rejected the API key. Check the key and whether it has been revoked." };
-    if (error && error.statusCode === 403) return { ok: false, message: "The External System is inactive or the API key does not have the required mail:send scope." };
+    if (error && error.statusCode === 403) return { ok: false, message: "Mail System rejected sender verification (HTTP 403): " + (error.message || "External System credentials are disabled or have invalid permissions.") + " The key must be linked to an active External System and have exactly one scope: mail:send. Additional scopes such as mail:read are rejected by the sender-verification endpoint." };
     return { ok: false, message: error instanceof Error ? error.message : "Mail System connection failed." };
   }
 }
