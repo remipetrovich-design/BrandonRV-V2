@@ -38,8 +38,8 @@ test("staff invitations emit an integration event and retain a manual link fallb
 
 test("password recovery and password changes emit core integration events",async()=>{
  const recovery=await read("src/app/api/auth/forgot-password/route.ts"),reset=await read("src/app/api/auth/reset-password/route.ts");
- assert.match(recovery,/dispatchIntegrationEvent\("account\.password_reset_requested"/);
- assert.match(reset,/dispatchIntegrationEvent\("account\.password_changed"/);
+ assert.match(recovery,/emitIntegrationEvent\("account\.password_reset_requested"/);
+ assert.match(reset,/emitIntegrationEvent\("account\.password_changed"/);
  assert.match(recovery,/genericMessage/);
  assert.match(recovery,/password_reset_tokens/);
 });
