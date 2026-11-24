@@ -2,7 +2,7 @@
 
 This directory is the discovery root for optional, separately installed modules. The core application scans its immediate child folders for a valid `integration.json` manifest and a `server.cjs` entry point. Valid modules appear in Staff Portal → Integrations.
 
-**The core repository contains no installed provider modules.** Do not add demo modules, provider placeholders, provider credentials or email templates here. The root `mail-configuration-module.zip` is retained separately for a future installed module.
+**The core repository contains no installed provider modules.** Do not add demo modules, provider placeholders or provider credentials here.
 
 ## Installed module layout
 
