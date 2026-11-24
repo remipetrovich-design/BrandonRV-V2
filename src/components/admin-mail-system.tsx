@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { MailModuleConsole } from "@/integrations/Mail-system/console";
-import type { MailModuleStore } from "@/integrations/Mail-system/types";
+import { MailModuleConsole } from "../../integrations/Mail-system/console";
+import type { MailModuleStore } from "../../integrations/Mail-system/types";
 
 async function request(action: string, data: Record<string, unknown> = {}) {
   const response = await fetch("/api/admin/mail-system", {
