@@ -21,6 +21,14 @@ test("discovery requires a valid manifest and server entry point in each integra
  assert.match(registry,/providesEvents/);
 });
 
+test("duplicate folders with the same integration id resolve to one canonical manager entry",async()=>{
+ const registry=await read("src/lib/integration-registry.ts"),manager=await read("src/components/admin-integrations.tsx");
+ assert.match(registry,/const found=new Map<string,IntegrationManifest>\(\)/);
+ assert.match(registry,/const existing=found\.get\(id\)/);
+ assert.match(registry,/found\.set\(id,candidate\)/);
+ assert.match(manager,/new Map\(\(d\.integrations\?\?\[\]\)\.map/);
+});
+
 test("server runtime validates module contract and dispatches only declared events to enabled modules",async()=>{
  const runtime=await read("src/lib/integration-runtime.ts");
  assert.match(runtime,/createRequire/);
@@ -29,8 +37,17 @@ test("server runtime validates module contract and dispatches only declared even
  assert.match(runtime,/handleEvent/);
  assert.match(runtime,/eq\(\"active\",true\)/);
  assert.match(runtime,/manifest\.events\.includes\(event\)/);
- assert.match(runtime,/manifest\.events\.includes\("\*"\)/);
+ assert.match(runtime,/manifest\.events\.includes\(\"\*\"\)/);
  assert.match(runtime,/discoverIntegrationEvents/);
+});
+
+test("sender discovery preserves usable mailbox choices and returns them to the manager",async()=>{
+ const runtime=await read("src/lib/integration-runtime.ts"),api=await read("src/app/api/admin/integrations/route.ts"),manager=await read("src/components/admin-integrations.tsx");
+ assert.match(runtime,/value\.id===undefined\|\|value\.id===null/);
+ assert.match(runtime,/String\(value\.id\)/);
+ assert.match(runtime,/const senders=Array\.isArray\(result\.senders\)/);
+ assert.match(api,/senders:result\.senders/);
+ assert.match(manager,/Permitted sender mailboxes/);
 });
 
 test("staff API is permission checked, validates configuration, tests connections and redacts secrets",async()=>{
@@ -53,6 +70,7 @@ test("integration secret values are encrypted with authenticated encryption",asy
 test("manifest schema and module contract are documented without provider placeholders",async()=>{
  const schema=JSON.parse(await read("integrations/manifest.schema.json"));
  assert.equal(schema.properties.entrypoint.const,"server.cjs");
+ assert.match(schema.properties.events.items.pattern,/\\\\\*/);
  const events=await read("src/lib/integration-events.ts");
  assert.match(events,/account\.password_reset_requested/);
  assert.match(events,/account\.password_changed/);
@@ -64,13 +82,13 @@ test("manifest schema and module contract are documented without provider placeh
  await assert.rejects(access(new URL("../integrations/Plugin2",import.meta.url)));
 });
 
-
-test("integration registry validates optional module-owned admin page entrypoints",async()=>{
- const registry=await read("src/lib/integration-registry.ts");
- const manifest=JSON.parse(await read("integrations/Mail-system/integration.json"));
- const schema=JSON.parse(await read("integrations/manifest.schema.json"));
+test("integration registry validates optional module-owned admin page entrypoints and live event discovery",async()=>{
+ const registry=await read("src/lib/integration-registry.ts"),manifest=JSON.parse(await read("integrations/Mail-system/integration.json")),schema=JSON.parse(await read("integrations/manifest.schema.json")),consoleSource=await read("integrations/Mail-system/console.tsx"),adminPage=await read("integrations/Mail-system/admin-page.tsx");
  assert.equal(manifest.adminPage,"admin-page.tsx");
  assert.equal(schema.properties.adminPage.const,"admin-page.tsx");
  assert.match(registry,/raw\.adminPage/);
  assert.match(registry,/admin-page\.tsx/);
+ assert.match(consoleSource,/availableEvents\.map/);
+ assert.match(consoleSource,/Select an available event/);
+ assert.match(adminPage,/force-dynamic/);
 });
