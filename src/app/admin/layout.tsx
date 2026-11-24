@@ -1,6 +1,6 @@
 import {redirect} from "next/navigation";
 import type {ReactNode} from "react";
-import {currentUser,currentMembership,userHasPermissions} from "@/lib/auth";
+import {currentUser,currentMembership,userHasPermissions,database} from "@/lib/auth";\nimport {discoverIntegrations} from "@/lib/integration-registry";
 import AdminShell,{type AdminNavGroup} from "@/components/admin-shell";
 import "./admin-density.css";
 export const dynamic="force-dynamic";
@@ -53,7 +53,22 @@ export default async function AdminLayout({children}:{children:ReactNode}) {
  const canAccessWorkforce=workforcePermissions.some(permission=>permitted.has(permission));
  const canAccessStaff=permitted.has("staff.view")||permitted.has("staff.manage")||permitted.has("roles.manage");
  const canAccessDeployment=permitted.has("developer.deploy")||permitted.has("developer.migrations.manage");
- const groups=navigation.map(group=>({...group,items:group.items.filter(item=>item.href==="/admin/deployment"?canAccessDeployment:item.href==="/admin/quotes"?(permitted.has("quotes.view")||permitted.has("quotes.manage")||permitted.has("quotes.approve")):item.href==="/admin/workforce"?canAccessWorkforce:item.href==="/admin/staff"?canAccessStaff:item.href==="/admin/my-workcards"?(permitted.has("jobs.view")||permitted.has("jobs.complete")):permitted.has(item.permission))})).filter(group=>group.items.length>0);
+ let integrationLinks:AdminNavGroup["items"]=[];
+ if(permitted.has("integrations.manage")){
+  const [manifests,{data:enabledRows,error:enabledError}]=await Promise.all([
+   discoverIntegrations(),
+   database().from("app_integrations").select("slug").eq("active",true)
+  ]);
+  if(!enabledError){
+   const enabled=new Set((enabledRows??[]).map((row:{slug:string})=>row.slug));
+   integrationLinks=manifests.filter(module=>module.adminPage==="admin-page.tsx"&&enabled.has(module.id))
+    .map(module=>({label:module.name,href:"/admin/integrations/"+module.id,permission:"integrations.manage",icon:"settings"}));
+  }
+ }
+ const dynamicNavigation=navigation.map(group=>group.title==="Business setup"?{
+  ...group,items:group.items.flatMap(item=>item.href==="/admin/integrations"?[item,...integrationLinks]:[item])
+ }:group);
+ const groups=dynamicNavigation.map(group=>({...group,items:group.items.filter(item=>item.href==="/admin/deployment"?canAccessDeployment:item.href==="/admin/quotes"?(permitted.has("quotes.view")||permitted.has("quotes.manage")||permitted.has("quotes.approve")):item.href==="/admin/workforce"?canAccessWorkforce:item.href==="/admin/staff"?canAccessStaff:item.href==="/admin/my-workcards"?(permitted.has("jobs.view")||permitted.has("jobs.complete")):permitted.has(item.permission))})).filter(group=>group.items.length>0);
  const canSeeOverview=["enquiries.view","appointments.view","jobs.view","quotes.view","quotes.manage","quotes.approve","invoices.view","customers.view","vehicles.view"].some(permission=>permitted.has(permission));
  const employeeTools=["jobs.complete","time.view","time.manage","time.clock","leave.view","payroll.view","assets.view","onboarding.view"].some(permission=>permitted.has(permission));
  if(!canSeeOverview&&!groups.length&&!employeeTools)redirect("/portal");
