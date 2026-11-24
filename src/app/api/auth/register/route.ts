@@ -1,4 +1,5 @@
 import {createHash} from "node:crypto";
+import {emitIntegrationEvent} from "@/lib/emit-integration-event";
 import {database,normalizeEmail,passwordHash,digest,jsonError,sameOrigin,createSession} from "@/lib/auth";
 export const runtime="nodejs";
 const isValidBirthDate=(value:string)=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;const date=new Date(value+"T00:00:00Z");return !Number.isNaN(date.getTime())&&date.toISOString().slice(0,10)===value&&date<=new Date();};
@@ -51,6 +52,10 @@ export async function POST(request:Request){
    user_role:null,business_id:business.id,status:"active"
   }).select("id").single();
   if(error||!user)return jsonError("Could not create your account. Please try again.",500);
+  await emitIntegrationEvent("customer.account_created",{
+   recipient:{email,firstName},customer:{id:user.id,name:fullName,email,phone},
+   business:{id:business.id,name:"Brandon RV"},createdAt:new Date().toISOString()
+  });
   if(staffInvitation)await createSession(user.id,request);
   return Response.json({verificationRequired:false,invitationUrl:staffInvitation?"/portal/accept-staff-invitation?token="+encodeURIComponent(invitationToken):null,message:staffInvitation?"Your customer account is ready. Continue to accept your staff invitation.":"Your customer account is ready. You can now sign in."},{status:201});
  }catch{return jsonError("Registration is temporarily unavailable.",500);}

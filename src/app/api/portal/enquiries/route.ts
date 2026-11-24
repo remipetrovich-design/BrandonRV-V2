@@ -1,4 +1,5 @@
 import {currentUser,database,jsonError,sameOrigin} from "@/lib/auth";
+import {emitIntegrationEvent} from "@/lib/emit-integration-event";
 import {randomBytes} from "node:crypto";
 export const runtime="nodejs";
 const makeReference=()=> "BRV-CE-"+new Date().toISOString().slice(2,10).replaceAll("-","")+"-"+randomBytes(3).toString("hex").toUpperCase();
@@ -23,6 +24,12 @@ export async function POST(request:Request){
   if(error?.code==="23505"){const {data:duplicate}=await db.from("enquiries").select("id,request_number,request_type,requested_service,status,created_at").eq("business_id",customer.business_id).eq("user_id",user.id).eq("submission_key",submissionKey).maybeSingle();if(duplicate?.request_type==="customer_enquiry")return Response.json({enquiry:duplicate},{status:200});}
   if(error||!enquiry)return jsonError("Could not create your enquiry.",500);
   await db.from("audit_events").insert({business_id:customer.business_id,actor_user_id:user.id,action:"customer_enquiry.created",entity_type:"enquiry",entity_id:enquiry.id,details:{request_number:enquiry.request_number}});
+  await emitIntegrationEvent("enquiry.received",{
+   recipient:{email:user.email,firstName:user.full_name},
+   customer:{name:user.full_name,email:user.email,phone:user.phone},
+   enquiry:{id:enquiry.id,referenceNumber:enquiry.request_number,requestType:"customer_enquiry",requestedService:subject,description:message,location,vehicle:vehicleDescription},
+   business:{name:"Brandon RV"},submittedAt:new Date().toISOString()
+  });
   return Response.json({enquiry},{status:201});
  }catch{return jsonError("Could not create your enquiry.",500);}
 }

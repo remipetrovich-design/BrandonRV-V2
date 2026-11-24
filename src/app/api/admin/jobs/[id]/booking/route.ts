@@ -1,6 +1,7 @@
 import {authorizePermission,database,jsonError,sameOrigin,userHasPermission} from "@/lib/auth";
 import {validateBookingWindow} from "@/lib/booking-rules";
 import {bookingWindowsConflict} from "@/lib/booking-window-policy.mjs";
+import {emitIntegrationEvent} from "@/lib/emit-integration-event";
 export const runtime="nodejs";
 const idPattern=/^[0-9a-f-]{36}$/i;
 
@@ -69,6 +70,14 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
    const status=bookingError.code==="P0001"?409:bookingError.code==="P0002"?404:500;
    return jsonError(bookingError.message??"Booking was not saved because the Workcard could not be updated.",status);
   }
+  const {data:customerUser}=job.user_id?await db.from("users").select("email,full_name").eq("id",job.user_id).maybeSingle():{data:null};
+  const recipientEmail=customerUser?.email??job.guest_email??null;
+  if(recipientEmail)await emitIntegrationEvent(existing?.status==="rescheduled"?"booking.rescheduled":"booking.confirmed",{
+   recipient:{email:recipientEmail,firstName:customerUser?.full_name??job.guest_name??null},
+   customer:{email:recipientEmail,name:customerUser?.full_name??job.guest_name??null},
+   booking:{id:bookingResult.appointment?.id??appointment.id,status:bookingResult.appointment?.status??"confirmed",startsAt:startsAt.toISOString(),endsAt:endsAt?.toISOString()??null,location},
+   job:{id:job.id,number:job.job_number},business:{name:"Brandon RV"},confirmedAt:new Date().toISOString()
+  });
   return Response.json({appointment:bookingResult.appointment,acceptedRequest:existing?.status==="requested",workcardsUpdated:bookingResult.workcardsUpdated},{status:existing?200:201});
  }catch(error){console.error("Workcard booking confirmation failed",error);return jsonError("Could not confirm or create booking.",500);}
 }

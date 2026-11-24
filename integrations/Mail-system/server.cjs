@@ -165,7 +165,7 @@ async function handleEvent(input, context) {
     html: template.body_html == null ? undefined : render(template.body_html, payload),
     from_address: sender
   };
-  await mailRequest(context, "/api/mail", { method: "POST", body: JSON.stringify(message) });
+  await mailRequest(context, "/api/mail", { method: "POST", headers: payload.eventId ? { "x-request-id": String(payload.eventId) } : undefined, body: JSON.stringify(message) });
   return { sent: true, event, sender, recipientCount: recipientPayload.length };
 }
 

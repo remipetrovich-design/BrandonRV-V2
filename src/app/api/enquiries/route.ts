@@ -1,4 +1,5 @@
 import {randomBytes,randomUUID} from "node:crypto";
+import {emitIntegrationEvent} from "@/lib/emit-integration-event";
 import {currentUser,database,normalizeEmail,jsonError,sameOrigin,digest} from "@/lib/auth";
 export const runtime="nodejs";
 const allowedTypes=new Set(["image/jpeg","image/png","image/webp","application/pdf"]);
@@ -39,6 +40,12 @@ export async function POST(request:Request){
    const {data:enquiry,error}=await db.from("enquiries").insert({business_id:business.id,customer_id:account?.id??null,user_id:account?.id??null,contact_name:name,email,phone,requested_service:requestType==="public_enquiry"?"Public Contact form":"General enquiry",description,preferred_contact:"email",status:"new",source:requestType==="public_enquiry"?"contact_page":"website",request_type:requestType,request_number:reference,submission_key:submissionKey}).select("id").single();
    if(error?.code==="23505"){const {data:duplicate}=await db.from("enquiries").select("id,request_number,request_type,user_id,email").eq("business_id",business.id).eq("submission_key",submissionKey).maybeSingle();if(duplicate?.request_type===requestType&&duplicate.user_id===(account?.id??null)&&duplicate.email===email)return Response.json({success:true,referenceNumber:duplicate.request_number,message:"Your general enquiry has already been sent."},{status:200});}
    if(error||!enquiry)return jsonError("Could not submit your enquiry. Please try again.",500);
+   await emitIntegrationEvent("enquiry.received",{
+    recipient:{email,firstName:name},
+    customer:{name,email,phone},
+    enquiry:{id:enquiry.id,referenceNumber:reference,requestType,requestedService:requestType==="public_enquiry"?"Public Contact form":"General enquiry",description,location:null},
+    business:{name:"Brandon RV"},submittedAt:new Date().toISOString()
+   });
    return Response.json({success:true,referenceNumber:reference,message:"Your general enquiry has been sent. It is not a quote request or booking."},{status:201});
   }
   const vehicleType=String(form.get("vehicleType")??"").trim();const vehicle=String(form.get("vehicle")??"").trim();
@@ -70,7 +77,12 @@ export async function POST(request:Request){
    const {error:attachmentError}=await db.from("enquiry_attachments").insert({business_id:business.id,enquiry_id:enquiry.id,uploaded_by:account?.id??null,storage_path:path,file_name:file.name.slice(0,255),mime_type:file.type,size_bytes:file.size});
    if(attachmentError){await db.storage.from("brandon-rv-private").remove(uploaded);await db.from("enquiries").delete().eq("id",enquiry.id);return jsonError("Could not save enquiry attachments.",500);}
   }
-  const base=process.env.NEXT_PUBLIC_APP_URL??new URL(request.url).origin;
+  await emitIntegrationEvent("enquiry.received",{
+   recipient:{email,firstName:name},
+   customer:{name,email,phone},
+   enquiry:{id:enquiry.id,referenceNumber:reference,requestType:"quote_request",requestedService:workType,description,location,vehicle:vehicleDescription,preferredContact:preferred},
+   business:{name:"Brandon RV"},submittedAt:new Date().toISOString()
+  });
   return Response.json({success:true,enquiryId:enquiry.id,referenceNumber:reference,guestAccessToken:guestToken,message:"Your quote request has been received. Keep your Request Quote ID"+(guestToken?" and guest access code":"")+" so you can return to this conversation. This is not a booking."},{status:201});
  }catch{return jsonError("Could not submit your enquiry.",500);}
 }

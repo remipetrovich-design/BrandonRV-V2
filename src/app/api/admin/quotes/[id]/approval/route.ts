@@ -1,4 +1,5 @@
 import {authorizePermission,database,jsonError,sameOrigin,userHasPermission} from "@/lib/auth";
+import {emitIntegrationEvent} from "@/lib/emit-integration-event";
 export const runtime="nodejs";
 export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
  const primary=await authorizePermission("quotes.approve");let access=primary,workcardOnly=false;if(primary.response){const alternate=await authorizePermission("jobs.approve");if(alternate.response)return primary.response;access=alternate;workcardOnly=true;}
@@ -13,13 +14,21 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
  const primary=await authorizePermission("quotes.approve");let access=primary,workcardOnly=false;if(primary.response){const alternate=await authorizePermission("jobs.approve");if(alternate.response)return primary.response;access=alternate;workcardOnly=true;}
  try{
   const {id}=await params,body=await request.json(),decision=String(body.decision??""),note=String(body.note??"").trim().slice(0,2000);
-  const {data:target}=await database().from("quotes").select("quote_kind").eq("id",id).eq("business_id",access.membership!.business_id).maybeSingle();
+  const {data:target}=await database().from("quotes").select("id,quote_kind,quote_number,prepared_by,customer_id,total").eq("id",id).eq("business_id",access.membership!.business_id).maybeSingle();
   if(!target)return jsonError("Quote not found.",404);
   if(workcardOnly&&target.quote_kind!=="variation")return jsonError("Quote approval permission is required for standard quotes.",403);
   if(!["approved","changes_requested"].includes(decision))return jsonError("Choose approve or request changes.");
   if(decision==="changes_requested"&&note.length<5)return jsonError("Describe the quote changes required.");
   const {data,error}=await database().rpc("review_quote",{p_quote_id:id,p_business_id:access.membership!.business_id,p_actor_user_id:access.user!.id,p_decision:decision,p_note:note||null});
   if(error){if(error.code==="P0001")return jsonError(error.message??"This quote is not awaiting senior review.",409);return jsonError("Could not record senior review. No changes were made.",500);}
+  if(decision==="changes_requested"&&target?.prepared_by){
+   const {data:preparer}=await database().from("users").select("email,full_name").eq("id",target.prepared_by).maybeSingle();
+   if(preparer?.email)await emitIntegrationEvent("quote.changes_requested",{
+    recipient:{email:preparer.email,firstName:preparer.full_name},staff:{email:preparer.email,name:preparer.full_name},
+    quote:{id,number:target.quote_number,total:target.total},review:{decision,note},
+    business:{name:"Brandon RV"},reviewedAt:new Date().toISOString()
+   });
+  }
   return Response.json(data);
  }catch{return jsonError("Could not review quote.",500);}
 }

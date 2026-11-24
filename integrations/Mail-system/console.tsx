@@ -15,14 +15,17 @@ import { renderTemplate } from "./renderer";
 
 type ConnectionResult = { connected: boolean; canSend?: boolean; status?: string; message?: string; sender?: string | null; senders: MailSender[]; error?: string };
 
+
 export function MailModuleConsole({
   store,
   onTestConnection,
   canManage = false,
+  availableEvents = [],
 }: {
   store: MailModuleStore;
   onTestConnection: () => Promise<ConnectionResult>;
   canManage?: boolean;
+  availableEvents?: string[];
 }) {
   const [tab, setTab] = useState("templates");
   const [templates, setTemplates] = useState<MailTemplate[]>([]);
@@ -260,7 +263,7 @@ export function MailModuleConsole({
           <button type="button" disabled={!canManage || busy} onClick={() => run(() => store.deleteTrigger(trigger.id), "Trigger deleted")}>Delete</button>
         </li>)}</ul>
         <fieldset disabled={!canManage || busy}>
-          <label>Event key<input value={eventKey} onChange={(event) => setEventKey(event.target.value)} /></label>
+          <label>Event<select value={eventKey} onChange={(event) => setEventKey(event.target.value)}><option value="">Select an available event</option>{[...new Set([...availableEvents, ...(eventKey && !availableEvents.includes(eventKey) ? [eventKey] : [])])].map((item) => <option key={item} value={item}>{item}</option>)}</select></label><p>Events are selected from the Brandon RV event catalogue. A trigger sends only when its corresponding business workflow emits that event.</p>
           <label>Template<select value={triggerTemplate} onChange={(event) => setTriggerTemplate(event.target.value)}>
             <option value="">Select template</option>
             {templates.map((template) => <option key={template.id} value={template.template_key}>{template.display_name}</option>)}

@@ -1,5 +1,5 @@
 import {database,digest,passwordHash,jsonError,sameOrigin} from "@/lib/auth";
-import {dispatchIntegrationEvent} from "@/lib/integration-runtime";
+import {emitIntegrationEvent} from "@/lib/emit-integration-event";
 export const runtime="nodejs";
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
@@ -14,7 +14,7 @@ export async function POST(request:Request){
   await db.from("user_sessions").delete().eq("user_id",record.user_id);
   try{
    const {data:user}=await db.from("users").select("email,full_name,first_name").eq("id",record.user_id).maybeSingle();
-   if(user)await dispatchIntegrationEvent("account.password_changed",{recipient:{email:user.email,firstName:user.first_name??String(user.full_name??"").split(/\s+/)[0]??""},changedAt:now});
+   if(user)await emitIntegrationEvent("account.password_changed",{recipient:{email:user.email,firstName:user.first_name??String(user.full_name??"").split(/\s+/)[0]??""},changedAt:now});
   }catch(error){console.error("[account-recovery] Password-change event dispatch failed.",error instanceof Error?error.message:"unknown error");}
   return Response.json({success:true,message:"Password updated. Sign in with your new password."});
  }catch{return jsonError("Password reset is temporarily unavailable.",500);}

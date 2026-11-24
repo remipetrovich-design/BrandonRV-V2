@@ -1,5 +1,6 @@
 import {currentUser,currentMembership,database,jsonError,sameOrigin} from "@/lib/auth";
 import {canStartWorkOrder,canFinishWorkOrder} from "@/lib/work-order-lifecycle.mjs";
+import {emitIntegrationEvent} from "@/lib/emit-integration-event";
 export const runtime="nodejs";
 
 export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){
@@ -12,7 +13,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
   if(!["start","finish"].includes(action))return jsonError("Choose start or finish.");
   const db=database();const {data:staff}=await db.from("staff").select("id").eq("user_id",user.id).eq("business_id",membership.business_id).maybeSingle();
   if(!staff)return jsonError("Employee profile not found.",404);
-    const {data:job}=await db.from("jobs").select("id,status,customer_id,user_id,quote_id,appointment_id,job_number,title,customer_approval_status,senior_approval_status").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
+    const {data:job}=await db.from("jobs").select("id,status,customer_id,user_id,guest_email,guest_name,quote_id,appointment_id,job_number,title,customer_approval_status,senior_approval_status").eq("id",id).eq("business_id",membership.business_id).maybeSingle();
   if(!job)return jsonError("Work Order not found.",404);
   const {data:assignment}=await db.from("job_assignments").select("id,status").eq("business_id",membership.business_id).eq("job_id",id).eq("staff_id",staff.id).maybeSingle();
   if(assignment?.status!=="accepted")return jsonError("Accept this Work Order assignment before starting or finishing it.",403);
@@ -21,6 +22,12 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    if(!canStartWorkOrder(job.status,assignment?.status,false))return jsonError("This Work Order cannot be started from its current status or assignment.",409);
    const {data:started,error}=await db.rpc("start_workcard",{p_job_id:id,p_business_id:membership.business_id,p_actor_user_id:user.id,p_staff_id:staff.id});
    if(error){if(error.code==="P0001")return jsonError(error.message??"This Workcard cannot be started.",409);return jsonError("Could not start this Workcard. No changes were saved.",500);}
+   const {data:customerUser}=job.user_id?await db.from("users").select("email,full_name").eq("id",job.user_id).maybeSingle():{data:null};
+   const recipientEmail=customerUser?.email??job.guest_email??null;
+   if(recipientEmail)await emitIntegrationEvent("job.started",{
+    recipient:{email:recipientEmail,firstName:customerUser?.full_name??null},customer:{email:recipientEmail,name:customerUser?.full_name??null},
+    job:{id:job.id,number:job.job_number,title:job.title,status:"in_progress"},business:{name:"Brandon RV"},startedAt:new Date().toISOString()
+   });
    return Response.json(started);
   }
   if(job.status==="completed"&&["pending","approved","legacy_approved"].includes(String(job.senior_approval_status))){
@@ -35,6 +42,13 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
    p_job_id:id,p_business_id:membership.business_id,p_actor_user_id:user.id,p_staff_id:staff.id,p_work_summary:summary
   });
   if(finishError){if(finishError.code==="P0001")return jsonError(finishError.message??"Workcard could not be signed off.",409);if(finishError.code==="22023")return jsonError(finishError.message??"Enter a valid work summary.");return jsonError("Workcard sign-off and invoice creation failed. No changes were saved.",500);}
+  const {data:customerUser}=job.user_id?await db.from("users").select("email,full_name").eq("id",job.user_id).maybeSingle():{data:null};
+  const recipientEmail=customerUser?.email??job.guest_email??null;
+  if(recipientEmail){
+   const payload={recipient:{email:recipientEmail,firstName:customerUser?.full_name??null},customer:{email:recipientEmail,name:customerUser?.full_name??null},job:{id:job.id,number:job.job_number,title:job.title,status:"completed"},workSummary:summary,business:{name:"Brandon RV"},completedAt:new Date().toISOString()};
+   await emitIntegrationEvent("job.completed",payload);
+   await emitIntegrationEvent("job.customer_approval_requested",{...payload,approvalUrl:(process.env.NEXT_PUBLIC_APP_URL?.trim()||new URL(request.url).origin).replace(/\/+$/g,"")+"/portal/jobcards/"+id});
+  }
   return Response.json({success:true,status:"completed",invoice:result?.invoice,alreadyFinished:result?.already_finished===true});
  }catch{return jsonError("Could not update Work Order.",500);}
 }

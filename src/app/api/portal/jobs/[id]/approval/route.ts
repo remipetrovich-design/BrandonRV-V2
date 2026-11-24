@@ -1,4 +1,5 @@
 import {currentUser,database,jsonError,sameOrigin} from "@/lib/auth";
+import {emitIntegrationEvent} from "@/lib/emit-integration-event";
 export const runtime="nodejs";
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
@@ -11,6 +12,11 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   const db=database();const {data:job}=await db.from("jobs").select("id,business_id").eq("id",id).eq("user_id",user.id).maybeSingle();if(!job)return jsonError("Completed Workcard not found.",404);
   const {data,error}=await db.rpc("respond_to_completed_workcard",{p_job_id:id,p_business_id:job.business_id,p_actor_user_id:user.id,p_guest_enquiry_id:null,p_guest_token_hash:null,p_decision:decision,p_note:note||null});
   if(error){if(error.code==="P0001")return jsonError(error.message??"This Workcard is not ready for your response.",409);if(error.code==="22023")return jsonError(error.message??"Invalid Workcard response.");return jsonError("Could not save your Workcard response. No changes were made.",500);}
+  await emitIntegrationEvent(decision==="approved"?"job.customer_approved":"job.customer_changes_requested",{
+   recipient:{email:user.email,firstName:user.full_name},customer:{id:user.id,email:user.email,name:user.full_name},
+   job:{id:job.id,status:decision==="approved"?"customer_approved":"changes_requested"},
+   response:{decision,note:note||null},business:{name:"Brandon RV"},respondedAt:new Date().toISOString()
+  });
   return Response.json(data);
  }catch(error){console.error("Customer Workcard decision failed.",error);return jsonError("Could not save your Workcard response.",500);}
 }
