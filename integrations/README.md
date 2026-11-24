@@ -37,7 +37,7 @@ The server context contains the module id/name/version, configured endpoint, non
 
 A module declares the exact event names it handles in the manifest `events` array. The core backend exposes `dispatchIntegrationEvent(event, payload)`; it invokes only enabled modules that declare that event. Each handler receives a single event and payload. Errors are isolated per module and returned to the caller so one module cannot prevent other modules from running.
 
-The event names currently reserved for future wiring include `account.password_reset_requested`, `account.invitation_created`, `staff.invitation_created`, `enquiry.received`, `quote.issued`, `invoice.issued` and `booking.confirmed`. Adding a module does not silently activate it or alter core business workflows; the relevant core event is wired deliberately as part of that module's integration work.
+The event names currently reserved for future wiring include `account.password_reset_requested`, `account.invitation_created`, `staff.invitation_created`, `enquiry.received`, `quote.issued`, `invoice.issued` and `booking.confirmed`. Password recovery, password-change and staff-invitation workflows already emit their corresponding core events. Other events are declared for future wiring; adding a module does not silently change those core workflows.
 
 ## Runtime boundary
 
