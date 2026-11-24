@@ -205,7 +205,7 @@ export function MailModuleConsole({
         <button type="button" disabled={busy} onClick={async () => {
           try {
             const rendered = renderTemplate({ subject, text: textBody, html: htmlBody }, { sample: "Example", customer: { name: "Sample Customer" } });
-            setPreview("<!doctype html><html><head><meta name=\\"viewport\\" content=\\"width=device-width,initial-scale=1\\"><title>Email preview</title></head><body>"+(rendered.html||"<pre>"+String(rendered.text||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")+"</pre>")+"</body></html>");
+            setPreview('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Email preview</title></head><body>'+(rendered.html||"<pre>"+String(rendered.text||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")+"</pre>")+"</body></html>");
           } catch (error) {
             setStatus(error instanceof Error ? error.message : "Preview failed");
           }
