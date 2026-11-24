@@ -13,7 +13,7 @@ export async function discoverIntegrations(){
  const root=path.resolve(process.cwd(),"integrations");
  let entries;
  try{entries=await readdir(root,{withFileTypes:true});}catch{return [] as IntegrationManifest[];}
- const found:IntegrationManifest[]=[];
+ const found=new Map<string,IntegrationManifest>();
  for(const entry of entries){
   if(!entry.isDirectory()||entry.name.startsWith(".")||entry.name==="node_modules")continue;
   const folder=path.resolve(root,entry.name);
@@ -36,10 +36,14 @@ export async function discoverIntegrations(){
    }
    const events:string[]=Array.isArray(raw.events)?[...new Set<string>(raw.events.filter((value:unknown):value is string=>typeof value==="string"&&(value==="*"||validEvent.test(value))))]:[];
    const providesEvents=Array.isArray(raw.providesEvents)?raw.providesEvents.filter((item:unknown)=>!!item&&typeof item==="object"&&validEvent.test(String((item as any).name??""))&&typeof (item as any).description==="string"&&typeof (item as any).trigger==="string").slice(0,200).map((item:any)=>({name:String(item.name),description:String(item.description).slice(0,500),trigger:String(item.trigger).slice(0,500)})):[];
-   found.push({id,folder:entry.name,name:raw.name.trim().slice(0,100),version:raw.version.slice(0,40),description:raw.description.slice(0,1000),entrypoint:"server.cjs",...(adminPage?{adminPage}:{}),events,providesEvents,config});
+   const candidate:IntegrationManifest={id,folder:entry.name,name:raw.name.trim().slice(0,100),version:raw.version.slice(0,40),description:raw.description.slice(0,1000),entrypoint:"server.cjs",...(adminPage?{adminPage}:{}),events,providesEvents,config};
+   const existing=found.get(id);
+   const candidateIsCanonical=id==="mail-system"&&entry.name==="Mail-system";
+   const existingIsCanonical=existing?.folder==="Mail-system"&&id==="mail-system";
+   if(!existing||candidateIsCanonical||(!existingIsCanonical&&entry.name.localeCompare(existing.folder)<0))found.set(id,candidate);
   }catch{/* Invalid or incomplete module folders are not loadable and are omitted. */}
  }
- return found.sort((a,b)=>a.name.localeCompare(b.name));
+ return [...found.values()].sort((a,b)=>a.name.localeCompare(b.name));
 }
 
 /** Discover host events and events contributed by installed integration manifests. */
