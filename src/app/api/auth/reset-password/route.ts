@@ -1,4 +1,4 @@
-import { database,digest,passwordHash,jsonError,sameOrigin } from "@/lib/auth";
+import { database,digest,passwordHash,jsonError,sameOrigin } from "@/lib/auth";\nimport {dispatchIntegrationEvent} from "@/lib/integration-runtime";
 export const runtime="nodejs";
 export async function POST(request:Request){
  if(!sameOrigin(request)) return jsonError("Invalid request origin.",403);
