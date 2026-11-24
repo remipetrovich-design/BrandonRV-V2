@@ -26,7 +26,7 @@ test("duplicate folders with the same integration id resolve to one canonical ma
  assert.match(registry,/const found=new Map<string,IntegrationManifest>\(\)/);
  assert.match(registry,/const existing=found\.get\(id\)/);
  assert.match(registry,/found\.set\(id,candidate\)/);
- assert.match(manager,/new Map\(\(d\.integrations\?\?\[\]\)\.map/);
+ assert.match(manager,/new Map\(\(data\.integrations\?\?\[\]\)\.map/);
 });
 
 test("server runtime validates module contract and dispatches only declared events to enabled modules",async()=>{
@@ -73,7 +73,7 @@ test("integration secret values are encrypted with authenticated encryption",asy
 test("manifest schema and module contract are documented without provider placeholders",async()=>{
  const schema=JSON.parse(await read("integrations/manifest.schema.json"));
  assert.equal(schema.properties.entrypoint.const,"server.cjs");
- assert.match(schema.properties.events.items.pattern,/\\\\\*/);
+ assert.equal(schema.properties.events.items.pattern,"^\\*$|^[a-z0-9][a-z0-9._-]{0,99}$");
  const events=await read("src/lib/integration-events.ts");
  assert.match(events,/account\.password_reset_requested/);
  assert.match(events,/account\.password_changed/);
