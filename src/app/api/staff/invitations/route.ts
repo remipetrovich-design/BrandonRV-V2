@@ -1,6 +1,6 @@
 import {randomBytes} from "node:crypto";
 import {authorizePermission,database,digest,jsonError,normalizeEmail,sameOrigin} from "@/lib/auth";
-import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
+import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";\nimport {dispatchIntegrationEvent} from "@/lib/integration-runtime";
 export const runtime="nodejs";
 const staffRoleKeys=["trial_apprentice","apprentice","senior_apprentice","team_leader","supervisor","office_admin","office_supervisor","office_manager","manager","senior_manager","website_development_specialist","ceo_founder"];
 export async function GET(){
