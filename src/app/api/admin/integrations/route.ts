@@ -30,6 +30,7 @@ export async function PATCH(request:Request){
   const secrets={...priorSecrets};
   const incoming=body.settings&&typeof body.settings==="object"&&!Array.isArray(body.settings)?body.settings:{};
   const incomingSecrets=body.secrets&&typeof body.secrets==="object"&&!Array.isArray(body.secrets)?body.secrets:{};
+  const enabled=body.enabled===undefined?existing?.active===true:body.enabled===true;
   for(const field of module.config){
    const value=incoming[field.key];
    if(field.type==="secret"){
@@ -46,8 +47,7 @@ export async function PATCH(request:Request){
    if(field.type==="select"&&text&&!field.options?.includes(text))return jsonError("Invalid selection for "+field.label+".");
    settings[field.key]=text;
   }
-  for(const field of module.config){if(field.required&&field.type!=="secret"&&!String(settings[field.key]??"").trim())return jsonError(field.label+" is required.");if(field.required&&field.type==="secret"&&!secrets[field.key])return jsonError(field.label+" is required.");}
-  const enabled=body.enabled===undefined?existing?.active===true:body.enabled===true;
+  if(enabled)for(const field of module.config){if(field.required&&field.type!=="secret"&&!String(settings[field.key]??"").trim())return jsonError(field.label+" is required.");if(field.required&&field.type==="secret"&&!secrets[field.key])return jsonError(field.label+" is required.");}
   if(enabled&&!module.config.every(field=>!field.required||(field.type==="secret"?Boolean(secrets[field.key]):settings[field.key]!==undefined&&String(settings[field.key]).trim()!=="")))return jsonError("Complete all required configuration fields before enabling this integration.");
   let encrypted=existing?.secret??"";
   if(Object.keys(secrets).length)encrypted=encryptIntegrationSecrets(secrets);
