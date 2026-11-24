@@ -47,7 +47,7 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
   if(!Number.isFinite(startsAt.getTime())||(endsAt&&(!Number.isFinite(endsAt.getTime())||endsAt<=startsAt)))return jsonError("Enter a valid booking date and time window.");
   if(location.length<3)return jsonError("Enter the customer service location.");
   const db=database(),businessId=access.membership!.business_id,bypassRestrictions=await userHasPermission(access.user!.id,"appointments.override_scheduling_restrictions");
-  const {data:enquiry,error:enquiryError}=await db.from("enquiries").select("id,stage,customer_id,vehicle_id,contact_name,email").eq("id",id).eq("business_id",businessId).maybeSingle();
+  const {data:enquiry,error:enquiryError}=await db.from("enquiries").select("id,request_number,stage,customer_id,vehicle_id,contact_name,email").eq("id",id).eq("business_id",businessId).maybeSingle();
   if(enquiryError||!enquiry)return jsonError("Jobcard not found.",404);
   const {data:quotes,error:quoteError}=await db.from("quotes").select("id,status").eq("business_id",businessId).eq("enquiry_id",id).eq("status","accepted").order("revision_number",{ascending:false}).limit(1);
   if(quoteError)return jsonError("Could not verify the accepted quote.",500);
