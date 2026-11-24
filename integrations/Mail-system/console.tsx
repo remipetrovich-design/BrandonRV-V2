@@ -15,6 +15,9 @@ import { renderTemplate } from "./renderer";
 
 type ConnectionResult = { connected: boolean; canSend?: boolean; status?: string; message?: string; sender?: string | null; senders: MailSender[]; error?: string };
 
+// These are the event contracts currently emitted by Brandon RV V2.
+const AVAILABLE_EVENTS = ["account.password_reset_requested", "account.password_changed", "staff.invitation_created"];
+
 export function MailModuleConsole({
   store,
   onTestConnection,
@@ -260,7 +263,7 @@ export function MailModuleConsole({
           <button type="button" disabled={!canManage || busy} onClick={() => run(() => store.deleteTrigger(trigger.id), "Trigger deleted")}>Delete</button>
         </li>)}</ul>
         <fieldset disabled={!canManage || busy}>
-          <label>Event key<input value={eventKey} onChange={(event) => setEventKey(event.target.value)} /></label>
+          <label>Event<select value={eventKey} onChange={(event) => setEventKey(event.target.value)}><option value="">Select an available event</option>{AVAILABLE_EVENTS.map((item) => <option key={item} value={item}>{item}</option>)}</select></label><p>Only events currently emitted by Brandon RV V2 are selectable here. Additional business events can be enabled when their workflows are wired into the event dispatcher.</p>
           <label>Template<select value={triggerTemplate} onChange={(event) => setTriggerTemplate(event.target.value)}>
             <option value="">Select template</option>
             {templates.map((template) => <option key={template.id} value={template.template_key}>{template.display_name}</option>)}
