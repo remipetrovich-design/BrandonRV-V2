@@ -12,7 +12,7 @@ test("Mail System owns its complete admin page and editor inside its integration
   read("integrations/Mail-system/actions.ts")
  ]);
  assert.match(page,/MailModuleConsole/);
- assert.match(page,/createSupabaseMailModuleStore/);
+ assert.match(actions,/createSupabaseMailModuleStore/);
  assert.match(editor,/contentEditable/);
  assert.match(editor,/HTML source/);
  assert.match(editor,/Upload image/);
@@ -23,7 +23,7 @@ test("Mail System navigation is generated from enabled integration manifests onl
  const layout=await read("src/app/admin/layout.tsx");
  assert.match(layout,/discoverIntegrations/);
  assert.match(layout,/app_integrations/);
- assert.match(layout,/active/);
+ assert.match(layout,/active/);\n assert.match(layout,/router\.refresh/);
  assert.match(layout,/admin\/integrations\/\$\{[^}]+\}/);
  assert.doesNotMatch(layout,/href:"\/admin\/settings\/mail-system"/);
 });
