@@ -201,6 +201,7 @@ test("manager connection test returns sender mailboxes and preserves the Mail Sy
     assert.equal(result.ok, false);
     assert.match(result.message, /An active external-system send-only key is required/);
     assert.match(result.message, /GET \/api\/mail\/senders/);
+    assert.match(result.message, /mail:send scope or the privileged mail:admin scope/);
   } finally { globalThis.fetch = originalFetch; }
 });
 
