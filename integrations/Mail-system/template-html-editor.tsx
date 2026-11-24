@@ -7,7 +7,7 @@ const commands=[["bold","B","Bold"],["italic","I","Italic"],["underline","U","Un
 export default function MailHtmlEditor({value,onChange,disabled=false}:Props){
  const editor=useRef<HTMLDivElement>(null),file=useRef<HTMLInputElement>(null);
  const [sourceMode,setSourceMode]=useState(false),[source,setSource]=useState(value),[notice,setNotice]=useState("");
- useEffect(()=>{setSource(value);if(editor.current&&editor.current.innerHTML!==value)editor.current.innerHTML=value||"";},[value]);
+ useEffect(()=>{setSource(value);if(!sourceMode&&editor.current&&editor.current.innerHTML!==value)editor.current.innerHTML=value||"";},[value,sourceMode]);
  const sync=()=>{const html=editor.current?.innerHTML||"";setSource(html);onChange(html);};
  const run=(command:string,arg?:string)=>{if(disabled||!editor.current)return;editor.current.focus();document.execCommand(command,false,arg);sync();};
  const insert=(html:string)=>{if(disabled||!editor.current)return;editor.current.focus();document.execCommand("insertHTML",false,html);sync();};
