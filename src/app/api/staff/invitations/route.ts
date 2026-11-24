@@ -1,7 +1,7 @@
 import {randomBytes} from "node:crypto";
 import {authorizePermission,database,digest,jsonError,normalizeEmail,sameOrigin} from "@/lib/auth";
 import {isGlobalAdministrator} from "@/lib/user-role-policy.mjs";
-import {dispatchIntegrationEvent} from "@/lib/integration-runtime";
+import {emitIntegrationEvent} from "@/lib/emit-integration-event";
 export const runtime="nodejs";
 const staffRoleKeys=["trial_apprentice","apprentice","senior_apprentice","team_leader","supervisor","office_admin","office_supervisor","office_manager","manager","senior_manager","website_development_specialist","ceo_founder"];
 export async function GET(){
@@ -35,7 +35,7 @@ export async function POST(request:Request){
   const link=origin+"/portal/accept-staff-invitation?token="+encodeURIComponent(token);
   await db.from("audit_events").insert({business_id:businessId,actor_user_id:access.user!.id,action:"staff.invitation.created",entity_type:"staff_invitation",entity_id:invitation.id,details:{email,role_key:roleKey,delivery:"integration_event_or_manual_link"}});
   let notificationHandled=false;
-  try{const results=await dispatchIntegrationEvent("staff.invitation_created",{recipient:{email,firstName:null},inviter:{name:access.user!.full_name??access.user!.email},role:{key:roleKey,name:role.name},jobTitle,invitationUrl:link,expiresAt});notificationHandled=results.some(result=>result.ok);}catch(error){console.error("[staff-invitations] Integration event dispatch failed.",error instanceof Error?error.message:"unknown error");}
+  try{const dispatch=await emitIntegrationEvent("staff.invitation_created",{recipient:{email,firstName:null},inviter:{name:access.user!.full_name??access.user!.email},role:{key:roleKey,name:role.name},jobTitle,invitationUrl:link,expiresAt});notificationHandled=dispatch.handled;}catch(error){console.error("[staff-invitations] Integration event dispatch failed.",error instanceof Error?error.message:"unknown error");}
   return Response.json({success:true,notificationHandled,inviteUrl:link},{status:201});
  }catch{return jsonError("Could not create the staff invitation.",500);}
 }
