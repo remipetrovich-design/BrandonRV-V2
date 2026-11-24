@@ -1,6 +1,7 @@
 import {currentUser,database,jsonError,sameOrigin} from "@/lib/auth";
 import {validateBookingWindow} from "@/lib/booking-rules";
 import {bookingWindowsConflict} from "@/lib/booking-window-policy.mjs";
+import {emitIntegrationEvent} from "@/lib/emit-integration-event";
 export const runtime="nodejs";
 export async function GET(){
  const user=await currentUser();if(!user)return jsonError("Not signed in.",401);
@@ -47,6 +48,12 @@ export async function POST(request:Request){
    }
   }
   await db.from("audit_events").insert({business_id:customer.business_id,actor_user_id:user.id,action:"booking.requested_after_quote_acceptance",entity_type:"appointment",entity_id:appointment.id,details:{quote_id:quote.id,preferred_start:appointment.preferred_start}});
+  await emitIntegrationEvent("booking.requested",{
+   recipient:{email:user.email,firstName:user.full_name},
+   customer:{id:user.id,name:user.full_name,email:user.email},
+   booking:{id:appointment.id,status:appointment.status,preferredStart:appointment.preferred_start,quoteNumber:quote.quote_number,location},
+   business:{name:"Brandon RV"},requestedAt:new Date().toISOString()
+  });
   return Response.json({success:true,appointment,message:"Your preferred booking time has been sent. It is not confirmed until Brandon RV agrees the date, time and location."},{status:201});
  }catch{return jsonError("Could not submit booking request.",500);}
 }
