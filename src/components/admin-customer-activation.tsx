@@ -17,5 +17,5 @@ export default function AdminCustomerActivation({customerId}:{customerId:string}
    setNotice({type:"error",text:error instanceof Error?error.message:"Could not activate customer account."});
   }finally{setBusy(false);}
  }
- return <div className="customer-email-verification-action"><button className="button button-secondary" type="button" disabled={busy} onClick={()=>void activate()}>{busy?"Activating…":"Activate account"}</button>{notice&&<div className={"form-banner "+(notice.type==="success"?"form-banner-success":"form-banner-error")} role={notice.type==="success"?"status":"alert"}>{notice.text}</div>}</div>;
+ return <div className="customer-account-activation-action"><button className="button button-secondary" type="button" disabled={busy} onClick={()=>void activate()}>{busy?"Activating…":"Activate account"}</button>{notice&&<div className={"form-banner "+(notice.type==="success"?"form-banner-success":"form-banner-error")} role={notice.type==="success"?"status":"alert"}>{notice.text}</div>}</div>;
 }
