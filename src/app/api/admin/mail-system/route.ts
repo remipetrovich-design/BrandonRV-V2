@@ -1,9 +1,9 @@
 import { authorizePermission, database, jsonError, sameOrigin } from "@/lib/auth";
 import { decryptIntegrationSecrets } from "@/lib/integration-secrets";
-import { createSupabaseMailModuleStore } from "@/integrations/Mail-system/supabase-store";
+import { createSupabaseMailModuleStore } from "../../../../../integrations/Mail-system/supabase-store";
 import {
   configureTemplate, configureRoute, configureTrigger, updateModuleSettings,
-} from "@/integrations/Mail-system/configuration";
+} from "../../../../../integrations/Mail-system/configuration";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
