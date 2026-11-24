@@ -187,3 +187,33 @@ test("manager event handler loads module configuration and sends the mapped temp
     else process.env.SUPABASE_SECRET_KEY = oldKey;
   }
 });
+
+
+test("manager connection test returns sender mailboxes and preserves the Mail System API's actual 403 reason", async () => {
+  const adapter = require("./server.cjs");
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: false, status: 403,
+    json: async () => ({ error: "An active external-system send-only key is required." })
+  });
+  try {
+    const result = await adapter.testConnection({ endpoint: "https://mail.example.com", secrets: { apiKey: "test-secret" } });
+    assert.equal(result.ok, false);
+    assert.match(result.message, /An active external-system send-only key is required/);
+    assert.match(result.message, /GET \/api\/mail\/senders/);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test("connection test returns sender IDs and addresses for routing configuration", async () => {
+  const adapter = require("./server.cjs");
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true, status: 200,
+    json: async () => ({ senders: [{ id: "sender-1", address: "service@example.com" }] })
+  });
+  try {
+    const result = await adapter.testConnection({ endpoint: "https://mail.example.com", secrets: { apiKey: "test-secret" } });
+    assert.equal(result.ok, true);
+    assert.deepEqual(result.senders, [{ id: "sender-1", address: "service@example.com" }]);
+  } finally { globalThis.fetch = originalFetch; }
+});
