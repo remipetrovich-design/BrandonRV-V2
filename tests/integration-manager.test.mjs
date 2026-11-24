@@ -26,7 +26,7 @@ test("duplicate folders with the same integration id resolve to one canonical ma
  assert.match(registry,/const found=new Map<string,IntegrationManifest>\(\)/);
  assert.match(registry,/const existing=found\.get\(id\)/);
  assert.match(registry,/found\.set\(id,candidate\)/);
- assert.ok(manager.includes("new Map((data.integrations ?? []).map"));
+ assert.ok(manager.includes("new Map<string, Integration>(received.map"));
 });
 
 test("server runtime validates module contract and dispatches only declared events to enabled modules",async()=>{
@@ -46,7 +46,8 @@ test("sender discovery preserves usable mailbox choices and returns them to the 
  assert.match(runtime,/value\.id===undefined\|\|value\.id===null/);
  assert.match(runtime,/String\(value\.id\)/);
  assert.match(runtime,/const senders=Array\.isArray\(result\.senders\)/);
- assert.match(api,/senders:result\.senders/);
+ assert.ok(api.includes("const senders=result.senders??[]"));
+ assert.ok(api.includes("message:result.message,senders"));
  assert.match(manager,/Permitted sender mailboxes/);
  const consoleSource=await read("integrations/Mail-system/console.tsx");
  assert.match(consoleSource,/void testConnection\(\)/);
