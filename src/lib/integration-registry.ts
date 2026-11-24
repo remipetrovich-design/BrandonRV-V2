@@ -1,13 +1,13 @@
 import "server-only";
 import {readdir,readFile,stat} from "node:fs/promises";
 import path from "node:path";
-import {CORE_INTEGRATION_EVENT_NAMES} from "@/lib/integration-events";
+import {CORE_INTEGRATION_EVENT_DEFINITIONS,type IntegrationEventDefinition} from "@/lib/integration-events";
 
 export type IntegrationField={key:string;label:string;type:"text"|"url"|"secret"|"boolean"|"number"|"select";required?:boolean;description?:string;options?:string[]};
-export type IntegrationManifest={id:string;folder:string;name:string;version:string;description:string;entrypoint:"server.cjs";adminPage?:"admin-page.tsx";events:string[];config:IntegrationField[]};
+export type IntegrationManifest={id:string;folder:string;name:string;version:string;description:string;entrypoint:"server.cjs";adminPage?:"admin-page.tsx";events:string[];providesEvents?:{name:string;description:string;trigger:string}[];config:IntegrationField[]};
 const validId=/^[a-z0-9][a-z0-9-]{1,62}$/;
 const validField=/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/;
-const validEvents=new Set<string>(CORE_INTEGRATION_EVENT_NAMES);
+const validEvent=/^[a-z0-9][a-z0-9._-]{0,99}$/;
 const types=new Set(["text","url","secret","boolean","number","select"]);
 export async function discoverIntegrations(){
  const root=path.resolve(process.cwd(),"integrations");
@@ -34,9 +34,19 @@ export async function discoverIntegrations(){
     seen.add(field.key);
     config.push({key:field.key,label:field.label,type:field.type,required:field.required===true,description:typeof field.description==="string"?field.description.slice(0,500):"",...(field.type==="select"?{options:field.options as string[]}:{})});
    }
-   const events:string[]=Array.isArray(raw.events)?[...new Set<string>(raw.events.filter((value:unknown):value is string=>typeof value==="string"&&validEvents.has(value)))]:[];
-   found.push({id,folder:entry.name,name:raw.name.trim().slice(0,100),version:raw.version.slice(0,40),description:raw.description.slice(0,1000),entrypoint:"server.cjs",...(adminPage?{adminPage}:{}),events,config});
+   const events:string[]=Array.isArray(raw.events)?[...new Set<string>(raw.events.filter((value:unknown):value is string=>typeof value==="string"&&(value==="*"||validEvent.test(value))))]:[];
+   const providesEvents=Array.isArray(raw.providesEvents)?raw.providesEvents.filter((item:unknown)=>!!item&&typeof item==="object"&&validEvent.test(String((item as any).name??""))&&typeof (item as any).description==="string"&&typeof (item as any).trigger==="string").slice(0,200).map((item:any)=>({name:String(item.name),description:String(item.description).slice(0,500),trigger:String(item.trigger).slice(0,500)})):[];
+   found.push({id,folder:entry.name,name:raw.name.trim().slice(0,100),version:raw.version.slice(0,40),description:raw.description.slice(0,1000),entrypoint:"server.cjs",...(adminPage?{adminPage}:{}),events,providesEvents,config});
   }catch{/* Invalid or incomplete module folders are not loadable and are omitted. */}
  }
  return found.sort((a,b)=>a.name.localeCompare(b.name));
+}
+
+/** Discover host events and events contributed by installed integration manifests. */
+export async function discoverIntegrationEvents():Promise<IntegrationEventDefinition[]>{
+ const manifests=await discoverIntegrations(),all=[...CORE_INTEGRATION_EVENT_DEFINITIONS];
+ for(const manifest of manifests)for(const event of manifest.providesEvents??[])all.push({...event,sourceId:manifest.id,sourceName:manifest.name});
+ const unique=new Map<string,IntegrationEventDefinition>();
+ for(const event of all)if(!unique.has(event.name))unique.set(event.name,event);
+ return [...unique.values()].sort((a,b)=>a.sourceName.localeCompare(b.sourceName)||a.name.localeCompare(b.name));
 }

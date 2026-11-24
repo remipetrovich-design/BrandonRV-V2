@@ -1,10 +1,10 @@
 import "server-only";
 import {createRequire} from "node:module";
 import path from "node:path";
-import {discoverIntegrations,type IntegrationManifest} from "@/lib/integration-registry";
+import {discoverIntegrations,discoverIntegrationEvents,type IntegrationManifest} from "@/lib/integration-registry";
 import {database} from "@/lib/auth";
 import {decryptIntegrationSecrets} from "@/lib/integration-secrets";
-import type {CoreIntegrationEvent} from "@/lib/integration-events";
+
 
 export type IntegrationContext={id:string;name:string;version:string;endpoint:string;settings:Record<string,unknown>;secrets:Record<string,string>};
 export type IntegrationTestResult={ok:boolean;message:string;senders?:{id:string;address:string}[]};
@@ -46,16 +46,18 @@ export async function testInstalledIntegration(id:string):Promise<IntegrationTes
  return {ok:result.ok,message:result.message.slice(0,500),senders:Array.isArray(result.senders)?result.senders.filter((item:unknown):item is {id:string;address:string}=>!!item&&typeof item==="object"&&typeof (item as {id?:unknown}).id==="string"&&typeof (item as {address?:unknown}).address==="string").slice(0,100):[]};
 }
 
-/** Dispatch a named core event to every enabled installed module that declares it in integration.json. */
-export async function dispatchIntegrationEvent(event:CoreIntegrationEvent,payload:unknown){
+/** Dispatch a registered host or integration event to enabled subscribers. */
+export async function dispatchIntegrationEvent(event:string,payload:unknown){
  if(!validEvent.test(event))throw new Error("Invalid integration event name.");
- const manifests=await discoverIntegrations(),byId=new Map(manifests.map(item=>[item.id,item]));
+ const [manifests,registered]=await Promise.all([discoverIntegrations(),discoverIntegrationEvents()]);
+ if(!registered.some(item=>item.name===event))throw new Error("Integration event is not registered: "+event);
+ const byId=new Map(manifests.map(item=>[item.id,item]));
  const {data,error}=await database().from("app_integrations").select("slug,endpoint,settings,secret").eq("active",true);
  if(error)throw new Error("Could not load enabled integrations.");
  const results:{integrationId:string;ok:boolean;error?:string}[]=[];
  for(const row of data??[]){
   const manifest=byId.get(row.slug);
-  if(!manifest||!manifest.events.includes(event))continue;
+  if(!manifest||(!manifest.events.includes(event)&&!manifest.events.includes("*")))continue;
   try{
    await moduleFor(manifest).handleEvent({event,payload},contextFor(manifest,row));
    results.push({integrationId:manifest.id,ok:true});

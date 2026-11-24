@@ -4,6 +4,7 @@ import {currentUser,currentMembership,userHasPermissions,database} from "@/lib/a
 import {discoverIntegrations} from "@/lib/integration-registry";
 import AdminShell,{type AdminNavGroup} from "@/components/admin-shell";
 import "./admin-density.css";
+import "./staff-panel-refresh.css";
 export const dynamic="force-dynamic";
 
 // One canonical destination per workflow. Intake sub-types are filters inside

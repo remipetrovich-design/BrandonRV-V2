@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import type { IntegrationEventDefinition } from "@/lib/integration-events";
 import type {
   MailModuleStore,
   MailTemplate,
@@ -26,7 +27,7 @@ export function MailModuleConsole({
   store: MailModuleStore;
   onTestConnection: () => Promise<ConnectionResult>;
   canManage?: boolean;
-  availableEvents?: string[];
+  availableEvents?: IntegrationEventDefinition[];
 }) {
   const [tab, setTab] = useState("templates");
   const [templates, setTemplates] = useState<MailTemplate[]>([]);
@@ -137,21 +138,12 @@ export function MailModuleConsole({
   if (!settings) return <section aria-live="polite">Loading mail configuration… {status}</section>;
 
   const appearance = settings.appearance;
-  const style: React.CSSProperties = {
-    fontFamily: appearance.fontFamily,
-    color: appearance.textColor,
-    background: appearance.surfaceColor,
-    border: "1px solid " + appearance.borderColor,
-    borderRadius: appearance.borderRadius,
-    padding: 20,
-  };
-
   return (
-    <section style={style}>
+    <section className="brv-mail-module-console">
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <div>
           {appearance.logoUrl && <img src={appearance.logoUrl} alt="" style={{ maxHeight: 36, maxWidth: 140 }} />}
-          <h2 style={{ color: appearance.primaryColor }}>{appearance.title}</h2>
+          <h2>{appearance.title}</h2>
           <p>{appearance.subtitle}</p>
         </div>
         <label>
@@ -267,7 +259,8 @@ export function MailModuleConsole({
           <button type="button" disabled={!canManage || busy} onClick={() => run(() => store.deleteTrigger(trigger.id), "Trigger deleted")}>Delete</button>
         </li>)}</ul>
         <fieldset disabled={!canManage || busy}>
-          <label>Event<select value={eventKey} onChange={(event) => setEventKey(event.target.value)}><option value="">Select an available event</option>{[...new Set([...availableEvents, ...(eventKey && !availableEvents.includes(eventKey) ? [eventKey] : [])])].map((item) => <option key={item} value={item}>{item}</option>)}</select></label><p>Events are selected from the Brandon RV event catalogue. A trigger sends only when its corresponding business workflow emits that event.</p>
+          <label>Event<select value={eventKey} onChange={(event) => setEventKey(event.target.value)}><option value="">Select an available event</option>{availableEvents.map((item) => <option key={item.name} value={item.name}>{item.name} · {item.sourceName}</option>)}{eventKey && !availableEvents.some((item) => item.name === eventKey) && <option value={eventKey}>{eventKey} · previously configured</option>}</select></label>
+          {availableEvents.find((item) => item.name === eventKey) ? <div role="note"><p>{availableEvents.find((item) => item.name === eventKey)?.description}</p><small>Source: {availableEvents.find((item) => item.name === eventKey)?.sourceName} · Trigger: {availableEvents.find((item) => item.name === eventKey)?.trigger}</small></div> : <p>Events are discovered from BrandonRV V2 and installed integration manifests. The selected event is available when its source system emits it.</p>}
           <label>Template<select value={triggerTemplate} onChange={(event) => setTriggerTemplate(event.target.value)}>
             <option value="">Select template</option>
             {templates.map((template) => <option key={template.id} value={template.template_key}>{template.display_name}</option>)}

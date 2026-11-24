@@ -15,7 +15,7 @@ integrations/
     └── server.cjs
 ```
 
-Each installed module owns its implementation, provider adapter, configuration, types, documentation and tests in its own folder. Its manifest declares its stable id, name, version, description, configuration fields and the core events it handles. The folder id is the lowercase, hyphenated form of its folder name (for example, `Inventory-Provider` uses `inventory-provider`).
+Each installed module owns its implementation, provider adapter, configuration, types, documentation and tests in its own folder. Its manifest declares its stable id, name, version, description, configuration fields, the events it handles in `events`, and the events it emits in `providesEvents`. The folder id is the lowercase, hyphenated form of its folder name (for example, `Inventory-Provider` uses `inventory-provider`).
 
 The module entry point is CommonJS `server.cjs` so it can be loaded by the Node.js server runtime from the deployed integration folder. It must export:
 
@@ -35,7 +35,7 @@ The server context contains the module id/name/version, configured endpoint, non
 
 ## Core event contract
 
-A module declares the exact event names it handles in the manifest `events` array. The core backend exposes `dispatchIntegrationEvent(event, payload)`; it invokes only enabled modules that declare that event. Each handler receives a single event and payload. Errors are isolated per module and returned to the caller so one module cannot prevent other modules from running.
+A module declares the event names it handles in the manifest `events` array. Use `["*"]` to subscribe to all registered events. To publish its own events, a module adds `providesEvents` entries containing `name`, `description`, and `trigger`; these are discovered automatically and appear in the Mail System event menu with their source module. BrandonRV V2 registers host events and their descriptions in `src/lib/integration-events.ts`. The Mail System does not maintain a copied event catalogue. The core backend exposes `dispatchIntegrationEvent(event, payload)`; it invokes only enabled modules that subscribe to that registered event. Each handler receives a single event and payload. Errors are isolated per module and returned to the caller so one module cannot prevent other modules from running.
 
 The event names currently reserved for future wiring include `account.password_reset_requested`, `account.invitation_created`, `staff.invitation_created`, `enquiry.received`, `quote.issued`, `invoice.issued` and `booking.confirmed`. Password recovery, password-change and staff-invitation workflows already emit their corresponding core events. Other events are declared for future wiring; adding a module does not silently change those core workflows.
 
