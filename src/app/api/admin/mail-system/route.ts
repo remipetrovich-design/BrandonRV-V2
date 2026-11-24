@@ -9,25 +9,26 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+type DatabaseClient = ReturnType<typeof database>;
 
-async function authorize() {
+async function authorize(): Promise<{ db: DatabaseClient | null; response: Response | null }> {
   const access = await authorizePermission("integrations.manage");
-  if (access.response) return { response: access.response };
+  if (access.response) return { db: null, response: access.response };
   const db = database();
   const { data, error } = await db.from("app_integrations").select("active").eq("slug", "mail-system").maybeSingle();
-  if (error) return { response: jsonError("Could not verify Mail System integration status.", 500) };
-  if (data?.active !== true) return { response: jsonError("Enable the Mail System integration before opening its configuration.", 409) };
+  if (error) return { db: null, response: jsonError("Could not verify Mail System integration status.", 500) };
+  if (data?.active !== true) return { db: null, response: jsonError("Enable the Mail System integration before opening its configuration.", 409) };
   return { db, response: null };
 }
 
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return jsonError("Invalid request origin.", 403);
   const access = await authorize();
-  if (access.response) return access.response;
+  if (access.response || !access.db) return access.response || jsonError("Not authorised.", 403);
   try {
     const body = await request.json();
     const action = String(body.action || "");
-    const db = access.db!;
+    const db = access.db;
     const store = createSupabaseMailModuleStore(db);
     let data: unknown;
 
