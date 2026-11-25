@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFile,access} from "node:fs/promises";
 const read=path=>readFile(new URL("../"+path,import.meta.url),"utf8");
 
-test("core application exposes integration management without installing provider modules",async()=>{
+test("core application exposes integration management with one canonical Mail System provider module",async()=>{
  const adminLayout=await read("src/app/admin/layout.tsx"),index=await read("integrations/README.md");
  assert.match(adminLayout,/\/admin\/integrations/);
  assert.match(index,/Mail System is installed here as a standalone provider module/);

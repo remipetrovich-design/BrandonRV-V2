@@ -125,7 +125,7 @@ async function testConnection(context) {
     return { ok: true, senders, message: "Connected. " + senders.length + " permitted sender mailbox(es) available." };
   } catch (error) {
     if (error && error.statusCode === 401) return { ok: false, senders: [], message: "Mail System returned HTTP 401: " + (error.message || "The API key was not accepted. Check revocation and that the saved key is the current External System key.") };
-    if (error && error.statusCode === 403) return { ok: false, senders: [], message: "Mail System returned HTTP 403 from GET /api/mail/senders: " + (error.message || "Request forbidden.") + " The endpoint verifies that this key is linked to an External System, that External System is active, and that the key has exactly the mail:send scope. It also returns no senders unless active mailboxes and sender domains are assigned." };
+    if (error && error.statusCode === 403) return { ok: false, senders: [], message: "Mail System returned HTTP 403 from GET /api/mail/senders: " + (error.message || "Request forbidden.") + " The endpoint verifies that this key is linked to an External System, that External System is active, and that the key has either the mail:send scope or the privileged mail:admin scope. It also returns no senders unless active mailboxes and sender domains are assigned." };
     return { ok: false, senders: [], message: error instanceof Error ? error.message : "Mail System connection failed." };
   }
 }

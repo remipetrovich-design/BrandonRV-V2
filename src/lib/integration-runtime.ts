@@ -43,7 +43,15 @@ export async function testInstalledIntegration(id:string):Promise<IntegrationTes
  for(const field of manifest.config)if(field.required&&(field.type==="secret"?!context.secrets[field.key]:context.settings[field.key]===undefined||String(context.settings[field.key]).trim()===""))throw new Error(field.label+" is required before testing the connection.");
  const result=await moduleFor(manifest).testConnection(context);
  if(!result||typeof result.ok!=="boolean"||typeof result.message!=="string")throw new Error("Integration returned an invalid connection-test result.");
- return {ok:result.ok,message:result.message.slice(0,500),senders:Array.isArray(result.senders)?result.senders.filter((item:unknown):item is {id:string;address:string}=>!!item&&typeof item==="object"&&typeof (item as {id?:unknown}).id==="string"&&typeof (item as {address?:unknown}).address==="string").slice(0,100):[]};
+ const senders=Array.isArray(result.senders)?result.senders.flatMap((item:unknown)=>{
+  if(!item||typeof item!=="object")return [];
+  const value=item as {id?:unknown;address?:unknown};
+  const address=typeof value.address==="string"?value.address.trim().toLowerCase():"";
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address))return [];
+  const id=value.id===undefined||value.id===null||String(value.id).trim()===""?address:String(value.id);
+  return [{id,address}];
+ }).filter((item,index,all)=>all.findIndex(candidate=>candidate.address===item.address)===index).slice(0,100):[];
+ return {ok:result.ok,message:result.message.slice(0,500),senders};
 }
 
 /** Dispatch a registered host or integration event to enabled subscribers. */

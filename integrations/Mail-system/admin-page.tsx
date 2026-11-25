@@ -6,6 +6,7 @@ import {
  saveRoute,saveTrigger,saveSettings,testMailConnection,
 } from "./actions";
 import {discoverIntegrationEvents} from "@/lib/integration-registry";
+export const dynamic="force-dynamic";
 const store:MailModuleStore={
  listTemplates,
  getTemplateByKey,
