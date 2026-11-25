@@ -66,7 +66,17 @@ export async function PATCH(request:Request){
   let encrypted=existing?.secret??"";
   let secretFields=Array.isArray(existing?.secret_fields)?existing.secret_fields.filter((key:unknown):key is string=>typeof key==="string"):[];
   if(Object.keys(secretsToSet).length){
-   const priorSecrets=encrypted?decryptIntegrationSecrets(encrypted):{};
+   let priorSecrets:Record<string,string>={};
+   if(encrypted){
+    try{priorSecrets=decryptIntegrationSecrets(encrypted);}
+    catch(error){
+     const requiredSecretKeys=module.config.filter(field=>field.type==="secret").map(field=>field.key);
+     const missing=requiredSecretKeys.filter(key=>!secretsToSet[key]);
+     if(missing.length){
+      return jsonError("Saved credentials cannot be decrypted with the configured encryption key. Re-enter all secret fields ("+requiredSecretKeys.join(", ")+") to replace them, or restore the original INTEGRATIONS_ENCRYPTION_KEY. No saved data was changed.",409);
+     }
+    }
+   }
    const mergedSecrets={...priorSecrets,...secretsToSet};
    encrypted=encryptIntegrationSecrets(mergedSecrets);
    secretFields=Object.keys(mergedSecrets);
@@ -85,5 +95,9 @@ export async function PATCH(request:Request){
   if(error)return jsonError("Could not save integration settings.",500);
   await db.from("audit_events").insert({business_id:access.membership!.business_id,actor_user_id:access.user!.id,action:enabled?"integration.enabled":existing?.active?"integration.disabled":"integration.configuration_updated",entity_type:"app_integration",details:{integration_id:id,enabled,configured_fields:Object.keys(settings),secret_fields_configured:secretFields}});
   return Response.json({success:true,enabled,secretConfigured:module.config.filter(field=>field.type==="secret").reduce((out,field)=>({...out,[field.key]:secretFields.includes(field.key)}),{})});
- }catch(error){return jsonError(error instanceof Error&&error.message.includes("INTEGRATIONS_ENCRYPTION_KEY")?error.message:"Could not save integration settings.",500);}
+ }catch(error){
+  const message=error instanceof Error?error.message:"Could not save integration settings.";
+  if(message.includes("INTEGRATIONS_ENCRYPTION_KEY")||message.includes("could not be decrypted"))return jsonError(message,409);
+  return jsonError("Could not save integration settings: "+message,500);
+ }
 }
