@@ -9,50 +9,272 @@ declare
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
-    body { margin:0; padding:0; background-color:#f2f3f5; font-family:Arial,Helvetica,sans-serif; color:#333333; }
-    table { border-collapse:collapse; border-spacing:0; }
-    .email-wrapper { width:100%; padding:30px 12px; background-color:#f2f3f5; }
-    .email-container { width:100%; max-width:600px; margin:0 auto; background-color:#ffffff; border-radius:6px; overflow:hidden; }
-    .header { padding:30px 25px; text-align:center; background-color:#ffffff; }
-    .logo { display:block; width:100%; max-width:230px; height:auto; margin:0 auto; border:0; }
-    .header-divider { height:4px; background-color:#263746; line-height:4px; font-size:0; }
-    .content { padding:35px 30px; background-color:#ffffff; font-size:15px; line-height:1.7; color:#333333; }
-    .footer { padding:30px 25px 20px; background-color:#263746; color:#ffffff; }
-    .footer-columns { width:100%; }
-    .footer-column { width:33.33%; padding:0 10px; vertical-align:top; }
-    .footer-heading { margin:0 0 12px; font-size:14px; font-weight:bold; color:#ffffff; }
-    .footer-text { margin:0 0 8px; font-size:12px; line-height:1.6; color:#d9e0e5; }
-    .footer a { color:#d9e0e5; text-decoration:none; }
-    .footer a:hover { color:#ffffff; text-decoration:underline; }
-    .footer-bottom { margin-top:24px; padding-top:18px; border-top:1px solid #52616d; text-align:center; }
-    .footer-bottom p { margin:0 0 6px; font-size:11px; line-height:1.6; color:#c5cdd3; }
-    @media screen and (max-width:480px) {
-      .email-wrapper { padding:15px 8px; }
-      .header { padding:25px 15px; }
-      .content { padding:25px 20px; }
-      .footer { padding:25px 20px 18px; }
-      .footer-column { display:block; width:100%; padding:0 0 20px; }
-      .footer-column:last-child { padding-bottom:0; }
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f2f3f5;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #333333;
+    }
+
+    table {
+      border-collapse: collapse;
+      border-spacing: 0;
+    }
+
+    .email-wrapper {
+      width: 100%;
+      padding: 30px 12px;
+      background-color: #f2f3f5;
+    }
+
+    .email-container {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    /* HEADER */
+
+    .header {
+      padding: 30px 25px;
+      text-align: center;
+      background-color: #ffffff;
+    }
+
+    .logo {
+      display: block;
+      width: 100%;
+      max-width: 230px;
+      height: auto;
+      margin: 0 auto;
+      border: 0;
+    }
+
+    .header-divider {
+      height: 4px;
+      background-color: #263746;
+      line-height: 4px;
+      font-size: 0;
+    }
+
+    /* EMAIL BODY */
+
+    .content {
+      padding: 35px 30px;
+      background-color: #ffffff;
+      font-size: 15px;
+      line-height: 1.7;
+      color: #333333;
+    }
+
+    /* FOOTER */
+
+    .footer {
+      padding: 30px 25px 20px;
+      background-color: #263746;
+      color: #ffffff;
+    }
+
+    .footer-columns {
+      width: 100%;
+    }
+
+    .footer-column {
+      width: 33.33%;
+      padding: 0 10px;
+      vertical-align: top;
+    }
+
+    .footer-heading {
+      margin: 0 0 12px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #ffffff;
+    }
+
+    .footer-text {
+      margin: 0 0 8px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #d9e0e5;
+    }
+
+    .footer a {
+      color: #d9e0e5;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      color: #ffffff;
+      text-decoration: underline;
+    }
+
+    .footer-bottom {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid #52616d;
+      text-align: center;
+    }
+
+    .footer-bottom p {
+      margin: 0 0 6px;
+      font-size: 11px;
+      line-height: 1.6;
+      color: #c5cdd3;
+    }
+
+    /* MOBILE RESPONSIVE */
+
+    @media screen and (max-width: 480px) {
+      .email-wrapper {
+        padding: 15px 8px;
+      }
+
+      .header {
+        padding: 25px 15px;
+      }
+
+      .content {
+        padding: 25px 20px;
+      }
+
+      .footer {
+        padding: 25px 20px 18px;
+      }
+
+      .footer-column {
+        display: block;
+        width: 100%;
+        padding: 0 0 20px;
+      }
+
+      .footer-column:last-child {
+        padding-bottom: 0;
+      }
     }
   </style>
 </head>
+
 <body>
-  <table role="presentation" width="100%" class="email-wrapper"><tr><td align="center">
-    <table role="presentation" width="100%" class="email-container">
-      <tr><td class="header"><img src="https://brandon-rv-v2.vercel.app/imgs/brandonrvlogo.jpg" alt="Brandon RV" class="logo"></td></tr>
-      <tr><td class="header-divider"></td></tr>
-      <tr><td class="content">{{EMAIL_CONTENT}}</td></tr>
-      <tr><td class="footer">
-        <table role="presentation" width="100%" class="footer-columns"><tr>
-          <td class="footer-column"><h3 class="footer-heading">Information</h3><p class="footer-text">Brandon RV</p><p class="footer-text">Tamworth, NSW</p></td>
-          <td class="footer-column"><h3 class="footer-heading">About Us</h3><p class="footer-text">From Factory Experience to Repairs On The Go</p></td>
-          <td class="footer-column"><h3 class="footer-heading">Contact</h3><p class="footer-text"><a href="tel:0437985190">0437 985 190</a></p><p class="footer-text"><a href="mailto:brandon@brandonrv.trade">brandon@brandonrv.trade</a></p></td>
-        </tr></table>
-        <div class="footer-bottom"><p>Brandon RV | Tamworth, NSW</p><p>&copy; Brandon RV. All rights reserved.</p></div>
-      </td></tr>
-    </table>
-  </td></tr></table>
+
+  <table role="presentation" width="100%" class="email-wrapper">
+    <tr>
+      <td align="center">
+
+        <table
+          role="presentation"
+          width="100%"
+          class="email-container"
+        >
+
+          <!-- BRAND HEADER -->
+
+          <tr>
+            <td class="header">
+              <img
+                src="https://brandon-rv-v2.vercel.app/imgs/brandonrvlogo.jpg"
+                alt="Brandon RV"
+                class="logo"
+              >
+            </td>
+          </tr>
+
+          <tr>
+            <td class="header-divider"></td>
+          </tr>
+
+          <!-- INDIVIDUAL EMAIL CONTENT -->
+
+          <tr>
+            <td class="content">
+              {{EMAIL_CONTENT}}
+            </td>
+          </tr>
+
+          <!-- GLOBAL FOOTER -->
+
+          <tr>
+            <td class="footer">
+
+              <table
+                role="presentation"
+                width="100%"
+                class="footer-columns"
+              >
+                <tr>
+
+                  <!-- INFORMATION -->
+
+                  <td class="footer-column">
+                    <h3 class="footer-heading">Information</h3>
+
+                    <p class="footer-text">
+                      Brandon RV
+                    </p>
+
+                    <p class="footer-text">
+                      Tamworth, NSW
+                    </p>
+                  </td>
+
+                  <!-- ABOUT -->
+
+                  <td class="footer-column">
+                    <h3 class="footer-heading">About Us</h3>
+
+                    <p class="footer-text">
+                      From Factory Experience to Repairs On The Go
+                    </p>
+                  </td>
+
+                  <!-- CONTACT -->
+
+                  <td class="footer-column">
+                    <h3 class="footer-heading">Contact</h3>
+
+                    <p class="footer-text">
+                      <a href="tel:0437985190">
+                        0437 985 190
+                      </a>
+                    </p>
+
+                    <p class="footer-text">
+                      <a href="mailto:brandon@brandonrv.trade">
+                        brandon@brandonrv.trade
+                      </a>
+                    </p>
+                  </td>
+
+                </tr>
+              </table>
+
+              <!-- COPYRIGHT -->
+
+              <div class="footer-bottom">
+                <p>
+                  Brandon RV | Tamworth, NSW
+                </p>
+
+                <p>
+                  &copy; Brandon RV. All rights reserved.
+                </p>
+              </div>
+
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
 </body>
 </html>
 $shell$;
