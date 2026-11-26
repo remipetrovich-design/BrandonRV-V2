@@ -89,7 +89,7 @@ function render(value, context) {
 function composeEmailHtml(content, layout, context) {
   const selected = layout && typeof layout.html === "string" && typeof layout.css === "string" ? layout : DEFAULT_EMAIL_LAYOUT;
   const shell = selected.html.includes("{{content}}") ? selected.html : selected.html + "{{content}}";
-  const body = shell.replace(/{{\\s*content\\s*}}/g, content);
+  const body = shell.replace(/{{\s*content\s*}}/g, content);
   return '<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>' + render(selected.css, context) + '</style></head><body>' + render(body, context) + '</body></html>';
 }
 function conditionMatches(conditions, context) {

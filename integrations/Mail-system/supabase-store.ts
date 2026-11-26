@@ -1,7 +1,8 @@
 import type {
   MailModuleStore, MailModuleSettings, MailTemplate, MailTemplateRevision,
-  MailRoute, MailTrigger, defaultEmailLayout,
+  MailRoute, MailTrigger,
 } from "./types";
+import { defaultEmailLayout } from "./types";
 
 /** Minimal structural type: accepts a Supabase JS client without forcing a second SDK install. */
 export type SupabaseMailClient = {
@@ -116,7 +117,7 @@ export function createSupabaseMailModuleStore(client: SupabaseMailClient): MailM
       if (error) fail(error, "settings save");
       return { ...DEFAULT_SETTINGS, ...(data?.value || {}), appearance: {
         ...DEFAULT_SETTINGS.appearance, ...(data?.value?.appearance || {}),
-      } } as MailModuleSettings;
+      }, emailLayout: { ...DEFAULT_SETTINGS.emailLayout, ...(data?.value?.emailLayout || {}) } } as MailModuleSettings;
     },
   };
 }

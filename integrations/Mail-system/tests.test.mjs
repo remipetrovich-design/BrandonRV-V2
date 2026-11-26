@@ -227,10 +227,10 @@ test("global email layout wraps per-template content between shared header and f
  const html=composeEmailHtml("<p>Hello {{customer.name}}</p>",layout,{brandColor:"#263746",customer:{name:"Ada"}});
  assert.ok(html.indexOf("BRAND")<html.indexOf("<p>Hello Ada</p>"));
  assert.ok(html.indexOf("<p>Hello Ada</p>")<html.indexOf("FOOT"));
- assert.match(html,/body\\{color:#263746\\}/);
+ assert.match(html,/body\{color:#263746\}/);
 });
 
 test("template HTML receives the global shell while text remains template-specific",()=>{
  const result=renderTemplate({subject:"Hi {{name}}",text:"Hi {{name}}",html:"<p>Hi {{name}}</p>"},{name:"Ada"},{html:"<header>Global</header>{{content}}<footer>End</footer>",css:".content{color:red}"});
- assert.equal(result.text,"Hi Ada"); assert.match(result.html,/Global/); assert.match(result.html,/<p>Hi Ada<\\/p>/); assert.match(result.html,/<footer>End<\\/footer>/); assert.match(result.html,/\\.content\\{color:red\\}/);
+ assert.equal(result.text,"Hi Ada"); assert.match(result.html,/Global/); assert.match(result.html,/<p>Hi Ada<\/p>/); assert.match(result.html,/<footer>End<\/footer>/); assert.match(result.html,/\.content\{color:red\}/);
 });
