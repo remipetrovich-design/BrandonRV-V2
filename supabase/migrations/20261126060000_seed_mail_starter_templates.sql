@@ -314,6 +314,14 @@ begin
         when 'invoice-issued' then 'invoice.issued'
         when 'payment-received' then 'payment.received'
         when 'payment-refunded' then 'payment.refunded'
+        when 'staff-invitation' then 'staff.invitation_created'
+        when 'workcard-assigned' then 'workcard.assigned'
+        when 'workcard-started' then 'workcard.started'
+        when 'workcard-completed' then 'workcard.completed'
+        when 'workcard-awaiting-approval' then 'workcard.awaiting_customer_approval'
+        when 'workcard-approved' then 'workcard.customer_approved'
+        when 'workcard-changes-requested' then 'workcard.changes_requested'
+        when 'quote-review-requested' then 'quote.review_requested'
       end,
       item->>'key',
       null,
