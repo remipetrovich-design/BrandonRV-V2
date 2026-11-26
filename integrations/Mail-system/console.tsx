@@ -316,7 +316,7 @@ export function MailModuleConsole({
           })} /></label>)}
         <hr />
         <h4>Global email template</h4>
-        <p>This layout is shared by every email. Each individual template supplies only the content inserted between the global header and footer. Keep {{content}} as the insertion point and use {{logoUrl}} for the logo.</p>
+        <p>This layout is shared by every email. Each individual template supplies only the content inserted between the global header and footer. Keep {"{{content}}"} as the insertion point and use {"{{logoUrl}}"} for the logo.</p>
         <label>Global HTML layout<textarea aria-label="Global email HTML layout" rows={16} value={emailLayout.html} disabled={!canManage || busy} onChange={event => setSettings({ ...settings, emailLayout: { ...emailLayout, html: event.target.value } })} /></label>
         <label>Global CSS styles<textarea aria-label="Global email CSS styles" rows={16} value={emailLayout.css} disabled={!canManage || busy} onChange={event => setSettings({ ...settings, emailLayout: { ...emailLayout, css: event.target.value } })} /></label>
         <button type="button" disabled={!canManage || busy} onClick={() => setSettings({ ...settings, emailLayout: defaultEmailLayout })}>Reset email layout</button>
