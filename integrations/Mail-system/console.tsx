@@ -10,8 +10,8 @@ import type {
   MailTrigger,
   MailModuleSettings,
   MailSender,
-  defaultEmailLayout,
 } from "./types";
+import { defaultEmailLayout } from "./types";
 import { configureTemplate, configureRoute, configureTrigger, updateModuleSettings } from "./configuration";
 import { renderTemplate } from "./renderer";
 import MailHtmlEditor from "./template-html-editor";
