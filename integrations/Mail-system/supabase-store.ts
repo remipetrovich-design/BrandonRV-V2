@@ -1,6 +1,6 @@
 import type {
   MailModuleStore, MailModuleSettings, MailTemplate, MailTemplateRevision,
-  MailRoute, MailTrigger,
+  MailRoute, MailTrigger, defaultEmailLayout,
 } from "./types";
 
 /** Minimal structural type: accepts a Supabase JS client without forcing a second SDK install. */
@@ -22,6 +22,7 @@ const DEFAULT_SETTINGS: MailModuleSettings = {
     textColor: "#172033", borderColor: "#d9e0ea", borderRadius: "12px",
     fontFamily: "inherit", title: "Mail settings", subtitle: "Configure application email",
   },
+  emailLayout: defaultEmailLayout,
 };
 
 /**
@@ -107,7 +108,7 @@ export function createSupabaseMailModuleStore(client: SupabaseMailClient): MailM
       if (error) fail(error, "settings lookup");
       return { ...DEFAULT_SETTINGS, ...(data?.value || {}), appearance: {
         ...DEFAULT_SETTINGS.appearance, ...(data?.value?.appearance || {}),
-      } } as MailModuleSettings;
+      }, emailLayout: { ...DEFAULT_SETTINGS.emailLayout, ...(data?.value?.emailLayout || {}) } } as MailModuleSettings;
     },
     async saveSettings(input) {
       const { data, error } = await client.from("app_mail_settings")

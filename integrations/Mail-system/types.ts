@@ -44,10 +44,12 @@ export type MailAppearance = {
   subtitle: string;
 };
 
+export type MailEmailLayout = { html: string; css: string };
 export type MailModuleSettings = {
   enabled: boolean;
   defaultSender: string | null;
   appearance: MailAppearance;
+  emailLayout?: MailEmailLayout;
 };
 
 export type MailTemplateRevision = {
@@ -89,6 +91,8 @@ export type MailModuleStore = {
   getSettings(): Promise<MailModuleSettings>;
   saveSettings(input: MailModuleSettings): Promise<MailModuleSettings>;
 };
+
+export const defaultEmailLayout: MailEmailLayout = { html: "<table role=\"presentation\" width=\"100%\" class=\"email-wrapper\"><tr><td align=\"center\"><table role=\"presentation\" width=\"100%\" class=\"email-container\"><tr><td class=\"header\"><img src=\"{{logoUrl}}\" alt=\"Brandon RV\" class=\"logo\"></td></tr><tr><td class=\"header-divider\"></td></tr><tr><td class=\"content\">{{content}}</td></tr><tr><td class=\"footer\"><table role=\"presentation\" width=\"100%\" class=\"footer-columns\"><tr><td class=\"footer-column\"><h3 class=\"footer-heading\">Information</h3><p class=\"footer-text\">Brandon RV</p><p class=\"footer-text\">Tamworth, NSW</p></td><td class=\"footer-column\"><h3 class=\"footer-heading\">About Us</h3><p class=\"footer-text\">From Factory Experience to Repairs On The Go</p></td><td class=\"footer-column\"><h3 class=\"footer-heading\">Contact</h3><p class=\"footer-text\"><a href=\"tel:0437985190\">0437 985 190</a></p><p class=\"footer-text\"><a href=\"mailto:brandon@brandonrv.trade\">brandon@brandonrv.trade</a></p></td></tr></table><div class=\"footer-bottom\"><p>Brandon RV | Tamworth, NSW</p><p>© Brandon RV. All rights reserved.</p></div></td></tr></table></td></tr></table>", css: "body{margin:0;padding:0;background-color:#f2f3f5;font-family:Arial,Helvetica,sans-serif;color:#333}.email-wrapper{width:100%;padding:30px 12px;background:#f2f3f5}.email-container{width:100%;max-width:600px;margin:0 auto;background:#fff;border-radius:6px;overflow:hidden}.header{padding:30px 25px;text-align:center;background:#fff}.logo{display:block;width:100%;max-width:230px;height:auto;margin:0 auto;border:0}.header-divider{height:4px;background:#263746;line-height:4px;font-size:0}.content{padding:35px 30px;background:#fff;font-size:15px;line-height:1.7;color:#333}.footer{padding:30px 25px 20px;background:#263746;color:#fff}.footer-columns{width:100%;border-collapse:collapse}.footer-column{width:33.33%;padding:0 10px;vertical-align:top}.footer-heading{margin:0 0 12px;font-size:14px;font-weight:bold;color:#fff}.footer-text{margin:0 0 8px;font-size:12px;line-height:1.6;color:#d9e0e5}.footer a{color:#d9e0e5;text-decoration:none}.footer-bottom{margin-top:24px;padding-top:18px;border-top:1px solid #52616d;text-align:center}.footer-bottom p{margin:0 0 6px;font-size:11px;line-height:1.6;color:#c5cdd3}@media screen and (max-width:480px){.email-wrapper{padding:15px 8px}.header{padding:25px 15px}.content{padding:25px 20px}.footer{padding:25px 20px 18px}.footer-column{display:block;width:100%;padding:0 0 20px}.footer-column:last-child{padding-bottom:0}}" };
 
 export const defaultAppearance: MailAppearance = {
   primaryColor: "#253858",

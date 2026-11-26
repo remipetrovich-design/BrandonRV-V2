@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { renderVariable, renderTemplate } from "./renderer.mjs";
+import { renderVariable, renderTemplate, composeEmailHtml } from "./renderer.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const read = (name) => readFile(join(root, name), "utf8");
@@ -219,4 +219,18 @@ test("connection test returns sender IDs and addresses for routing configuration
     assert.equal(result.ok, true);
     assert.deepEqual(result.senders, [{ id: "sender-1", address: "service@example.com" }]);
   } finally { globalThis.fetch = originalFetch; }
+});
+
+
+test("global email layout wraps per-template content between shared header and footer", () => {
+ const layout={html:"<header>BRAND</header><main>{{content}}</main><footer>FOOT</footer>",css:"body{color:{{brandColor}}}"};
+ const html=composeEmailHtml("<p>Hello {{customer.name}}</p>",layout,{brandColor:"#263746",customer:{name:"Ada"}});
+ assert.ok(html.indexOf("BRAND")<html.indexOf("<p>Hello Ada</p>"));
+ assert.ok(html.indexOf("<p>Hello Ada</p>")<html.indexOf("FOOT"));
+ assert.match(html,/body\\{color:#263746\\}/);
+});
+
+test("template HTML receives the global shell while text remains template-specific",()=>{
+ const result=renderTemplate({subject:"Hi {{name}}",text:"Hi {{name}}",html:"<p>Hi {{name}}</p>"},{name:"Ada"},{html:"<header>Global</header>{{content}}<footer>End</footer>",css:".content{color:red}"});
+ assert.equal(result.text,"Hi Ada"); assert.match(result.html,/Global/); assert.match(result.html,/<p>Hi Ada<\\/p>/); assert.match(result.html,/<footer>End<\\/footer>/); assert.match(result.html,/\\.content\\{color:red\\}/);
 });

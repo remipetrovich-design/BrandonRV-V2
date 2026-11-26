@@ -10,6 +10,7 @@ import type {
   MailTrigger,
   MailModuleSettings,
   MailSender,
+  defaultEmailLayout,
 } from "./types";
 import { configureTemplate, configureRoute, configureTrigger, updateModuleSettings } from "./configuration";
 import { renderTemplate } from "./renderer";
@@ -154,6 +155,7 @@ export function MailModuleConsole({
   if (!settings) return <section aria-live="polite">Loading mail configuration… {status}</section>;
 
   const appearance = settings.appearance;
+  const emailLayout = settings.emailLayout || defaultEmailLayout;
   return (
     <section className="brv-mail-module-console">
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
@@ -212,7 +214,7 @@ export function MailModuleConsole({
         <button type="button" disabled={!canManage || busy} onClick={saveTemplate}>Save template</button>
         <button type="button" disabled={busy} onClick={async () => {
           try {
-            const rendered = renderTemplate({ subject, text: textBody, html: htmlBody }, { sample: "Example", customer: { name: "Sample Customer" } });
+            const rendered = renderTemplate({ subject, text: textBody, html: htmlBody }, { sample: "Example", logoUrl: appearance.logoUrl || "https://www.brandonrv.trade/Blogo.jpg", customer: { name: "Sample Customer" } }, emailLayout);
             setPreview('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Email preview</title></head><body>'+(rendered.html||"<pre>"+String(rendered.text||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")+"</pre>")+"</body></html>");
           } catch (error) {
             setStatus(error instanceof Error ? error.message : "Preview failed");
@@ -312,6 +314,12 @@ export function MailModuleConsole({
             ...settings,
             appearance: { ...settings.appearance, [key]: event.target.value },
           })} /></label>)}
+        <hr />
+        <h4>Global email template</h4>
+        <p>This layout is shared by every email. Each individual template supplies only the content inserted between the global header and footer. Keep {{content}} as the insertion point and use {{logoUrl}} for the logo.</p>
+        <label>Global HTML layout<textarea aria-label="Global email HTML layout" rows={16} value={emailLayout.html} disabled={!canManage || busy} onChange={event => setSettings({ ...settings, emailLayout: { ...emailLayout, html: event.target.value } })} /></label>
+        <label>Global CSS styles<textarea aria-label="Global email CSS styles" rows={16} value={emailLayout.css} disabled={!canManage || busy} onChange={event => setSettings({ ...settings, emailLayout: { ...emailLayout, css: event.target.value } })} /></label>
+        <button type="button" disabled={!canManage || busy} onClick={() => setSettings({ ...settings, emailLayout: defaultEmailLayout })}>Reset email layout</button>
         <button type="button" disabled={!canManage || busy} onClick={() => run(() => updateModuleSettings(store, settings), "Settings saved")}>Save settings</button>
         <button type="button" disabled={busy} onClick={testConnection}>Test connection and refresh senders</button>
       </div>}

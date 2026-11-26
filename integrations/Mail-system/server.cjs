@@ -2,6 +2,7 @@
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DEFAULT_TIMEOUT_MS = 15000;
+const DEFAULT_EMAIL_LAYOUT = { html: "<table role=\"presentation\" width=\"100%\" class=\"email-wrapper\"><tr><td align=\"center\"><table role=\"presentation\" width=\"100%\" class=\"email-container\"><tr><td class=\"header\"><img src=\"{{logoUrl}}\" alt=\"Brandon RV\" class=\"logo\"></td></tr><tr><td class=\"header-divider\"></td></tr><tr><td class=\"content\">{{content}}</td></tr><tr><td class=\"footer\"><table role=\"presentation\" width=\"100%\" class=\"footer-columns\"><tr><td class=\"footer-column\"><h3 class=\"footer-heading\">Information</h3><p class=\"footer-text\">Brandon RV</p><p class=\"footer-text\">Tamworth, NSW</p></td><td class=\"footer-column\"><h3 class=\"footer-heading\">About Us</h3><p class=\"footer-text\">From Factory Experience to Repairs On The Go</p></td><td class=\"footer-column\"><h3 class=\"footer-heading\">Contact</h3><p class=\"footer-text\"><a href=\"tel:0437985190\">0437 985 190</a></p><p class=\"footer-text\"><a href=\"mailto:brandon@brandonrv.trade\">brandon@brandonrv.trade</a></p></td></tr></table><div class=\"footer-bottom\"><p>Brandon RV | Tamworth, NSW</p><p>© Brandon RV. All rights reserved.</p></div></td></tr></table></td></tr></table>", css: "body{margin:0;padding:0;background-color:#f2f3f5;font-family:Arial,Helvetica,sans-serif;color:#333}.email-wrapper{width:100%;padding:30px 12px;background:#f2f3f5}.email-container{width:100%;max-width:600px;margin:0 auto;background:#fff;border-radius:6px;overflow:hidden}.header{padding:30px 25px;text-align:center;background:#fff}.logo{display:block;width:100%;max-width:230px;height:auto;margin:0 auto;border:0}.header-divider{height:4px;background:#263746;line-height:4px;font-size:0}.content{padding:35px 30px;background:#fff;font-size:15px;line-height:1.7;color:#333}.footer{padding:30px 25px 20px;background:#263746;color:#fff}.footer-columns{width:100%;border-collapse:collapse}.footer-column{width:33.33%;padding:0 10px;vertical-align:top}.footer-heading{margin:0 0 12px;font-size:14px;font-weight:bold;color:#fff}.footer-text{margin:0 0 8px;font-size:12px;line-height:1.6;color:#d9e0e5}.footer a{color:#d9e0e5;text-decoration:none}.footer-bottom{margin-top:24px;padding-top:18px;border-top:1px solid #52616d;text-align:center}.footer-bottom p{margin:0 0 6px;font-size:11px;line-height:1.6;color:#c5cdd3}@media screen and (max-width:480px){.email-wrapper{padding:15px 8px}.header{padding:25px 15px}.content{padding:25px 20px}.footer{padding:25px 20px 18px}.footer-column{display:block;width:100%;padding:0 0 20px}.footer-column:last-child{padding-bottom:0}}" };
 
 function mailConfig(context) {
   const endpoint = String(context.endpoint || "").trim().replace(/\/+$/, "");
@@ -85,6 +86,12 @@ function render(value, context) {
     return result == null ? "" : String(result);
   });
 }
+function composeEmailHtml(content, layout, context) {
+  const selected = layout && typeof layout.html === "string" && typeof layout.css === "string" ? layout : DEFAULT_EMAIL_LAYOUT;
+  const shell = selected.html.includes("{{content}}") ? selected.html : selected.html + "{{content}}";
+  const body = shell.replace(/{{\\s*content\\s*}}/g, content);
+  return '<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>' + render(selected.css, context) + '</style></head><body>' + render(body, context) + '</body></html>';
+}
 function conditionMatches(conditions, context) {
   if (!conditions || typeof conditions !== "object" || Array.isArray(conditions)) return false;
   return Object.entries(conditions).every(([path, expected]) => {
@@ -162,7 +169,7 @@ async function handleEvent(input, context) {
     to: recipientPayload,
     subject: render(template.subject, payload),
     text: template.body_text == null ? undefined : render(template.body_text, payload),
-    html: template.body_html == null ? undefined : render(template.body_html, payload),
+    html: template.body_html == null ? undefined : composeEmailHtml(render(template.body_html, payload), settings.emailLayout || DEFAULT_EMAIL_LAYOUT, { ...payload, logoUrl: settings.appearance && settings.appearance.logoUrl || "https://www.brandonrv.trade/Blogo.jpg" }),
     from_address: sender
   };
   await mailRequest(context, "/api/mail", { method: "POST", headers: payload.eventId ? { "x-request-id": String(payload.eventId) } : undefined, body: JSON.stringify(message) });
