@@ -283,8 +283,8 @@ export function MailModuleConsole({
             <option value="">Select template</option>
             {templates.map((template) => <option key={template.id} value={template.template_key}>{template.display_name}</option>)}
           </select></label>
-          <label>Route key (optional)<select value={routeKey} onChange={(event) => setRouteKey(event.target.value)}>
-            <option value="">Use default route selection</option>
+          <label>Sender choice (optional)<select value={routeKey} onChange={(event) => setRouteKey(event.target.value)}>
+            <option value="">Use default sender</option>
             {routes.map((route) => <option key={route.id} value={route.route_key}>{route.route_key}</option>)}
           </select></label>
           <label>Recipient mapping JSON<textarea value={recipientMapping} onChange={(event) => setRecipientMapping(event.target.value)} /></label>
