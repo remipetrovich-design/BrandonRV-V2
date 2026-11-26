@@ -49,11 +49,11 @@ export function MailModuleConsole({
   const [htmlBody, setHtmlBody] = useState("");
   const [templateActive, setTemplateActive] = useState(false);
   const [eventKey, setEventKey] = useState("");
+  const [routeId, setRouteId] = useState<string | undefined>();
   const [routeKey, setRouteKey] = useState("");
   const [senderAddress, setSenderAddress] = useState("");
   const [routeActive, setRouteActive] = useState(true);
-  const [priority, setPriority] = useState(0);
-  const [conditions, setConditions] = useState("{}");
+
   const [triggerTemplate, setTriggerTemplate] = useState("");
   const [recipientMapping, setRecipientMapping] = useState("{}");
   const [triggerActive, setTriggerActive] = useState(false);
@@ -185,7 +185,7 @@ export function MailModuleConsole({
         </div>
       </section>
       <nav aria-label="Mail configuration" style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "16px 0" }}>
-        {["templates", "routing", "triggers", "settings"].map((item) =>
+        {["templates", "senders", "triggers", "settings"].map((item) =>
           <button type="button" key={item} aria-pressed={tab === item} onClick={() => setTab(item)}>
             {item[0].toUpperCase() + item.slice(1)}
           </button>)}
@@ -236,32 +236,32 @@ export function MailModuleConsole({
         </section>}
       </div>}
 
-      {tab === "routing" && <div>
-        <h3>Sender routing rules</h3>
+      {tab === "senders" && <div>
+        <h3>Sender choices</h3>
+        <p>Choose which permitted email address Brandon RV sends from. Create a named choice here, then select it for an email trigger. If a trigger has no choice, the default sender is used.</p>
         <ul>{routes.map((route) => <li key={route.id}>
           <button type="button" onClick={() => {
+            setRouteId(route.id);
             setRouteKey(route.route_key);
             setSenderAddress(route.sender_address);
-            setPriority(route.priority);
             setRouteActive(route.active);
-            setConditions(JSON.stringify(route.conditions, null, 2));
-          }}>{route.route_key} → {route.sender_address} · priority {route.priority}</button>
-          <button type="button" disabled={!canManage || busy} onClick={() => run(() => store.deleteRoute(route.id), "Route deleted")}>Delete</button>
+          }}>{route.route_key} — {route.sender_address} · {route.active ? "Active" : "Disabled"}</button>
+          <button type="button" disabled={!canManage || busy} onClick={() => run(() => store.deleteRoute(route.id), "Sender choice deleted")}>Delete</button>
         </li>)}</ul>
+        <h4>{routeId ? "Edit sender choice" : "Add sender choice"}</h4>
         <fieldset disabled={!canManage || busy}>
-          <label>Route key<input value={routeKey} onChange={(event) => setRouteKey(event.target.value)} /></label>
-          <label>Permitted sender<select value={senderAddress} onChange={(event) => setSenderAddress(event.target.value)}>
-            <option value="">Select sender</option>
+          <label>Name<input value={routeKey} onChange={(event) => setRouteKey(event.target.value)} placeholder="e.g. bookings" /></label>
+          <label>Send from<select value={senderAddress} onChange={(event) => setSenderAddress(event.target.value)}>
+            <option value="">Select an available sender</option>
             {senders.map((sender) => <option key={sender.id} value={sender.address}>{sender.address}</option>)}
           </select></label>
-          <label>Priority<input type="number" step="1" value={priority} onChange={(event) => setPriority(Number(event.target.value))} /></label>
-          <label>Conditions JSON<textarea value={conditions} onChange={(event) => setConditions(event.target.value)} /></label>
-          <label><input type="checkbox" checked={routeActive} onChange={(event) => setRouteActive(event.target.checked)} /> Active</label>
+          <label><input type="checkbox" checked={routeActive} onChange={(event) => setRouteActive(event.target.checked)} /> Available for triggers</label>
         </fieldset>
         <button type="button" disabled={!canManage || busy} onClick={() => run(
-          () => configureRoute(store, { route_key: routeKey, sender_address: senderAddress, priority, conditions: JSON.parse(conditions), active: routeActive }),
-          "Route saved",
-        )}>Save active route</button>
+          () => configureRoute(store, { id: routeId, route_key: routeKey, sender_address: senderAddress, priority: 0, conditions: {}, active: routeActive }),
+          "Sender choice saved",
+        )}>Save sender choice</button>
+        <button type="button" disabled={!canManage || busy} onClick={() => { setRouteId(undefined); setRouteKey(""); setSenderAddress(""); setRouteActive(true); }}>New sender choice</button>
       </div>}
 
       {tab === "triggers" && <div>
