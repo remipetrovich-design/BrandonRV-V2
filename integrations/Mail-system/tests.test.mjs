@@ -234,3 +234,13 @@ test("template HTML receives the global shell while text remains template-specif
  const result=renderTemplate({subject:"Hi {{name}}",text:"Hi {{name}}",html:"<p>Hi {{name}}</p>"},{name:"Ada"},{html:"<header>Global</header>{{content}}<footer>End</footer>",css:".content{color:red}"});
  assert.equal(result.text,"Hi Ada"); assert.match(result.html,/Global/); assert.match(result.html,/<p>Hi Ada<\/p>/); assert.match(result.html,/<footer>End<\/footer>/); assert.match(result.html,/\.content\{color:red\}/);
 });
+
+
+test("sender configuration uses simple named sender choices instead of raw routing rules", async () => {
+  const source = await read("console.tsx");
+  assert.match(source, /Sender choices/);
+  assert.match(source, /If a trigger has no choice, the default sender is used/);
+  assert.match(source, /Save sender choice/);
+  assert.doesNotMatch(source, /Conditions JSON|Priority<input/);
+  assert.match(source, /\["templates", "senders", "triggers", "settings"\]/);
+});
