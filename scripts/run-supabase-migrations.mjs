@@ -7,22 +7,23 @@ if (!["preview", "apply"].includes(mode)) {
 }
 
 const projectRef = resolveSupabaseMigrationTarget(process.env);
-const secrets = [
-  process.env.SUPABASE_ACCESS_TOKEN,
-  process.env.SUPABASE_DB_PASSWORD,
-].filter(Boolean);
+const secrets = [process.env.SUPABASE_ACCESS_TOKEN, process.env.SUPABASE_DB_PASSWORD].filter(Boolean);
 
 async function run(args) {
-  const status = await runCommand("supabase", args, {
-    env: process.env,
-    redact: secrets,
-  });
+  const status = await runCommand("supabase", args, { env: process.env, redact: secrets });
+  if (status !== 0) process.exit(status);
+}
+async function guardHistory() {
+  const status = await runCommand("node", ["scripts/diagnose-migration-history.mjs"], { env: process.env, redact: secrets });
   if (status !== 0) process.exit(status);
 }
 
 if (mode === "preview") {
+  await guardHistory();
   await run(["migration", "list", `--remote=${projectRef}`]);
   await run(["db", "push", `--remote=${projectRef}`, "--dry-run"]);
 } else {
+  // Repeat the history guard immediately before any apply operation.
+  await guardHistory();
   await run(["db", "push", `--remote=${projectRef}`, "--yes"]);
 }
