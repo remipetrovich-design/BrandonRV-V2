@@ -1,0 +1,58 @@
+name: Reconcile Supabase Migration History
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type CHECK to run a read-only migration-history diagnostic."
+        required: true
+        default: "NO"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: brandon-rv-v2-migration-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    if: inputs.confirm == 'CHECK' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+    env:
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Refresh main
+        run: |
+          set -euo pipefail
+          git fetch origin main --force
+          git checkout --detach origin/main
+          echo "Diagnostic commit: $(git rev-parse HEAD)"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate dedicated Supabase target and credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$SUPABASE_PROJECT_ID" = "lciylmfpcefdpsouoqvm"
+          for name in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD; do
+            if [ -z "${!name:-}" ]; then echo "::error::Missing secret $name"; exit 1; fi
+          done
+      - run: npm install --no-package-lock
+      - uses: supabase/setup-cli@v3
+        with:
+          version: latest
+      - name: Validate local migration filenames
+        run: node scripts/check-migrations.mjs
+      - name: Diagnose migration-history consistency (read-only)
+        run: node scripts/diagnose-migration-history.mjs
