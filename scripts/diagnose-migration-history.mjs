@@ -5,32 +5,31 @@ import { resolveSupabaseMigrationTarget } from "../src/lib/supabase-migration-ta
 
 const execFileAsync = promisify(execFile);
 const projectRef = resolveSupabaseMigrationTarget(process.env);
-const localDir = "supabase/migrations";
-const localFiles = (await readdir(localDir)).filter(f => /^\d{14}_.+\.sql$/.test(f));
+const localFiles = (await readdir("supabase/migrations")).filter(f => /^\d{14}_.+\.sql$/.test(f));
 const localVersions = new Set(localFiles.map(f => f.slice(0,14)));
-
-const { stdout } = await execFileAsync("supabase", ["migration","list",`--remote=${projectRef}`], {
-  env: process.env, maxBuffer: 8 * 1024 * 1024
-});
+const { stdout } = await execFileAsync("supabase", ["migration","list",`--remote=${projectRef}`], { env: process.env, maxBuffer: 8 * 1024 * 1024 });
 console.log(stdout);
-const remoteVersions = new Set([...stdout.matchAll(/(?:^|\s)(\d{14})(?=\s|$)/gm)].map(m=>m[1]));
+
+// Supabase CLI migration-list table columns: LOCAL version, REMOTE version, timestamp.
+// Parse column-by-column, never treat the local column as proof of remote history.
+const remoteVersions = new Set();
+for (const line of stdout.split(/\r?\n/)) {
+  const cells = line.split("|").map(c => c.trim());
+  if (cells.length >= 2 && /^\d{14}$/.test(cells[1])) remoteVersions.add(cells[1]);
+}
 if (!remoteVersions.size) {
-  console.error("Unable to reliably parse remote migration history. Stopping rather than assuming the database is empty.");
+  console.error("Remote migration column could not be parsed reliably. Stopping safely.");
   process.exit(2);
 }
 const remoteOnly=[...remoteVersions].filter(v=>!localVersions.has(v)).sort();
-const localOnly=[...localVersions].filter(v=>!remoteVersions.has(v)).sort();
+const localPending=[...localVersions].filter(v=>!remoteVersions.has(v)).sort();
 if(remoteOnly.length){
- console.error("\nREMOTE-ONLY migration versions (history entries without local files):");
+ console.error("\nREMOTE-ONLY versions (remote history entries missing local files):");
  for(const v of remoteOnly) console.error(" - "+v);
- console.error("\nThis is migration-history drift. No migrations were applied or history records changed.");
- console.error("Reconciliation is required: restore the corresponding migration files or review the schema/history and reconcile deliberately.");
+ console.error("\nHistory drift detected. No migration was applied and remote history was not changed.");
+ console.error("Restore reviewed migration files or reconcile deliberately before applying.");
  process.exit(1);
 }
-if(localOnly.length){
- console.log("\nLOCAL PENDING migration versions:");
- for(const v of localOnly) console.log(" - "+v);
- console.log("Remote history is consistent with the local migration set; pending files may be previewed.");
-}else{
- console.log("\nMigration histories match: no pending local migration versions.");
-}
+console.log(localPending.length ? "\nLocal migration files pending remotely:" : "\nNo local migrations pending.");
+for(const v of localPending) console.log(" - "+v);
+console.log("Remote history appears consistent with local files; safe to proceed to CLI preview.");
