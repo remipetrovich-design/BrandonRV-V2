@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 
 const deploy = await readFile(new URL("../.github/workflows/manual-deploy-latest.yml", import.meta.url), "utf8");
 const fullScan = await readFile(new URL("../.github/workflows/manual-full-scan.yml", import.meta.url), "utf8");
-const migrations = await readFile(new URL("../.github/workflows/manual-scan-apply-migrations.yml", import.meta.url), "utf8");
+const migrations = await readFile(new URL("../.github/workflows/manual-scan-apply-migrations.yml", import.meta.url), "utf8");\nconst diagnostic = await readFile(new URL("../.github/workflows/reconcile-migration-history.yml", import.meta.url), "utf8");\nconst dispatch = await readFile(new URL("../src/app/api/admin/deployment/dispatch/route.ts", import.meta.url), "utf8");\nconst status = await readFile(new URL("../src/app/api/admin/deployment/status/route.ts", import.meta.url), "utf8");\nconst logs = await readFile(new URL("../src/app/api/admin/deployment/logs/route.ts", import.meta.url), "utf8");\nconst retry = await readFile(new URL("../src/app/api/admin/deployment/retry/route.ts", import.meta.url), "utf8");\nconst control = await readFile(new URL("../src/components/admin-manual-deploy.tsx", import.meta.url), "utf8");
 const dispatch = await readFile(new URL("../src/app/api/admin/deployment/dispatch/route.ts", import.meta.url), "utf8");
 const status = await readFile(new URL("../src/app/api/admin/deployment/status/route.ts", import.meta.url), "utf8");
 const page = await readFile(new URL("../src/components/admin-manual-deploy.tsx", import.meta.url), "utf8");
@@ -57,4 +57,15 @@ test("deployment status and admin page expose separate workflow results and chec
   assert.match(page, /Deploy Latest Commit/);
   assert.match(page, /Scan and Apply Migrations/);
   assert.match(page, /Commit checks/);
+});
+
+
+test("staff deployment control exposes read-only migration diagnostic through API, status and logs",()=>{
+ assert.match(diagnostic,/confirm == 'CHECK'/);
+ assert.match(dispatch,/diagnostic:"reconcile-migration-history\.yml"/);
+ assert.match(status,/diagnosticRun/);
+ assert.match(logs,/diagnostic:"reconcile-migration-history\.yml"/);
+ assert.match(retry,/diagnostic:"reconcile-migration-history\.yml"/);
+ assert.match(control,/Diagnose Migration History/);
+ assert.match(control,/Migration history diagnostics/);
 });
