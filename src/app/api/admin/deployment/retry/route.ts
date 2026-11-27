@@ -2,13 +2,13 @@ import {authorizePermission,currentMembership,database,jsonError,sameOrigin} fro
 import {writeAuditEvent} from "@/lib/audit-events.mjs";
 export const runtime="nodejs";export const dynamic="force-dynamic";
 const REPO="remipetrovich-design/BrandonRV-V2";
-const WORKFLOWS={full_scan:"manual-full-scan.yml",scan_apply:"manual-scan-apply-migrations.yml",deploy:"manual-deploy-latest.yml"} as const;
+const WORKFLOWS={full_scan:"manual-full-scan.yml",scan_apply:"manual-scan-apply-migrations.yml",deploy:"manual-deploy-latest.yml",diagnostic:"reconcile-migration-history.yml"} as const;
 export async function POST(request:Request){
  if(!sameOrigin(request))return jsonError("Invalid request origin.",403);
  const body=await request.json().catch(()=>null),operation=body?.operation,runId=Number(body?.runId);
  if(typeof operation!=="string"||!Object.hasOwn(WORKFLOWS,operation)||!Number.isSafeInteger(runId)||runId<=0)return jsonError("Choose a valid operation and workflow run.",400);
  const workflow=WORKFLOWS[operation as keyof typeof WORKFLOWS];
- const access=await authorizePermission(operation==="scan_apply"?"developer.migrations.manage":"developer.deploy");if(access.response)return access.response;
+ const access=await authorizePermission(operation==="scan_apply"||operation==="diagnostic"?"developer.migrations.manage":"developer.deploy");if(access.response)return access.response;
  const token=process.env.GITHUB_ACTIONS_DISPATCH_TOKEN?.trim();if(!token)return jsonError("GitHub Actions retry access is not configured.",503);
  const headers={Accept:"application/vnd.github+json",Authorization:"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"};
  try{
